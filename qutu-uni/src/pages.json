@@ -1,0 +1,237 @@
+{
+	"pages": [
+		{
+			"path": "pages/index/index",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "趣途"
+			}
+		},
+		{
+			"path": "pages/guide/list",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "精选攻略"
+			}
+		},
+		{
+			"path": "pages/guide/detail",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "攻略详情"
+			}
+		},
+		{
+			"path": "pages/story/index",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "旅行故事"
+			}
+		},
+		{
+			"path": "pages/story/detail",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "故事详情"
+			}
+		},
+		{
+			"path": "pages/story/share",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "分享故事"
+			}
+		},
+		{
+			"path": "pages/checklist/index",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "旅行清单"
+			}
+		},
+		{
+			"path": "pages/checklist/detail",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "清单详情"
+			}
+		},
+		{
+			"path": "pages/record/index",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "记录行程"
+			}
+		},
+		{
+			"path": "pages/destination/detail",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "景点详情"
+			}
+		},
+		{
+			"path": "pages/planning/index",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "智能规划"
+			}
+		},
+		{
+			"path": "pages/footprint/index",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "人生地点收藏机"
+			}
+		},
+		{
+			"path": "pages/footprint/records",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "我的点亮记录"
+			}
+		},
+		{
+			"path": "pages/footprint/map",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "点亮地图"
+			}
+		},
+		{
+			"path": "pages/nearby/index",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "附近"
+			}
+		},
+		{
+			"path": "pages/collect/index",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "采集"
+			}
+		},
+		{
+			"path": "pages/collect/camera",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "拍照采集"
+			}
+		},
+		{
+			"path": "pages/collect/settings",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "采集偏好设置"
+			}
+		},
+		{
+			"path": "pages/collect/share",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "分享"
+			}
+		},
+		{
+			"path": "pages/collect/edit",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "编辑采集"
+			}
+		},
+		{
+			"path": "pages/collect/detail",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "采集详情"
+			}
+		},
+		{
+			"path": "pages/planning/detail",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "规划详情"
+			}
+		},
+		{
+			"path": "pages/message/index",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "消息中心"
+			}
+		},
+		{
+			"path": "pages/user/profile",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "个人资料"
+			}
+		},
+		{
+			"path": "pages/user/settings",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "个人设置"
+			}
+		},
+		{
+			"path": "pages/user/vip",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "会员中心"
+			}
+		},
+		{
+			"path": "pages/user/frequent",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "常用地点"
+			}
+		},
+		{
+			"path": "pages/user/favorites",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "收藏地点"
+			}
+		},
+		{
+			"path": "pages/user/backup",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "数据备份"
+			}
+		},
+		{
+			"path": "pages/user/login",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "登录"
+			}
+		},
+		{
+			"path": "pages/user/register",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "注册"
+			}
+		},
+		{
+			"path": "pages/user/forgot-password",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "找回密码"
+			}
+		}
+	],
+	"globalStyle": {
+		"navigationBarTextStyle": "black",
+		"navigationBarTitleText": "趣途",
+		"navigationBarBackgroundColor": "#FFFFFF",
+		"backgroundColor": "#F5F5F7",
+		"app-plus": {
+			"titleNView": false
+		}
+	}
+}
