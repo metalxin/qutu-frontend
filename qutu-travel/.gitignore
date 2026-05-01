@@ -1,0 +1,46 @@
+# Compiled class file
+*.class
+
+# Log file
+*.log
+
+# BlueJ files
+*.ctxt
+
+# Mobile Tools for Java (J2ME)
+.mtj.tmp/
+
+# Package Files #
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+*.lst
+# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+hs_err_pid*
+/qutu-guide/target/classes/application.yml
+/qutu-destination/target/classes/application.yml
+/qutu-story/target/classes/application.yml
+/qutu-destination/target/classes/bootstrap.yml
+/logs/qutu-boot/2026-04/debug.2026-04-07.0.log.gz
+/logs/qutu-boot/2026-04/debug.2026-04-08.0.log.gz
+/logs/qutu-boot/2026-04/debug.2026-04-09.0.log.gz
+/logs/qutu-boot/2026-04/debug.2026-04-10.0.log.gz
+/logs/qutu-boot/2026-04/debug.2026-04-11.0.log.gz
+/qutu-checklist/target/maven-archiver/pom.properties
+/qutu-common/qutu-common-datasource/target/maven-archiver/pom.properties
+/qutu-destination/target/maven-archiver/pom.properties
+/qutu-footprint/target/maven-archiver/pom.properties
+/qutu-guide/target/maven-archiver/pom.properties
+/qutu-planning/target/maven-archiver/pom.properties
+/qutu-story/target/maven-archiver/pom.properties
+/qutu-destination/target/qutu-destination.jar.original
+/qutu-guide/target/qutu-guide.jar.original
+/qutu-story/target/qutu-story.jar.original
+/qutu-destination/target/classes/mapper/SpotCommentMapper.xml
+/qutu-destination/target/classes/mapper/SpotFavoriteMapper.xml
+/qutu-destination/target/classes/mapper/SpotMapper.xml
+/qutu-common/qutu-common-datasource/target/classes/META-INF/spring-configuration-metadata.json

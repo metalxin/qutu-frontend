@@ -1,0 +1,5 @@
+cn.sdstudio.qutu.common.core.config.JacksonConfiguration
+cn.sdstudio.qutu.common.core.config.RedisTemplateConfiguration
+cn.sdstudio.qutu.common.core.config.RestTemplateConfiguration
+cn.sdstudio.qutu.common.core.util.SpringContextHolder
+cn.sdstudio.qutu.common.core.config.WebMvcConfiguration
