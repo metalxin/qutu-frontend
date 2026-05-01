@@ -1,0 +1,3 @@
+cn.sdstudio.qutu.common.feign.QutuFeignAutoConfiguration
+cn.sdstudio.qutu.common.feign.sentinel.SentinelAutoConfiguration
+cn.sdstudio.qutu.common.feign.sentinel.handle.GlobalBizExceptionHandler

@@ -1,0 +1,63 @@
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Dependencies
+node_modules/
+vendor/
+
+# Build outputs
+dist/
+target/
+*.class
+*.o
+
+# Environment
+.env.local
+.env.*.local
+
+# Logs
+*.log
+logs/
+
+# Coverage
+coverage/
+.nyc_output/
+
+# Flutter
+qutu_app/build/
+qutu_app/.dart_tool/
+qutu_app/.flutter-plugins
+qutu_app/.flutter-plugins-dependencies
+qutu_app/ios/.symlinks/
+qutu_app/ios/Pods/
+qutu_app/android/.gradle/
+qutu_app/android/local.properties
+qutu_app/macos/Build/
+qutu_app/macos/Pods/
+
+# Android
+*.apk
+*.ap_
+*.aab
+
+# iOS
+*.ipa
+*.dSYM.zip
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Temporary files
+*.tmp
+*.temp
+.cache/

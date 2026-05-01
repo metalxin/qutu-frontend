@@ -1,0 +1,34 @@
+server:
+  port: 5020
+
+spring:
+  application:
+    name: @artifactId@
+  mybatis-plus:
+    mapper-locations: classpath:mapper/*.xml
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_HOST:qutu-register}:${NACOS_PORT:8848}
+      config:
+        server-addr: ${spring.cloud.nacos.discovery.server-addr}
+
+security:
+  oauth2:
+    ignore:
+      urls:
+        - /guides/**
+        - /v3/api-docs/**
+        - /actuator/**
+
+swagger:
+  title: 攻略模块
+  description: 攻略列表、详情、关联查询接口
+  authorization:
+    name: qutu OAuth
+    auth-regex: ^.*$
+    authorization-scope-list:
+      - scope: server
+        description: server all
+    token-url-list:
+      - http://${GATEWAY_HOST:qutu-gateway}:${GATEWAY_PORT:9999}/auth/oauth2/token

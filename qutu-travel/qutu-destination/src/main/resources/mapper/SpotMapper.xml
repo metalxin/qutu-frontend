@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.sdstudio.qutu.destination.mapper.SpotMapper">
+
+    <!-- 分页查询景点列表 -->
+    <select id="selectSpotPage" resultType="cn.sdstudio.qutu.destination.vo.SpotListVO">
+        SELECT 
+            s.id,
+            s.name,
+            s.subtitle,
+            s.cover_url,
+            s.rating,
+            s.rating_count,
+            s.price_text,
+            s.address,
+            s.view_count,
+            s.favorite_count,
+            s.comment_count,
+            s.status,
+            c.name as city_name
+        FROM t_spot s
+        LEFT JOIN t_destination_city c ON s.city_id = c.id
+        WHERE s.deleted_flag = 0
+        <if test="query.cityId != null">
+            AND s.city_id = #{query.cityId}
+        </if>
+        <if test="query.cityName != null and query.cityName != ''">
+            AND c.name LIKE CONCAT('%', #{query.cityName}, '%')
+        </if>
+        <if test="query.categoryId != null">
+            AND s.category_id = #{query.categoryId}
+        </if>
+        <if test="query.name != null and query.name != ''">
+            AND s.name LIKE CONCAT('%', #{query.name}, '%')
+        </if>
+        <if test="query.keyword != null and query.keyword != ''">
+            AND (s.name LIKE CONCAT('%', #{query.keyword}, '%') 
+                 OR s.description LIKE CONCAT('%', #{query.keyword}, '%'))
+        </if>
+        <if test="query.minRating != null">
+            AND s.rating >= #{query.minRating}
+        </if>
+        <if test="query.minPrice != null">
+            AND s.price_min >= #{query.minPrice}
+        </if>
+        <if test="query.maxPrice != null">
+            AND s.price_max &lt;= #{query.maxPrice}
+        </if>
+        <if test="query.status != null">
+            AND s.status = #{query.status}
+        </if>
+        <if test="query.tagId != null">
+            AND EXISTS (SELECT 1 FROM t_spot_tag_map m WHERE m.spot_id = s.id AND m.tag_id = #{query.tagId})
+        </if>
+        <if test="query.tagName != null and query.tagName != ''">
+            AND EXISTS (
+                SELECT 1 FROM t_spot_tag_map m 
+                INNER JOIN t_spot_tag t ON m.tag_id = t.id 
+                WHERE m.spot_id = s.id AND t.name = #{query.tagName}
+            )
+        </if>
+        <choose>
+            <when test="query.orderBy == 'rating'">
+                ORDER BY s.rating
+                <if test="query.orderDirection == 'asc'">ASC</if>
+                <if test="query.orderDirection != 'asc'">DESC</if>
+            </when>
+            <when test="query.orderBy == 'viewCount'">
+                ORDER BY s.view_count
+                <if test="query.orderDirection == 'asc'">ASC</if>
+                <if test="query.orderDirection != 'asc'">DESC</if>
+            </when>
+            <otherwise>
+                ORDER BY s.hot_score DESC
+            </otherwise>
+        </choose>
+    </select>
+
+    <!-- 获取景点详情 -->
+    <select id="selectSpotDetail" resultType="cn.sdstudio.qutu.destination.vo.SpotDetailVO">
+        SELECT 
+            s.id AS id,
+            s.city_id AS cityId,
+            s.category_id AS categoryId,
+            sc.name AS categoryName,
+            s.name AS name,
+            s.subtitle AS subtitle,
+            s.cover_url AS coverUrl,
+            s.cover_url AS cover,
+            s.rating AS rating,
+            s.rating_count AS ratingCount,
+            s.comment_count AS reviewCount,
+            '来自趣途' as review_source,
+            s.description AS description,
+            c.name AS locationTitle,
+            s.address AS address,
+            s.address AS locationDetail,
+            s.price_min AS priceMin,
+            s.price_max AS priceMax,
+            s.price_text AS priceText,
+            s.price_text AS price,
+            CONCAT('最低¥', s.price_min) AS priceNote,
+            s.favorite_count AS favoriteCount,
+            s.view_count AS viewCount,
+            c.name AS cityName,
+            s.best_season AS bestSeason,
+            s.suitable_for AS suitableFor,
+            s.visit_duration_minutes AS visitDurationMinutes,
+            s.status AS status,
+            s.lng AS lng,
+            s.lat AS lat
+        FROM t_spot s
+        LEFT JOIN t_destination_city c ON s.city_id = c.id
+        LEFT JOIN t_spot_category sc ON s.category_id = sc.id
+        WHERE s.id = #{id} AND s.deleted_flag = 0
+    </select>
+
+    <!-- 获取附近景点 -->
+    <select id="selectNearbySpots" resultType="cn.sdstudio.qutu.destination.vo.SpotListVO">
+        SELECT 
+            s.id,
+            s.name,
+            s.subtitle,
+            s.cover_url,
+            s.rating,
+            s.rating_count,
+            s.price_text,
+            s.address,
+            s.favorite_count,
+            s.comment_count,
+            c.name as city_name,
+            ROUND(
+                ST_Distance_Sphere(
+                    ST_GeomFromText(CONCAT('POINT(', #{lng}, ' ', #{lat}, ')'), 4326),
+                    ST_GeomFromText(CONCAT('POINT(', s.lng, ' ', s.lat, ')'), 4326)
+                ) / 1000, 2
+            ) as distance
+        FROM t_spot s
+        LEFT JOIN t_destination_city c ON s.city_id = c.id
+        WHERE s.status = 1 AND s.deleted_flag = 0
+        HAVING distance &lt;= #{radius}
+        ORDER BY distance ASC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 获取景点关联攻略 -->
+    <select id="selectRelatedGuides" resultType="cn.sdstudio.qutu.destination.vo.SpotGuideVO">
+        SELECT
+            g.id,
+            g.title,
+            g.cover_url AS cover,
+            g.summary,
+            CONCAT(g.days, '天', g.nights, '晚') AS duration_text,
+            g.like_count,
+            g.view_count,
+            g.tag
+        FROM t_guide g
+        INNER JOIN t_guide_spot_map m ON g.id = m.guide_id
+        WHERE m.spot_id = #{spotId}
+          AND g.deleted_flag = 0
+        ORDER BY g.view_count DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 批量插入景点关联攻略 -->
+    <insert id="insertSpotGuideMaps">
+        INSERT INTO t_guide_spot_map (spot_id, guide_id)
+        VALUES
+        <foreach collection="guideIds" item="guideId" separator=",">
+            (#{spotId}, #{guideId})
+        </foreach>
+    </insert>
+
+</mapper>

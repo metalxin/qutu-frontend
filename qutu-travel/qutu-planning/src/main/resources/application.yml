@@ -1,0 +1,66 @@
+server:
+  port: 5020
+
+spring:
+  application:
+    name: @artifactId@
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://${MYSQL_HOST:qutu-mysql}:${MYSQL_PORT:3306}/${MYSQL_DB:qutu_planning}?characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowMultiQueries=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=Asia/Shanghai&nullCatalogMeansCurrent=true&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USER:root}
+    password: ${MYSQL_PWD:root}
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_HOST:qutu-register}:${NACOS_PORT:8848}
+      config:
+        server-addr: ${spring.cloud.nacos.discovery.server-addr}
+
+mybatis-plus:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: cn.sdstudio.qutu.planning.entity
+  global-config:
+    db-config:
+      logic-delete-field: deletedFlag
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+qutu:
+  ai:
+    base-url: http://127.0.0.1:8000/v1
+    api-key: omlx
+    model: Qwen3.5-4B-MLX-4bit
+    timeout: 180
+    max-tokens: 2048
+    temperature: 0.7
+
+security:
+  oauth2:
+    ignore:
+      urls:
+        - /planning/generate
+        - /planning/preferences
+        - /planning/transports
+        - /planning/cities
+        - /planning/settings
+        - /v3/api-docs/**
+        - /actuator/**
+
+swagger:
+  title: 智能行程规划模块
+  description: AI智能行程规划、路线生成等接口
+  license: Apache License 2.0
+  licenseUrl: https://www.apache.org/licenses/LICENSE-2.0
+  terms-of-service-url: https://www.qutu.cn
+  contact:
+    name: qutu
+    email: admin@qutu.cn
+    url: https://www.qutu.cn
+  authorization:
+    name: qutu OAuth
+    auth-regex: ^.*$
+    authorization-scope-list:
+      - scope: server
+        description: server all
+    token-url-list:
+      - http://${GATEWAY_HOST:qutu-gateway}:${GATEWAY_PORT:9999}/auth/oauth2/token

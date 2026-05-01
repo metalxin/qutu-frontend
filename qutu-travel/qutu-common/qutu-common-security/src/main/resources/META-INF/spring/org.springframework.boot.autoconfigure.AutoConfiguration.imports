@@ -1,0 +1,7 @@
+cn.sdstudio.qutu.common.security.service.qutuUserDetailsServiceImpl
+cn.sdstudio.qutu.common.security.service.qutuAppUserDetailsServiceImpl
+cn.sdstudio.qutu.common.security.service.qutuRedisOAuth2AuthorizationService
+cn.sdstudio.qutu.common.security.service.qutuRedisOAuth2AuthorizationConsentService
+cn.sdstudio.qutu.common.security.component.qutuSecurityInnerAspect
+cn.sdstudio.qutu.common.security.component.qutuSecurityMessageSourceConfiguration
+cn.sdstudio.qutu.common.security.service.QutuRemoteRegisteredClientRepository
