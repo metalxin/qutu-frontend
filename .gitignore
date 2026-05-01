@@ -38,16 +38,16 @@ file/
 qutu-travel/
 
 # Flutter
-qutu/build/
-qutu/.dart_tool/
-qutu/.flutter-plugins
-qutu/.flutter-plugins-dependencies
-qutu/ios/.symlinks/
-qutu/ios/Pods/
-qutu/android/.gradle/
-qutu/android/local.properties
-qutu/macos/Build/
-qutu/macos/Pods/
+qutu-app/build/
+qutu-app/.dart_tool/
+qutu-app/.flutter-plugins
+qutu-app/.flutter-plugins-dependencies
+qutu-app/ios/.symlinks/
+qutu-app/ios/Pods/
+qutu-app/android/.gradle/
+qutu-app/android/local.properties
+qutu-app/macos/Build/
+qutu-app/macos/Pods/
 
 # Android
 *.apk
