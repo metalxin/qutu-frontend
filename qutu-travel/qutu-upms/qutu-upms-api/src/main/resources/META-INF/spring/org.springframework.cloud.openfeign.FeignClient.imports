@@ -1,6 +1,0 @@
-cn.sdstudio.qutu.admin.api.feign.RemoteClientDetailsService
-cn.sdstudio.qutu.admin.api.feign.RemoteDictService
-cn.sdstudio.qutu.admin.api.feign.RemoteLogService
-cn.sdstudio.qutu.admin.api.feign.RemoteParamService
-cn.sdstudio.qutu.admin.api.feign.RemoteTokenService
-cn.sdstudio.qutu.admin.api.feign.RemoteUserService

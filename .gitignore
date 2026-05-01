@@ -34,6 +34,9 @@ coverage/
 # File uploads
 file/
 
+# Backend project (not open source)
+qutu-travel/
+
 # Flutter
 qutu_app/build/
 qutu_app/.dart_tool/

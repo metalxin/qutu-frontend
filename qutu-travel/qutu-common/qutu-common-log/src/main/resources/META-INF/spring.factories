@@ -1,2 +1,0 @@
-org.springframework.boot.env.EnvironmentPostProcessor=\
-    cn.sdstudio.qutu.common.log.init.ApplicationLoggerInitializer
