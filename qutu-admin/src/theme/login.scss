@@ -1,0 +1,386 @@
+// 用户名密码登录
+.login-content-form {
+	margin-top: 20px;
+
+	@for $i from 1 through 4 {
+		.login-animation#{$i} {
+			opacity: 0;
+			animation-name: error-num;
+			animation-duration: 0.5s;
+			animation-fill-mode: forwards;
+			animation-delay: calc($i/10) + s;
+		}
+	}
+
+	.login-content-password {
+		display: inline-block;
+		width: 20px;
+		cursor: pointer;
+
+		&:hover {
+			color: #909399;
+		}
+	}
+
+	.login-content-code {
+		width: 100%;
+		padding: 0;
+		font-weight: bold;
+		letter-spacing: 5px;
+	}
+
+	.login-content-submit {
+		width: 100%;
+		letter-spacing: 2px;
+		font-weight: 500;
+		margin-top: 20px;
+		background-color: #36b36e !important;
+		border-color: #36b36e !important;
+		&:hover {
+			background-color: #2d9a5d !important;
+			border-color: #2d9a5d !important;
+		}
+	}
+
+	.login-msg {
+		color: var(--el-text-color-placeholder);
+		font-size: 12px;
+		line-height: 1.5;
+	}
+}
+
+// 社交登录
+.social-container {
+	margin: 20px 0;
+	display: flex;
+	align-items: center;
+	justify-content: space-around;
+	.box {
+		cursor: pointer;
+	}
+
+	.iconfont {
+		color: #fff;
+		font-size: 30px;
+	}
+
+	.container {
+		$height: 50px;
+		display: inline-block;
+		width: $height;
+		height: $height;
+		line-height: $height;
+		text-align: center;
+		border-radius: 4px;
+		margin-bottom: 10px;
+	}
+
+	.title {
+		text-align: center;
+	}
+}
+.select-none {
+	user-select: none;
+}
+.tenant {
+	position: absolute;
+	top: 0.75rem;
+	right: 1.25rem;
+	z-index: 9;
+}
+.mini_qr {
+	position: fixed;
+	right: 2rem;
+	bottom: 1rem;
+	padding: 36px;
+	z-index: 1000;
+	img {
+		width: 120px;
+	}
+	p {
+		margin-top: 20px;
+		text-align: center;
+		color: var(--el-text-color-placeholder);
+		font-size: 12px;
+	}
+}
+.wave {
+	position: fixed;
+	width: 100%;
+	height: 100%;
+	left: 0;
+	bottom: 0;
+	z-index: 0;
+}
+.login-container {
+	width: 100vw;
+	height: 100vh;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: linear-gradient(135deg, #e8f7ee 0%, #f0f9f4 50%, #f6fcf9 100%);
+	position: relative;
+	overflow: hidden;
+}
+
+// 背景装饰
+.login-container::before {
+	content: '';
+	position: absolute;
+	left: -10%;
+	top: -5%;
+	width: 50%;
+	height: 50%;
+	background: radial-gradient(ellipse, rgba(54, 179, 110, 0.08) 0%, transparent 70%);
+	z-index: 0;
+}
+
+.login-container::after {
+	content: '';
+	position: absolute;
+	right: -10%;
+	bottom: -5%;
+	width: 40%;
+	height: 40%;
+	background: radial-gradient(ellipse, rgba(54, 179, 110, 0.06) 0%, transparent 70%);
+	z-index: 0;
+}
+
+.img {
+	display: none;
+}
+
+.login-title {
+	font-size: 18px;
+	font-weight: 600;
+	font-family: PingFang SC, Arial, Hiragino Sans GB, Microsoft YaHei, sans-serif;
+	margin-bottom: 8px;
+	color: #333;
+	letter-spacing: 0.5px;
+}
+
+// 登录框容器
+.login-box {
+	display: flex;
+	align-items: stretch;
+	text-align: left;
+	width: 900px;
+	max-width: 90vw;
+	height: 500px;
+	border-radius: 12px;
+	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+	overflow: hidden;
+	z-index: 2;
+	background: #fff;
+}
+
+// 左侧区域
+.login-box-left {
+	flex: 1;
+	background: linear-gradient(180deg, #36b36e 0%, #1a8f51 100%);
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-end;
+	padding: 40px 30px;
+	min-width: 400px;
+	
+	&::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300"><path d="M150,50 Q180,30 210,50 T270,50" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="3"/><path d="M100,120 Q150,90 200,120 T300,120" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="2"/><path d="M120,200 Q180,170 240,200 T320,200" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="2"/></svg>');
+		background-size: cover;
+		opacity: 0.5;
+	}
+	
+	// 装饰元素
+	.login-left-decoration {
+		position: absolute;
+		top: 30%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		z-index: 1;
+		
+		.login-logo-icon {
+			width: 120px;
+			height: 120px;
+			margin-bottom: 20px;
+			opacity: 0.95;
+		}
+	}
+	
+	// 底部文字
+	.login-left-title {
+		position: relative;
+		z-index: 1;
+		text-align: center;
+		color: #fff;
+		
+		h2 {
+			font-size: 22px;
+			font-weight: 600;
+			margin: 0 0 12px 0;
+			letter-spacing: 1px;
+		}
+		
+		p {
+			font-size: 14px;
+			margin: 0;
+			opacity: 0.9;
+			letter-spacing: 0.5px;
+		}
+	}
+}
+
+// 右侧登录表单区域
+.login-form {
+	flex: 1;
+	background: #fff;
+	padding: 50px 50px 40px;
+	display: flex;
+	flex-direction: column;
+	min-width: 400px;
+	position: relative;
+}
+
+// 下载二维码
+.login-qr-download {
+	position: absolute;
+	top: 20px;
+	right: 30px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	z-index: 10;
+	
+	.qr-btn {
+		font-size: 12px;
+		color: #666;
+		border: 1px solid #ddd;
+		border-radius: 4px;
+		padding: 4px 12px;
+		background: #fff;
+		cursor: pointer;
+		
+		&:hover {
+			color: #36b36e;
+			border-color: #36b36e;
+		}
+	}
+	
+	.qr-icon {
+		width: 32px;
+		height: 32px;
+	}
+}
+
+// Tabs 样式
+.login-form :deep(.el-tabs) {
+	.el-tabs__header {
+		margin-bottom: 24px;
+		border: none;
+	}
+	
+	.el-tabs__nav {
+		border: none;
+		
+		.el-tabs__item {
+			font-size: 15px;
+			color: #999;
+			padding: 0 24px 16px 0;
+			font-weight: 500;
+			
+			&.is-active {
+				color: #333;
+			}
+		}
+		
+		.el-tabs__active-bar {
+			height: 3px;
+			background-color: #36b36e;
+			border-radius: 2px;
+		}
+	}
+}
+
+.avatar {
+	width: 350px;
+	height: 80px;
+}
+
+.login-form h2 {
+	text-transform: uppercase;
+	margin: 15px 0;
+	color: #999;
+	font: bold 200% Consolas, Monaco, monospace;
+}
+
+// 输入框样式
+.login-content-form :deep(.el-input__wrapper) {
+	border-radius: 6px;
+	box-shadow: 0 0 0 1px #e5e5e5 inset;
+	padding: 10px 15px;
+	transition: all 0.2s;
+	
+	&.is-focus {
+		box-shadow: 0 0 0 1px #36b36e inset;
+	}
+	
+	&:hover {
+		box-shadow: 0 0 0 1px #36b36e inset;
+	}
+}
+
+.login-content-form :deep(.el-input__prefix) {
+	color: #aaa;
+}
+
+.login-content-form :deep(.el-input__inner) {
+	font-size: 14px;
+}
+
+// 验证码图片
+.login-content-form img {
+	height: 42px;
+	cursor: pointer;
+	border-radius: 6px;
+	border: 1px solid #e5e5e5;
+}
+
+@media screen and (max-width: 968px) {
+	.wave {
+		display: none;
+	}
+
+	.login-box {
+		width: 90vw;
+		height: auto;
+		flex-direction: column;
+	}
+	
+	.login-box-left {
+		min-width: 100%;
+		height: 200px;
+		padding: 30px 20px;
+		
+		.login-left-decoration {
+			display: none;
+		}
+	}
+	
+	.login-form {
+		min-width: 100%;
+		padding: 40px 30px;
+	}
+	
+	.login-qr-download {
+		display: none;
+	}
+}
