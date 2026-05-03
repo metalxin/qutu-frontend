@@ -1,0 +1,23 @@
+name: qutu
+description: "Qutu - Smart Travel Planning & Discovery App"
+homepage: https://github.com/metalxin/qutu-frontend
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/logo/app_logo.png
