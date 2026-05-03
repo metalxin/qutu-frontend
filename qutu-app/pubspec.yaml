@@ -1,4 +1,4 @@
-name: qutu
+name: qutu_app
 description: "Qutu - Smart Travel Planning & Discovery App"
 homepage: https://github.com/metalxin/qutu-frontend
 publish_to: 'none'
