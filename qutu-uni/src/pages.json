@@ -223,6 +223,13 @@
 				"navigationStyle": "custom",
 				"navigationBarTitleText": "找回密码"
 			}
+		},
+		{
+			"path": "pages/service/index",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "AI 客服"
+			}
 		}
 	],
 	"globalStyle": {
