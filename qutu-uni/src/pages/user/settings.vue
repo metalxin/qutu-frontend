@@ -76,6 +76,17 @@
       </view>
     </view>
 
+    <view class="section-card">
+      <text class="section-title">帮助与反馈</text>
+      <view class="setting-item clickable" @click="goToService">
+        <view class="setting-info">
+          <text class="setting-title-text">AI 客服</text>
+          <text class="setting-desc">智能问答，转人工客服</text>
+        </view>
+        <text class="arrow-icon">›</text>
+      </view>
+    </view>
+
     <view class="popup-mask" v-if="showMapStylePicker" @click="showMapStylePicker = false">
       <view class="popup-card" @click.stop>
         <view class="popup-header">
@@ -190,6 +201,10 @@ const goBack = () => {
   uni.navigateBack()
 }
 
+const goToService = () => {
+  uni.navigateTo({ url: '/pages/service/index' })
+}
+
 onMounted(() => {
   const systemInfo = uni.getSystemInfoSync()
   statusBarHeight.value = systemInfo.statusBarHeight || 44
@@ -291,6 +306,11 @@ onMounted(() => {
 
 .setting-slider {
   flex: 1;
+}
+
+.setting-item.clickable {
+  cursor: pointer;
+  opacity: 0.9;
 }
 
 .arrow-icon {
