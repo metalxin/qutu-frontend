@@ -15,8 +15,7 @@
         <!-- 用户信息 -->
         <view class="card-header">
           <view class="user-avatar">
-            <image v-if="userInfo.avatar" :src="userInfo.avatar" mode="aspectFill" />
-            <text class="avatar-placeholder" v-else>👤</text>
+            <image :src="userInfo.avatar || 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiB2aWV3Qm94PSIwIDAgMTAwIDEwMCI+PGNpcmNsZSBjeD0iNTAiIGN5PSI1MCIgcj0iNTAiIGZpbGw9IiNFNUU1RUEiLz48cGF0aCBkPSJNNTAgMzVjLTggMC0xNCA2LTE0IDE0czYgMTQgMTQgMTQgMTQtNiAxNC0xNC02LTE0LTE0LTE0em0wIDM0Yy0xMiAwLTIyIDYtMjIgMTJ2NGg0NHYtNGMwLTYtMTAtMTItMjItMTJ6IiBmaWxsPSIjODg4ODhCIi8+PC9zdmc+'" mode="aspectFill" />
           </view>
           <text class="user-name">{{ userInfo.nickname || '旅行者' }}</text>
         </view>

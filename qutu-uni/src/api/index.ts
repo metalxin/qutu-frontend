@@ -26,8 +26,13 @@ export {
   likeComment,
   favoriteSpot,
   unfavoriteSpot,
+  getUserFavoriteSpots,
   getRegionGroups,
   getHotCities
+} from './modules/destination'
+
+export type {
+  FavoriteSpotItem
 } from './modules/destination'
 
 export {
@@ -37,6 +42,7 @@ export {
   getGuidesPage,
   getGuideDetail,
   getRelatedGuides,
+  getInspirations,
   likeGuide,
   collectGuide,
   toggleGuideCollect,
@@ -49,7 +55,8 @@ export type {
   GuideDayItem,
   GuideListItem,
   GuideTag,
-  RelatedGuide
+  RelatedGuide,
+  InspirationItem
 } from './modules/guide'
 
 export {
@@ -154,3 +161,21 @@ export {
 } from './modules/collect'
 
 export * as collectApi from './modules/collect'
+export * as routeApi from './modules/route'
+
+export {
+  getRouteRecords,
+  getRouteDetail,
+  saveRouteRecord,
+  deleteRouteRecord,
+  deleteRouteRecordPost,
+  updateRouteRecord,
+  uploadRoutePhoto
+} from './modules/route'
+
+export type {
+  RoutePoint,
+  RoutePhoto,
+  RouteRecord,
+  RouteDetail
+} from './modules/route'

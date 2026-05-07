@@ -9,7 +9,7 @@
     </view>
 
     <view class="vip-header">
-      <image class="vip-avatar" :src="userInfo.avatar" mode="aspectFill" />
+      <image class="vip-avatar" :src="userInfo.avatar || DEFAULT_AVATAR" mode="aspectFill" />
       <view class="vip-info">
         <text class="vip-name">{{ userInfo.nickname }}</text>
         <text class="vip-level">{{ vipLevelText }}</text>
@@ -48,7 +48,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { getUserInfo, getVipBenefits, getVipPackages, purchaseVip } from '@/api/modules/user'
+import { getUserInfo, getVipBenefits, getVipPackages, purchaseVip, DEFAULT_AVATAR } from '@/api/modules/user'
 import type { UserInfo, VipBenefit, VipPackage } from '@/api/modules/user'
 
 const statusBarHeight = ref(0)

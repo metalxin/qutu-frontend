@@ -219,6 +219,7 @@ $text: #1D1D1F;
 $sub: #86868B;
 $bg: #F5F5F7;
 $card: #FFFFFF;
+$border: #E5E5EA;
 $botBubble: #F0F0F0;
 $userBubble: #00C853;
 

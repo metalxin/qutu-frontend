@@ -316,3 +316,27 @@ export function searchGuides(keyword: string) {
   )
   return get<GuideListItem[]>('/api/guides/search', { keyword }, results)
 }
+
+export interface InspirationItem {
+  id: number
+  title: string
+  cover: string
+  location: string
+}
+
+export async function getInspirations(limit: number = 6) {
+  try {
+    const list = await get<InspirationItem[]>('/admin/guides/inspirations', { limit })
+    return Array.isArray(list) ? list.map(item => ({
+      ...item,
+      cover: resolveFileUrl(item.cover || '')
+    })) : []
+  } catch {
+    return [
+      { id: 1, title: '杭州西湖一日游攻略', location: '杭州 · Citywalk', cover: '' },
+      { id: 2, title: '黄山日出观景指南', location: '安徽 · 自然风光', cover: '' },
+      { id: 3, title: '成都美食探店之旅', location: '四川 · 美食', cover: '' },
+      { id: 4, title: '厦门鼓浪屿漫步', location: '福建 · 海边', cover: '' }
+    ]
+  }
+}

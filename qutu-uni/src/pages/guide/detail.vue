@@ -3,7 +3,7 @@
     <!-- 顶部导航栏（悬浮） -->
     <view class="navbar" :class="{ 'navbar-bg': scrollTop > 100 }">
       <view class="nav-back" @click="goBack">
-        <SFIcon name="back" :size="40" color="#FFFFFF" />
+        <SFIcon name="back" :size="40" color="#333333" />
       </view>
     </view>
 
@@ -427,7 +427,11 @@ $border-radius-md: 16rpx;
 
 // 内容滚动区
 .content-scroll {
-  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
 }
 
 // 封面图
@@ -736,6 +740,7 @@ $border-radius-md: 16rpx;
   bottom: 0;
   left: 0;
   right: 0;
+  z-index: 100;
   display: flex;
   align-items: center;
   gap: 20rpx;

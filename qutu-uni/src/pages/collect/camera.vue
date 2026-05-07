@@ -8,6 +8,7 @@
         class="camera-view"
         :device-position="devicePosition"
         :flash="flashMode"
+        :key="devicePosition"
         @error="onCameraError"
       />
       
@@ -33,22 +34,23 @@
     </view>
 
     <!-- 顶部操作栏 -->
-    <view class="top-bar" :style="{ paddingTop: statusBarHeight + 'px' }">
+    <view class="top-bar" :style="topBarStyle">
       <view class="close-btn" @click="goBack">
         <text class="close-icon">×</text>
       </view>
       <view class="top-tools" v-if="cameraReady && useWxCamera">
-        <!-- 闪光灯 -->
-        <view class="tool-btn" @click="toggleFlash">
-          <text class="tool-icon">{{ flashIcon }}</text>
+        <view class="tool-btn" :class="{ active: flashMode !== 'off' }" @click="toggleFlash">
+          <view class="icon-flash">
+            <view class="flash-bolt"></view>
+            <view class="flash-slash" v-if="flashMode === 'off'"></view>
+          </view>
         </view>
-        <!-- 翻转相机 -->
         <view class="tool-btn" @click="toggleCamera">
-          <text class="tool-icon">🔄</text>
+          <view class="icon-flip"></view>
         </view>
       </view>
       <view class="settings-btn" @click="goToSettings">
-        <text class="settings-icon">⊙</text>
+        <view class="icon-gear"></view>
       </view>
     </view>
 
@@ -65,9 +67,6 @@
       <!-- 相册入口 -->
       <view class="album-btn" @click="chooseFromAlbum">
         <image v-if="lastPhoto" class="album-preview" :src="lastPhoto" mode="aspectFill" />
-        <view class="album-placeholder" v-else>
-          <text class="album-icon">🖼️</text>
-        </view>
       </view>
 
       <!-- 拍照按钮 -->
@@ -77,14 +76,9 @@
         </view>
       </view>
 
-      <!-- 最近采集 -->
-      <view class="recent-btn" @click="goToList">
-        <view class="recent-stamp">
-          <image v-if="lastCollection" class="recent-image" :src="lastCollection" mode="aspectFill" />
-          <view class="recent-placeholder" v-else>
-            <text class="stamp-icon">🎫</text>
-          </view>
-        </view>
+      <!-- 翻转相机 -->
+      <view class="flip-btn" @click="toggleCamera">
+        <view class="icon-flip"></view>
       </view>
     </view>
     
@@ -92,15 +86,12 @@
     <view class="action-sheet-mask" :class="{ show: showCameraChoice }" @click="showCameraChoice = false">
       <view class="action-sheet" @click.stop>
         <view class="action-item" @click="useWxCameraMode">
-          <text class="action-icon">📹</text>
           <text class="action-text">使用微信相机</text>
         </view>
         <view class="action-item" @click="openSystemCamera">
-          <text class="action-icon">📷</text>
           <text class="action-text">使用系统相机</text>
         </view>
         <view class="action-item" @click="chooseFromAlbum">
-          <text class="action-icon">🖼️</text>
           <text class="action-text">从相册选择</text>
         </view>
         <view class="action-cancel" @click="showCameraChoice = false">
@@ -116,6 +107,27 @@ import { ref, computed, onMounted } from 'vue'
 
 // 状态栏高度
 const statusBarHeight = ref(0)
+
+// 胶囊按钮信息
+const menuButtonLeft = ref(0)
+const menuButtonTop = ref(0)
+const menuButtonHeight = ref(32)
+const windowWidth = ref(375)
+
+const topBarStyle = computed(() => {
+  // #ifdef MP-WEIXIN
+  if (menuButtonTop.value > 0) {
+    return {
+      paddingTop: menuButtonTop.value + 'px',
+      height: (menuButtonTop.value + menuButtonHeight.value + 8) + 'px',
+      paddingRight: (windowWidth.value - menuButtonLeft.value + 10) + 'px'
+    }
+  }
+  // #endif
+  return {
+    paddingTop: statusBarHeight.value + 'px'
+  }
+})
 
 // 相机状态
 const cameraReady = ref(false)
@@ -144,19 +156,24 @@ const placeholderText = computed(() => {
 })
 
 // 闪光灯图标
-const flashIcon = computed(() => {
-  switch (flashMode.value) {
-    case 'on': return '⚡'
-    case 'off': return '🔦'
-    case 'torch': return '💡'
-    default: return '⚡A'
-  }
-})
-
 // 获取系统信息
 onMounted(() => {
   const systemInfo = uni.getSystemInfoSync()
   statusBarHeight.value = systemInfo.statusBarHeight || 44
+  windowWidth.value = systemInfo.windowWidth || 375
+
+  // #ifdef MP-WEIXIN
+  try {
+    const menuButton = uni.getMenuButtonBoundingClientRect()
+    if (menuButton) {
+      menuButtonLeft.value = menuButton.left
+      menuButtonTop.value = menuButton.top
+      menuButtonHeight.value = menuButton.height
+    }
+  } catch (e) {
+    console.log('获取胶囊按钮位置失败', e)
+  }
+  // #endif
   
   // 检查相机权限
   checkCameraPermission()
@@ -219,16 +236,27 @@ const toggleFlash = () => {
   const currentIndex = modes.indexOf(flashMode.value)
   flashMode.value = modes[(currentIndex + 1) % modes.length]
   
-  const tips: Record<string, string> = {
-    'auto': '自动闪光',
-    'on': '开启闪光',
-    'off': '关闭闪光',
-    'torch': '常亮'
+  if (cameraReady.value && useWxCamera.value) {
+    const ctx: any = uni.createCameraContext()
+    ctx.setFlashMode({
+      flash: flashMode.value,
+      success: () => {
+        const tips: Record<string, string> = {
+          'auto': '自动闪光',
+          'on': '开启闪光',
+          'off': '关闭闪光',
+          'torch': '常亮'
+        }
+        uni.showToast({ title: tips[flashMode.value], icon: 'none' })
+      },
+      fail: (err: any) => {
+        console.error('设置闪光灯失败', err)
+        uni.showToast({ title: '闪光灯设置失败', icon: 'none' })
+      }
+    })
   }
-  uni.showToast({ title: tips[flashMode.value], icon: 'none' })
 }
 
-// 切换前后摄像头
 const toggleCamera = () => {
   devicePosition.value = devicePosition.value === 'back' ? 'front' : 'back'
   uni.showToast({ 
@@ -373,13 +401,6 @@ const goToSettings = () => {
     url: '/pages/collect/settings'
   })
 }
-
-// 前往列表
-const goToList = () => {
-  uni.navigateTo({
-    url: '/pages/collect/index'
-  })
-}
 </script>
 
 <style lang="scss" scoped>
@@ -469,7 +490,10 @@ const goToList = () => {
   width: 72rpx;
   height: 72rpx;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1rpx solid rgba(255, 255, 255, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -486,6 +510,26 @@ const goToList = () => {
   color: #FFFFFF;
 }
 
+.icon-gear {
+  width: 32rpx;
+  height: 32rpx;
+  border: 4rpx solid #FFFFFF;
+  border-radius: 50%;
+  position: relative;
+}
+
+.icon-gear::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 12rpx;
+  height: 12rpx;
+  border: 3rpx solid #FFFFFF;
+  border-radius: 50%;
+}
+
 // 位置信息
 .location-bar {
   position: absolute;
@@ -498,20 +542,23 @@ const goToList = () => {
 .location-tag {
   display: flex;
   align-items: center;
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1rpx solid rgba(255, 255, 255, 0.2);
   border-radius: 100rpx;
   padding: 12rpx 24rpx;
 }
 
 .location-icon {
   font-size: 24rpx;
-  color: #007AFF;
+  color: rgba(255, 255, 255, 0.9);
   margin-right: 8rpx;
 }
 
 .location-text {
   font-size: 26rpx;
-  color: #1D1D1F;
+  color: #FFFFFF;
   max-width: 300rpx;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -526,16 +573,16 @@ const goToList = () => {
   right: 0;
   display: flex;
   align-items: center;
-  justify-content: space-around;
-  padding: 40rpx 60rpx 80rpx;
+  justify-content: space-between;
+  padding: 40rpx 80rpx 80rpx;
   z-index: 10;
 }
 
 // 相册按钮
 .album-btn {
-  width: 96rpx;
-  height: 96rpx;
-  border-radius: 16rpx;
+  width: 100rpx;
+  height: 100rpx;
+  border-radius: 20rpx;
   overflow: hidden;
   background: rgba(255, 255, 255, 0.1);
   border: 2rpx solid rgba(255, 255, 255, 0.3);
@@ -546,80 +593,45 @@ const goToList = () => {
   height: 100%;
 }
 
-.album-placeholder {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.album-icon {
-  font-size: 40rpx;
-}
-
 // 拍照按钮
 .capture-btn {
-  width: 140rpx;
-  height: 140rpx;
+  width: 160rpx;
+  height: 160rpx;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .capture-outer {
-  width: 140rpx;
-  height: 140rpx;
+  width: 160rpx;
+  height: 160rpx;
   border-radius: 50%;
-  border: 6rpx solid rgba(255, 255, 255, 0.8);
+  border: 8rpx solid rgba(255, 255, 255, 0.9);
   display: flex;
   align-items: center;
   justify-content: center;
   transition: transform 0.1s ease;
 
   &:active {
-    transform: scale(0.95);
+    transform: scale(0.92);
   }
 }
 
 .capture-inner {
-  width: 110rpx;
-  height: 110rpx;
+  width: 128rpx;
+  height: 128rpx;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.9);
+  background: #FFFFFF;
 }
 
-// 最近采集
-.recent-btn {
-  width: 96rpx;
-  height: 96rpx;
-}
-
-.recent-stamp {
-  width: 100%;
-  height: 100%;
-  border-radius: 8rpx;
-  overflow: hidden;
-  background: rgba(255, 255, 255, 0.1);
-  // 邮票锯齿效果
-  border: 4rpx dashed rgba(255, 255, 255, 0.5);
-}
-
-.recent-image {
-  width: 100%;
-  height: 100%;
-}
-
-.recent-placeholder {
-  width: 100%;
-  height: 100%;
+// 翻转相机按钮
+.flip-btn {
+  width: 100rpx;
+  height: 100rpx;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.stamp-icon {
-  font-size: 40rpx;
 }
 
 // 相机占位区域
@@ -670,7 +682,10 @@ const goToList = () => {
   width: 72rpx;
   height: 72rpx;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1rpx solid rgba(255, 255, 255, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -678,6 +693,91 @@ const goToList = () => {
 
 .tool-icon {
   font-size: 32rpx;
+}
+
+.icon-flash {
+  position: relative;
+  width: 32rpx;
+  height: 40rpx;
+}
+
+.flash-bolt {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 12rpx solid transparent;
+  border-right: 12rpx solid transparent;
+  border-top: 20rpx solid #FFFFFF;
+}
+
+.flash-bolt::after {
+  content: '';
+  position: absolute;
+  top: 20rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 8rpx solid transparent;
+  border-right: 8rpx solid transparent;
+  border-top: 18rpx solid #FFFFFF;
+}
+
+.flash-slash {
+  position: absolute;
+  top: -4rpx;
+  left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+  width: 4rpx;
+  height: 48rpx;
+  background: #FFFFFF;
+  border-radius: 2rpx;
+}
+
+.tool-btn.active .flash-bolt {
+  border-top-color: #FFD60A;
+}
+
+.tool-btn.active .flash-bolt::after {
+  border-top-color: #FFD60A;
+}
+
+.icon-flip {
+  width: 36rpx;
+  height: 36rpx;
+  border: 4rpx solid #FFFFFF;
+  border-radius: 50%;
+  position: relative;
+}
+
+.icon-flip::after {
+  content: '';
+  position: absolute;
+  top: -8rpx;
+  right: -6rpx;
+  width: 0;
+  height: 0;
+  border-left: 8rpx solid transparent;
+  border-right: 8rpx solid transparent;
+  border-bottom: 10rpx solid #FFFFFF;
+  transform: rotate(45deg);
+}
+
+.flip-btn .icon-flip {
+  width: 48rpx;
+  height: 48rpx;
+  border-width: 5rpx;
+}
+
+.flip-btn .icon-flip::after {
+  top: -10rpx;
+  right: -8rpx;
+  border-left-width: 10rpx;
+  border-right-width: 10rpx;
+  border-bottom-width: 12rpx;
 }
 
 // 拍照方式选择弹窗
@@ -730,11 +830,6 @@ const goToList = () => {
     border-radius: 0 0 16rpx 16rpx;
     margin-bottom: 16rpx;
   }
-}
-
-.action-icon {
-  font-size: 40rpx;
-  margin-right: 20rpx;
 }
 
 .action-text {

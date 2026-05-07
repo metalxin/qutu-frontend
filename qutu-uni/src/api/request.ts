@@ -4,12 +4,12 @@
  */
 
 // API基础配置
-export let BASE_URL = 'https://api.qutuyunji.com' // 默认生产环境API地址
+export let BASE_URL = 'https://api.qutuyunji.com'
 // #ifdef H5
-BASE_URL = '' // H5 走同源代理，留空以使用相对路径
+BASE_URL = ''
 // #endif
 // #ifdef MP-WEIXIN
-BASE_URL = 'http://localhost:9999' // 小程序开发环境本地服务（需在开发者工具允许或配置合法域名）
+BASE_URL = 'http://localhost:9999'
 // #endif
 const TIMEOUT = 10000 // 请求超时时间
 
@@ -53,6 +53,12 @@ export async function request<T = any>(config: RequestConfig): Promise<T> {
   }
 
   try {
+    let cleanData: any = data
+    if (data && typeof data === 'object') {
+      cleanData = Object.fromEntries(
+        Object.entries(data).filter(([, v]) => v !== undefined && v !== null && v !== '')
+      )
+    }
     const finalUrl = /^https?:\/\//i.test(url) ? url : `${BASE_URL}${url}`
     let injectedAuth = false
     const headerPayload: Record<string, string> = {
@@ -72,7 +78,7 @@ export async function request<T = any>(config: RequestConfig): Promise<T> {
       uni.request({
         url: finalUrl,
         method,
-        data,
+        data: cleanData,
         timeout: config.timeout || TIMEOUT,
         header: headerPayload,
         success: (res: any) => {

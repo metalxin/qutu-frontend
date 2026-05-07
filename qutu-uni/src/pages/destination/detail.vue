@@ -308,6 +308,7 @@ const loadSpotInfo = async (id: string) => {
     ])
     
     spotInfo.value = spotRes
+    isFavorite.value = !!spotRes.isFavorite
     comments.value = commentsRes
     relatedGuides.value = guidesRes
   } catch (error) {

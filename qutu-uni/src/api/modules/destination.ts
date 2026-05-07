@@ -44,6 +44,10 @@ export interface SpotDetail {
   priceNote: string
   gallery: string[]
   tips: Array<{ icon: string; title: string; desc: string }>
+  isFavorite?: boolean
+  favoriteCount?: number
+  viewCount?: number
+  tags?: string[]
 }
 
 export interface SpotListItem {
@@ -145,7 +149,7 @@ export function getDestinationDetail(id: number) {
 /**
  * 获取景点详情
  */
-export async function getSpotDetail(id: number) {
+export async function getSpotDetail(id: number): Promise<SpotDetail> {
   try {
     const raw = await request<any>({
       url: `/admin/spots/${id}`,
@@ -169,7 +173,11 @@ export async function getSpotDetail(id: number) {
       price: data.price ?? data.priceText ?? '',
       priceNote: data.priceNote ?? '',
       gallery: Array.isArray(data.gallery) ? data.gallery.map(resolveFileUrl) : [],
-      tips: Array.isArray(data.tips) ? data.tips : []
+      tips: Array.isArray(data.tips) ? data.tips : [],
+      isFavorite: !!data.isFavorite,
+      favoriteCount: data.favoriteCount ?? 0,
+      viewCount: data.viewCount ?? 0,
+      tags: data.tags ?? []
     }
     return detail
   } catch {
@@ -299,13 +307,48 @@ export function likeComment(commentId: number) {
 /**
  * 收藏景点
  */
-export function favoriteSpot(spotId: number) {
-  return post<{ success: boolean }>(`/admin/spots/${spotId}/favorite`, null, { success: true })
+export interface FavoriteSpotItem {
+  id: number
+  name: string
+  subtitle?: string
+  coverUrl: string
+  rating: number
+  ratingCount?: number
+  priceText?: string
+  distance?: string
+  address?: string
+  cityName?: string
+  tags?: string[]
+  favoriteCount?: number
+  commentCount?: number
+  viewCount?: number
+  favoriteTime?: string
 }
 
-/**
- * 取消收藏景点
- */
+export function favoriteSpot(spotId: number) {
+  return request<boolean>({
+    url: `/admin/spots/${spotId}/favorite`,
+    method: 'POST',
+    useMock: false
+  })
+}
+
 export function unfavoriteSpot(spotId: number) {
-  return post<{ success: boolean }>(`/admin/spots/${spotId}/unfavorite`, null, { success: true })
+  return request<boolean>({
+    url: `/admin/spots/${spotId}/unfavorite`,
+    method: 'POST',
+    useMock: false
+  })
+}
+
+export function getUserFavoriteSpots(params?: { current?: number; size?: number }) {
+  return request<any>({
+    url: '/admin/spots/favorites',
+    method: 'GET',
+    data: {
+      current: params?.current ?? 1,
+      size: params?.size ?? 20
+    },
+    useMock: false
+  })
 }

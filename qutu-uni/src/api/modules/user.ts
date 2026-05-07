@@ -13,6 +13,8 @@ import {
   mockFavoriteLocations 
 } from '../mock/user'
 
+export const DEFAULT_AVATAR = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiB2aWV3Qm94PSIwIDAgMTAwIDEwMCI+PGNpcmNsZSBjeD0iNTAiIGN5PSI1MCIgcj0iNTAiIGZpbGw9IiNFNUU1RUEiLz48cGF0aCBkPSJNNTAgMzVjLTggMC0xNCA2LTE0IDE0czYgMTQgMTQgMTQgMTQtNiAxNC0xNC02LTE0LTE0LTE0em0wIDM0Yy0xMiAwLTIyIDYtMjIgMTJ2NGg0NHYtNGMwLTYtMTAtMTItMjItMTJ6IiBmaWxsPSIjODg4ODhCIi8+PC9zdmc+'
+
 // 类型定义
 export interface UserInfo {
   id: number

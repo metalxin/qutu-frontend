@@ -151,7 +151,11 @@ export const mockSpotDetail = {
     { icon: '🚇', title: '交通方式', desc: '地铁4号线北宫门站D口出' },
     { icon: '⏱️', title: '建议游玩', desc: '3-4小时' },
     { icon: '📅', title: '最佳季节', desc: '春秋两季，天气宜人' }
-  ]
+  ],
+  isFavorite: false,
+  favoriteCount: 0,
+  viewCount: 0,
+  tags: []
 }
 
 // 地区分组数据

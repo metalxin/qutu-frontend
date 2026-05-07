@@ -175,7 +175,10 @@
       <scroll-view class="inspiration-scroll" scroll-x :show-scrollbar="false">
         <view class="inspiration-list">
           <view class="inspiration-card" v-for="item in inspirationList" :key="item.id" @tap="goToInspirationDetail(item)">
-            <image class="inspiration-cover" :src="item.cover" mode="aspectFill" />
+            <image v-if="item.cover && !item.coverError" class="inspiration-cover" :src="item.cover" mode="aspectFill" @error="item.coverError = true" />
+            <view v-else class="inspiration-cover inspiration-cover-placeholder">
+              <text class="placeholder-emoji">🗺️</text>
+            </view>
             <view class="inspiration-info">
               <text class="inspiration-title">{{ item.title }}</text>
               <text class="inspiration-location">{{ item.location }}</text>
@@ -520,8 +523,7 @@
         <view class="sidebar-header">
           <view class="sidebar-avatar">
             <view class="avatar-circle">
-            <image v-if="userInfo.avatar" class="avatar-image" :src="userInfo.avatar" mode="aspectFill" />
-            <SFIcon v-else name="user" :size="40" color="#86868B" />
+            <image class="avatar-image" :src="displayAvatar" mode="aspectFill" />
             </view>
           </view>
         <view class="sidebar-user-info" @click="goToProfile">
@@ -563,6 +565,13 @@
       <!-- 菜单列表 -->
       <scroll-view class="sidebar-menu" scroll-y :show-scrollbar="false">
         <view class="menu-group">
+          <view class="menu-item" @click="handleMenuClick('routes')">
+            <view class="menu-icon" style="background: #E8F5E9;">
+              <SFIcon name="route" :size="36" color="#34C759" />
+            </view>
+            <text class="menu-text">我的路线</text>
+            <SFIcon name="chevron-right" :size="28" color="#C7C7CC" />
+          </view>
           <view class="menu-item" @click="handleMenuClick('frequent')">
             <view class="menu-icon" style="background: #FFF3E0;">
               <SFIcon name="location" :size="36" color="#FF9500" />
@@ -574,19 +583,12 @@
             <view class="menu-icon" style="background: #FFF8E1;">
               <SFIcon name="star" :size="36" color="#FFB800" />
             </view>
-            <text class="menu-text">收藏地点管理</text>
+            <text class="menu-text">收藏景点</text>
             <SFIcon name="chevron-right" :size="28" color="#C7C7CC" />
           </view>
         </view>
         
         <view class="menu-group">
-          <view class="menu-item" @click="handleMenuClick('backup')">
-            <view class="menu-icon" style="background: #E3F2FD;">
-              <SFIcon name="import" :size="36" color="#007AFF" />
-            </view>
-            <text class="menu-text">数据备份</text>
-            <SFIcon name="chevron-right" :size="28" color="#C7C7CC" />
-          </view>
           <view class="menu-item" @click="handleMenuClick('messages')">
             <view class="menu-icon" style="background: #FCE4EC;">
               <SFIcon name="bell" :size="36" color="#FF2D55" />
@@ -613,8 +615,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import SFIcon from '@/components/SFIcon/SFIcon.vue'
-import { getDestinations, getRegionGroups, getHotCities, getDestinationSpots } from '@/api'
-import { getUserInfo, bindWechat as bindWechatApi, logout as logoutApi } from '@/api/modules/user'
+import { getDestinations, getRegionGroups, getHotCities, getDestinationSpots, getInspirations } from '@/api'
+import { getUserInfo, bindWechat as bindWechatApi, logout as logoutApi, DEFAULT_AVATAR } from '@/api/modules/user'
 import type { Destination, SpotListItem } from '@/api/modules/destination'
 import type { UserInfo } from '@/api/modules/user'
 
@@ -749,12 +751,11 @@ const hasMessage = ref(true) // 模拟有消息
 
 const displayAvatar = computed(() => {
   if (userInfo.value.avatar) return userInfo.value.avatar
-  // 尝试从缓存获取
   try {
     const cachedUser = uni.getStorageSync('userInfo')
     if (cachedUser && cachedUser.avatar) return cachedUser.avatar
   } catch (e) {}
-  return '' // 或者返回默认头像路径
+  return DEFAULT_AVATAR
 })
 
 // 初始化
@@ -789,7 +790,8 @@ onMounted(async () => {
   await Promise.all([
     loadDestinations(),
     loadRegionGroups(),
-    loadUserInfo()
+    loadUserInfo(),
+    loadInspirations()
   ])
 })
 
@@ -1028,32 +1030,16 @@ const toggleFavorite = (dest: any) => {
 }
 
 // 灵感推荐数据
-const inspirationList = ref([
-  {
-    id: 1,
-    title: '杭州西湖一日游攻略',
-    location: '杭州 · 西湖',
-    cover: 'https://images.unsplash.com/photo-1528164344705-47542687000d?w=400&q=80'
-  },
-  {
-    id: 2,
-    title: '黄山日出观景指南',
-    location: '安徽 · 黄山',
-    cover: 'https://images.unsplash.com/photo-1599579182416-c3a0b5c2c55f?w=400&q=80'
-  },
-  {
-    id: 3,
-    title: '成都美食探店之旅',
-    location: '四川 · 成都',
-    cover: 'https://images.unsplash.com/photo-1569163139394-de4798aa62b6?w=400&q=80'
-  },
-  {
-    id: 4,
-    title: '厦门鼓浪屿漫步',
-    location: '福建 · 厦门',
-    cover: 'https://images.unsplash.com/photo-1580655453156-6e2f136b0225?w=400&q=80'
+const inspirationList = ref<any[]>([])
+
+const loadInspirations = async () => {
+  try {
+    const list = await getInspirations(6)
+    inspirationList.value = list
+  } catch (e) {
+    console.error('加载灵感推荐失败:', e)
   }
-])
+}
 
 // 跳转到故事列表
 const goToStoryList = () => {
@@ -1065,7 +1051,7 @@ const goToStoryList = () => {
 // 跳转到灵感详情
 const goToInspirationDetail = (item: any) => {
   uni.navigateTo({
-    url: `/pages/story/detail?id=${item.id}`
+    url: `/pages/guide/detail?id=${item.id}`
   })
 }
 
@@ -1179,7 +1165,7 @@ const goToVipCenter = () => {
 const handleMenuClick = (menu: string) => {
   showUserSidebar.value = false
   const menuRoutes: Record<string, string> = {
-    'backup': '/pages/user/backup',
+    'routes': '/pages/route/list',
     'frequent': '/pages/user/frequent',
     'favorites': '/pages/user/favorites',
     'messages': '/pages/message/index'
@@ -1830,7 +1816,7 @@ $shadow-medium: 0 4rpx 30rpx rgba(0, 0, 0, 0.1);
 }
 
 .inspiration-card {
-  width: 260rpx;
+  width: 420rpx;
   flex-shrink: 0;
   border-radius: $border-radius-lg;
   overflow: hidden;
@@ -1844,8 +1830,19 @@ $shadow-medium: 0 4rpx 30rpx rgba(0, 0, 0, 0.1);
 
 .inspiration-cover {
   width: 100%;
-  height: 300rpx;
+  height: 240rpx;
   display: block;
+}
+
+.inspiration-cover-placeholder {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.placeholder-emoji {
+  font-size: 48rpx;
 }
 
 .inspiration-info {

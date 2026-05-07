@@ -64,6 +64,20 @@
 			}
 		},
 		{
+			"path": "pages/route/list",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "我的路线"
+			}
+		},
+		{
+			"path": "pages/route/detail",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "路线详情"
+			}
+		},
+		{
 			"path": "pages/destination/detail",
 			"style": {
 				"navigationStyle": "custom",

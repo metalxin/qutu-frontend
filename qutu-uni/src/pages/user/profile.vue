@@ -11,10 +11,7 @@
     <!-- 头像区域 -->
     <view class="profile-header">
       <view class="avatar-wrapper" @click="chooseAvatar">
-        <image v-if="userInfo.avatar" class="avatar-image" :src="userInfo.avatar" mode="aspectFill" />
-        <view class="avatar-placeholder" v-else>
-          <SFIcon name="user" :size="48" color="#86868B" />
-        </view>
+        <image class="avatar-image" :src="userInfo.avatar || DEFAULT_AVATAR" mode="aspectFill" />
         <view class="avatar-edit-badge">
           <SFIcon name="camera" :size="24" color="#fff" />
         </view>
@@ -107,7 +104,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { getUserInfo, editUserInfo, sendEmailVerifyCode, bindEmail, resolveFileUrl, getWechatOpenid, bindWechat, unbindWechat } from '@/api/modules/user'
+import { getUserInfo, editUserInfo, sendEmailVerifyCode, bindEmail, resolveFileUrl, getWechatOpenid, bindWechat, unbindWechat, DEFAULT_AVATAR } from '@/api/modules/user'
 import type { UserInfo } from '@/api/modules/user'
 import SFIcon from '@/components/SFIcon/SFIcon.vue'
 
