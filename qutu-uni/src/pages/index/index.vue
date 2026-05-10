@@ -103,8 +103,14 @@
             <SFIcon name="chevron-down" :size="20" color="#86868B" />
           </view>
         </view>
-        <view class="section-more" @click="toggleDestinations">
-          <text class="more-text">{{ showAllDestinations ? '收起' : '查看全部' }} ›</text>
+        <view class="section-actions">
+          <view class="location-action" @click="goToNearbyWithLocation">
+            <SFIcon name="location" :size="22" color="#007AFF" />
+            <text class="location-action-text">定位</text>
+          </view>
+          <view class="section-more" @click="toggleDestinations">
+            <text class="more-text">{{ showAllDestinations ? '收起' : '查看全部' }} ›</text>
+          </view>
         </view>
       </view>
     </view>
@@ -126,9 +132,7 @@
             <view class="card-tag" v-if="dest.tag">
               <text class="tag-text">{{ dest.tag }}</text>
             </view>
-            <view class="card-favorite" @click.stop="toggleFavorite(dest)">
-              <SFIcon name="heart" :size="28" :color="dest.isFavorite ? '#FF2D55' : '#FFFFFF'" :filled="dest.isFavorite" />
-            </view>
+
             <view class="card-rating">
               <SFIcon name="star" :size="24" color="#FFB800" filled />
               <text class="rating-text">{{ dest.rating }}</text>
@@ -202,6 +206,13 @@
       <view class="tabbar-item" @click="goToNearby">
         <SFIcon name="location" :size="44" />
         <text class="tabbar-text">附近</text>
+      </view>
+    </view>
+
+    <!-- 悬浮小途助手 -->
+    <view class="ai-float-btn" @click="goToAIService">
+      <view class="ai-float-icon">
+        <text class="ai-float-emoji">🌴</text>
       </view>
     </view>
 
@@ -627,7 +638,7 @@ const logoSrc = ref('/static/logo.png')
 // 功能入口数据
 const features = ref([
   { id: 1, name: '时光采集', iconName: 'collection', iconColor: '#007AFF', bgColor: '#E3F2FD', path: '/pages/collect/camera' },
-  { id: 2, name: '精选攻略', iconName: 'map', iconColor: '#34C759', bgColor: '#E8F5E9', path: '/pages/guide/list' },
+  { id: 2, name: '精选攻略', iconName: 'guide', iconColor: '#34C759', bgColor: '#E8F5E9', path: '/pages/guide/list' },
   { id: 3, name: '智能规划', iconName: 'route', iconColor: '#34C759', bgColor: '#E8F5E9', path: '/pages/planning/index' },
   { id: 4, name: '旅行故事', iconName: 'play', iconColor: '#AF52DE', bgColor: '#F3E5F5', path: '/pages/story/index' },
   { id: 5, name: '旅行清单', iconName: 'luggage', iconColor: '#FF2D55', bgColor: '#FCE4EC', path: '/pages/checklist/index' }
@@ -750,6 +761,18 @@ const currentMonth = ref('1')
 const hasMessage = ref(true) // 模拟有消息
 
 const displayAvatar = computed(() => {
+  // 未登录：不要读取历史缓存头像，避免一直显示之前的真人头像
+  if (!isLoggedIn.value) {
+    try {
+      const cachedUser = uni.getStorageSync('userInfo')
+      if (cachedUser?.avatar) {
+        cachedUser.avatar = ''
+        uni.setStorageSync('userInfo', cachedUser)
+      }
+    } catch (e) {}
+    return DEFAULT_AVATAR
+  }
+
   if (userInfo.value.avatar) return userInfo.value.avatar
   try {
     const cachedUser = uni.getStorageSync('userInfo')
@@ -954,6 +977,13 @@ const handleImageError = (dest: any) => {
   dest.image = ''
 }
 
+// 跳转到 AI 客服
+const goToAIService = () => {
+  uni.navigateTo({
+    url: '/pages/service/index'
+  })
+}
+
 // 跳转到点亮足迹页面
 const goToFootprint = () => {
   uni.navigateTo({
@@ -965,6 +995,12 @@ const goToFootprint = () => {
 const goToNearby = () => {
   uni.navigateTo({
     url: '/pages/nearby/index'
+  })
+}
+
+const goToNearbyWithLocation = () => {
+  uni.navigateTo({
+    url: '/pages/nearby/index?locate=1'
   })
 }
 
@@ -1008,25 +1044,6 @@ const goToSpotDetail = (spot: SpotListItem) => {
 
 const handleDestinationClick = (dest: Destination) => {
   openSpotList(dest)
-}
-
-// 切换收藏状态
-const toggleFavorite = (dest: any) => {
-  if (!isLoggedIn.value) {
-    uni.showToast({
-      title: '请先登录',
-      icon: 'none'
-    })
-    setTimeout(() => {
-      uni.navigateTo({ url: '/pages/user/login' })
-    }, 1000)
-    return
-  }
-  dest.isFavorite = !dest.isFavorite
-  uni.showToast({
-    title: dest.isFavorite ? '已收藏' : '已取消收藏',
-    icon: 'none'
-  })
 }
 
 // 灵感推荐数据
@@ -1277,6 +1294,12 @@ const doLogout = async () => {
   showUserSidebar.value = false
   uni.showToast({ title: '已退出登录', icon: 'success' })
 }
+
+onShow(() => {
+  if (selectedRegion.value) {
+    loadDestinations()
+  }
+})
 </script>
 
 <style lang="scss" scoped>
@@ -1570,6 +1593,13 @@ $shadow-medium: 0 4rpx 30rpx rgba(0, 0, 0, 0.1);
   width: 100%;
 }
 
+.section-actions {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  flex-shrink: 0;
+}
+
 .section-title-left {
   display: flex;
   align-items: center;
@@ -1591,6 +1621,22 @@ $shadow-medium: 0 4rpx 30rpx rgba(0, 0, 0, 0.1);
   background: $bg-color;
   border-radius: 100rpx;
   border: 2rpx solid #E5E5EA;
+}
+
+.location-action {
+  display: flex;
+  align-items: center;
+  gap: 4rpx;
+  padding: 10rpx 14rpx;
+  background: rgba(0, 122, 255, 0.08);
+  border-radius: 100rpx;
+  color: $primary-color;
+}
+
+.location-action-text {
+  font-size: 24rpx;
+  color: $primary-color;
+  font-weight: 600;
 }
 
 .city-name {
@@ -1673,21 +1719,6 @@ $shadow-medium: 0 4rpx 30rpx rgba(0, 0, 0, 0.1);
   padding: 6rpx 16rpx;
   background: linear-gradient(135deg, #FF6B6B, #FF8E53);
   border-radius: 8rpx;
-}
-
-.card-favorite {
-  position: absolute;
-  top: 12rpx;
-  right: 12rpx;
-  width: 48rpx;
-  height: 48rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border-radius: 50%;
 }
 
 .tag-text {
@@ -1864,6 +1895,41 @@ $shadow-medium: 0 4rpx 30rpx rgba(0, 0, 0, 0.1);
   font-size: 22rpx;
   color: $text-secondary;
   display: block;
+}
+
+// 悬浮 AI 客服按钮
+.ai-float-btn {
+  position: fixed;
+  right: 32rpx;
+  bottom: 260rpx;
+  z-index: 900;
+  opacity: 0;
+  animation: floatBtnIn 0.5s ease 1s forwards;
+}
+
+@keyframes floatBtnIn {
+  from { opacity: 0; transform: translateY(20rpx); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.ai-float-icon {
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: 44rpx;
+  background: linear-gradient(135deg, #FF8A65, #FF6B3D);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6rpx 24rpx rgba(255, 107, 61, 0.3);
+  transition: transform 0.2s ease;
+
+  &:active {
+    transform: scale(0.9);
+  }
+}
+
+.ai-float-emoji {
+  font-size: 42rpx;
 }
 
 // 底部TabBar
