@@ -324,7 +324,7 @@ export function getSavedRoutes() {
 }
 
 export function saveRoute(route: AIRoute) {
-  return post<{ success: boolean; id: number }>('/admin/planning/routes', route, { success: true, id: route.id })
+  return post<{ success: boolean; id: number }>('/admin/planning/save', route, { success: true, id: route.id })
 }
 
 export function getSpotInfo(city: string, spotId: number): SpotInfo | undefined {

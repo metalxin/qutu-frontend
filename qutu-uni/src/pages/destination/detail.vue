@@ -148,6 +148,100 @@
       </view>
     </view>
 
+    <!-- 行程配置弹窗 -->
+    <view class="trip-overlay" :class="{ show: showTripSheet }" @tap="showTripSheet = false"></view>
+    <view class="trip-sheet" :class="{ show: showTripSheet }">
+      <view class="trip-sheet-content" @tap.stop>
+        <!-- 拖拽指示条 -->
+        <view class="sheet-handle">
+          <view class="handle-bar"></view>
+        </view>
+
+        <!-- 标题区域 -->
+        <view class="sheet-header">
+          <view class="header-icon">
+            <text class="icon-emoji">🚀</text>
+          </view>
+          <view class="header-info">
+            <text class="header-title">开始旅程</text>
+            <text class="header-subtitle">目的地: {{ spotInfo.name }} · {{ spotInfo.locationTitle }}</text>
+          </view>
+          <view class="header-close" @tap="showTripSheet = false">
+            <text class="close-icon">×</text>
+          </view>
+        </view>
+
+        <!-- 天数选择 -->
+        <view class="config-section">
+          <view class="section-label">
+            <text class="label-icon">📅</text>
+            <text class="label-text">行程天数</text>
+            <text class="label-value">{{ tripDays }}天</text>
+          </view>
+          <view class="days-grid">
+            <view 
+              v-for="day in 7" 
+              :key="day"
+              class="day-item"
+              :class="{ active: tripDays === day }"
+              @tap="tripDays = day"
+            >
+              <text class="day-text">{{ day }}</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 偏好选择 -->
+        <view class="config-section">
+          <view class="section-label">
+            <text class="label-icon">🎯</text>
+            <text class="label-text">规划偏好</text>
+          </view>
+          <view class="preference-list">
+            <view 
+              v-for="pref in preferenceOptions" 
+              :key="pref.id"
+              class="preference-item"
+              :class="{ active: tripPreference === pref.id }"
+              @tap="tripPreference = pref.id"
+            >
+              <text class="pref-name">{{ pref.name }}</text>
+              <text class="pref-desc">{{ pref.desc }}</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 交通方式 -->
+        <view class="config-section">
+          <view class="section-label">
+            <text class="label-icon">🚗</text>
+            <text class="label-text">交通方式</text>
+          </view>
+          <view class="transport-list">
+            <view 
+              v-for="transport in transportModes" 
+              :key="transport.id"
+              class="transport-item"
+              :class="{ active: tripTransport === transport.id }"
+              @tap="tripTransport = transport.id"
+            >
+              <text class="transport-icon">{{ transport.icon }}</text>
+              <text class="transport-name">{{ transport.name }}</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 生成按钮 -->
+        <view class="generate-area">
+          <view class="generate-btn" :class="{ loading: isGenerating }" @tap="generateTrip">
+            <text class="generate-icon" v-if="!isGenerating">✨</text>
+            <view class="loading-spinner" v-else></view>
+            <text class="generate-text">{{ isGenerating ? 'AI正在规划中...' : `AI智能规划 ${tripDays}天行程` }}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
     <!-- 分享弹窗 -->
     <view class="share-overlay" :class="{ show: showSharePopup }" @tap="showSharePopup = false"></view>
     <view class="share-popup" :class="{ show: showSharePopup }">
@@ -220,8 +314,10 @@ import { onPageScroll, onShow } from '@dcloudio/uni-app'
 import SFIcon from '@/components/SFIcon/SFIcon.vue'
 import { getSpotDetail, getSpotComments, getUserFavoriteSpots, postComment, replyComment, likeComment as likeCommentApi, favoriteSpot, unfavoriteSpot } from '@/api'
 import { getRelatedGuides } from '@/api/modules/guide'
+import { generateAIRoute, getPreferenceOptions, getTransportModes } from '@/api/modules/planning'
 import type { SpotDetail, Comment, Reply } from '@/api/modules/destination'
 import type { RelatedGuide } from '@/api/modules/guide'
+import type { AIRoute, PreferenceOption, TransportMode } from '@/api/modules/planning'
 
 // 加载状态
 const loading = ref(false)
@@ -445,11 +541,68 @@ const goToGuideDetail = (id: number) => {
 }
 
 // 开始旅程
+const showTripSheet = ref(false)
+const tripDays = ref(3)
+const tripPreference = ref('auto')
+const tripTransport = ref('driving')
+const isGenerating = ref(false)
+
+const preferenceOptions = ref<PreferenceOption[]>([
+  { id: 'auto', name: '自动推荐', desc: 'AI智能规划最优路线' },
+  { id: 'spots', name: '只规划景点', desc: '不含餐饮住宿推荐' },
+  { id: 'relax', name: '休闲模式', desc: '每天2-3个景点，节奏慢' },
+  { id: 'intensive', name: '特种兵模式', desc: '紧凑安排，玩遍更多' }
+])
+
+const transportModes = ref<TransportMode[]>([
+  { id: 'driving', name: '自驾', icon: '🚗' },
+  { id: 'public', name: '公共交通', icon: '🚇' },
+  { id: 'walking', name: '步行', icon: '🚶' },
+  { id: 'cycling', name: '骑行', icon: '🚲' }
+])
+
+const loadPlanningOptions = async () => {
+  try {
+    const [prefs, transports] = await Promise.all([
+      getPreferenceOptions(),
+      getTransportModes()
+    ])
+    if (prefs && prefs.length > 0) preferenceOptions.value = prefs
+    if (transports && transports.length > 0) transportModes.value = transports
+  } catch (e) {
+    console.warn('加载规划选项失败，使用默认值', e)
+  }
+}
+
 const startJourney = () => {
-  uni.showToast({
-    title: '已添加到行程',
-    icon: 'success'
-  })
+  showTripSheet.value = true
+  loadPlanningOptions()
+}
+
+const generateTrip = async () => {
+  if (isGenerating.value) return
+  isGenerating.value = true
+
+  const cityName = spotInfo.value.locationTitle || spotInfo.value.locationDetail || ''
+
+  try {
+    const route = await generateAIRoute({
+      startCity: cityName,
+      endCity: cityName,
+      days: tripDays.value,
+      preference: tripPreference.value,
+      transport: tripTransport.value
+    })
+
+    isGenerating.value = false
+    showTripSheet.value = false
+
+    uni.setStorageSync('currentRoute', JSON.stringify(route))
+    uni.navigateTo({ url: '/pages/planning/detail' })
+  } catch (error) {
+    isGenerating.value = false
+    uni.showToast({ title: '规划生成失败，请重试', icon: 'none' })
+  }
 }
 
 // 评论相关
@@ -1040,6 +1193,300 @@ $text-secondary: #86868B;
 
 .start-text {
   font-size: 32rpx;
+  font-weight: 600;
+  color: #FFFFFF;
+}
+
+// 行程配置弹窗
+.trip-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 998;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+
+  &.show {
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
+.trip-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999;
+  transform: translateY(100%);
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &.show {
+    transform: translateY(0);
+  }
+}
+
+.trip-sheet-content {
+  background: #FFFFFF;
+  border-radius: 32rpx 32rpx 0 0;
+  padding-bottom: env(safe-area-inset-bottom);
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.sheet-handle {
+  display: flex;
+  justify-content: center;
+  padding: 20rpx 0 8rpx;
+}
+
+.handle-bar {
+  width: 72rpx;
+  height: 8rpx;
+  background: #E0E0E0;
+  border-radius: 4rpx;
+}
+
+.sheet-header {
+  display: flex;
+  align-items: center;
+  padding: 16rpx 32rpx 24rpx;
+  gap: 20rpx;
+}
+
+.header-icon {
+  width: 80rpx;
+  height: 80rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #FFF3E0, #FFE0B2);
+  border-radius: 24rpx;
+}
+
+.icon-emoji {
+  font-size: 40rpx;
+}
+
+.header-info {
+  flex: 1;
+}
+
+.header-title {
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #1A1A1A;
+  display: block;
+}
+
+.header-subtitle {
+  font-size: 24rpx;
+  color: #999;
+  margin-top: 4rpx;
+  display: block;
+}
+
+.header-close {
+  width: 56rpx;
+  height: 56rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #F5F5F5;
+  border-radius: 50%;
+}
+
+.close-icon {
+  font-size: 36rpx;
+  color: #999;
+  line-height: 1;
+}
+
+.config-section {
+  padding: 16rpx 32rpx 24rpx;
+}
+
+.section-label {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  margin-bottom: 20rpx;
+}
+
+.label-icon {
+  font-size: 28rpx;
+}
+
+.label-text {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.label-value {
+  font-size: 26rpx;
+  color: #FF5722;
+  font-weight: 600;
+  margin-left: auto;
+}
+
+.days-grid {
+  display: flex;
+  gap: 16rpx;
+}
+
+.day-item {
+  flex: 1;
+  height: 72rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #F5F5F7;
+  border-radius: 16rpx;
+  border: 2rpx solid transparent;
+  transition: all 0.2s ease;
+
+  &.active {
+    background: #FFF3E0;
+    border-color: #FF5722;
+  }
+}
+
+.day-text {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #666;
+
+  .day-item.active & {
+    color: #FF5722;
+    font-weight: 700;
+  }
+}
+
+.preference-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.preference-item {
+  display: flex;
+  align-items: center;
+  padding: 24rpx;
+  background: #F5F5F7;
+  border-radius: 20rpx;
+  border: 2rpx solid transparent;
+  transition: all 0.2s ease;
+
+  &.active {
+    background: #FFF3E0;
+    border-color: #FF5722;
+  }
+}
+
+.pref-name {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #333;
+  margin-right: 16rpx;
+
+  .preference-item.active & {
+    color: #FF5722;
+  }
+}
+
+.pref-desc {
+  font-size: 24rpx;
+  color: #999;
+  margin-left: auto;
+}
+
+.transport-list {
+  display: flex;
+  gap: 16rpx;
+}
+
+.transport-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8rpx;
+  padding: 20rpx 0;
+  background: #F5F5F7;
+  border-radius: 20rpx;
+  border: 2rpx solid transparent;
+  transition: all 0.2s ease;
+
+  &.active {
+    background: #FFF3E0;
+    border-color: #FF5722;
+  }
+}
+
+.transport-icon {
+  font-size: 36rpx;
+}
+
+.transport-name {
+  font-size: 24rpx;
+  color: #666;
+
+  .transport-item.active & {
+    color: #FF5722;
+    font-weight: 600;
+  }
+}
+
+.generate-area {
+  padding: 24rpx 32rpx 32rpx;
+}
+
+.generate-btn {
+  width: 100%;
+  height: 100rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
+  background: linear-gradient(135deg, #FF7043, #FF5722);
+  border-radius: 50rpx;
+  box-shadow: 0 8rpx 24rpx rgba(255, 87, 34, 0.3);
+  transition: all 0.2s ease;
+
+  &:active {
+    transform: scale(0.98);
+  }
+
+  &.loading {
+    opacity: 0.85;
+    pointer-events: none;
+  }
+}
+
+.generate-icon {
+  font-size: 32rpx;
+}
+
+.loading-spinner {
+  width: 32rpx;
+  height: 32rpx;
+  border: 4rpx solid rgba(255, 255, 255, 0.3);
+  border-top-color: #FFFFFF;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.generate-text {
+  font-size: 30rpx;
   font-weight: 600;
   color: #FFFFFF;
 }
