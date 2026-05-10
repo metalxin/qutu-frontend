@@ -325,6 +325,14 @@ export interface FavoriteSpotItem {
   favoriteTime?: string
 }
 
+export interface FavoriteSpotPage {
+  records: FavoriteSpotItem[]
+  total: number
+  size: number
+  current: number
+  pages: number
+}
+
 export function favoriteSpot(spotId: number) {
   return request<boolean>({
     url: `/admin/spots/${spotId}/favorite`,
@@ -342,7 +350,7 @@ export function unfavoriteSpot(spotId: number) {
 }
 
 export function getUserFavoriteSpots(params?: { current?: number; size?: number }) {
-  return request<any>({
+  return request<FavoriteSpotPage>({
     url: '/admin/spots/user/favorites',
     method: 'GET',
     data: {

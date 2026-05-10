@@ -1,7 +1,7 @@
 <template>
   <view class="page">
     <!-- 顶部导航栏 -->
-    <view class="navbar">
+    <view class="navbar" :style="navBarStyle">
       <view class="nav-back" @click="goBack">
         <SFIcon name="back" :size="40" color="#1D1D1F" />
       </view>
@@ -29,7 +29,7 @@
     <!-- 清单网格 -->
     <view class="checklist-grid">
       <!-- 添加清单卡片 -->
-      <view class="checklist-card add-card" @click="showAddPopup = true">
+      <view class="checklist-card add-card" @click="openAddPopup">
         <view class="add-icon-wrapper">
           <text class="add-icon">+</text>
         </view>
@@ -63,10 +63,10 @@
     </view>
 
     <!-- 添加清单弹窗 -->
-    <view class="popup-mask" v-if="showAddPopup" @click="showAddPopup = false"></view>
+    <view class="popup-mask" v-if="showAddPopup" @click="closeAddPopup"></view>
     <view class="add-popup" :class="{ 'popup-show': showAddPopup }">
       <!-- 返回按钮 -->
-      <view class="popup-back" @click="showAddPopup = false">
+      <view class="popup-back" @click="closeAddPopup">
         <text class="popup-back-icon">‹</text>
       </view>
 
@@ -124,6 +124,29 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
+
+// 胶囊按钮适配
+const statusBarHeight = ref(0)
+const menuButtonTop = ref(0)
+const menuButtonHeight = ref(32)
+const menuButtonLeft = ref(0)
+const windowWidth = ref(375)
+
+const navBarStyle = computed(() => {
+  // #ifdef MP-WEIXIN
+  if (menuButtonTop.value > 0) {
+    return {
+      paddingTop: (menuButtonTop.value - 12) + 'px',
+      height: (menuButtonTop.value + menuButtonHeight.value - 4) + 'px',
+      paddingRight: (windowWidth.value - menuButtonLeft.value + 10) + 'px'
+    }
+  }
+  // #endif
+  return {
+    paddingTop: statusBarHeight.value + 'px'
+  }
+})
 import SFIcon from '@/components/SFIcon/SFIcon.vue'
 import { getChecklists, createChecklist, updateChecklist, deleteChecklist } from '@/api'
 import type { Checklist } from '@/api/modules/checklist'
@@ -153,6 +176,21 @@ const formData = ref({
 
 const getErrorMessage = (error: any, fallback = '操作失败') => {
   return error?.response?.msg || error?.response?.message || error?.message || fallback
+}
+
+const resetForm = () => {
+  formData.value = { name: '', startDate: '', endDate: '' }
+  editingId.value = null
+}
+
+const openAddPopup = () => {
+  resetForm()
+  showAddPopup.value = true
+}
+
+const closeAddPopup = () => {
+  showAddPopup.value = false
+  resetForm()
 }
 
 // 加载清单数据
@@ -223,15 +261,11 @@ const submitChecklist = async () => {
       uni.showToast({ title: '创建成功', icon: 'success' })
     }
     // 重新加载列表
-    loadChecklists()
+    await loadChecklists()
+    closeAddPopup()
   } catch (error) {
     uni.showToast({ title: getErrorMessage(error, editingId.value ? '更新失败' : '创建失败'), icon: 'none' })
   }
-
-  // 重置表单
-  formData.value = { name: '', startDate: '', endDate: '' }
-  editingId.value = null
-  showAddPopup.value = false
 }
 
 // 跳转详情
@@ -274,6 +308,27 @@ const confirmDelete = (item: Checklist) => {
 
 // 页面加载
 onMounted(() => {
+  const systemInfo = uni.getSystemInfoSync()
+  statusBarHeight.value = systemInfo.statusBarHeight || 44
+  windowWidth.value = systemInfo.windowWidth || 375
+
+  // #ifdef MP-WEIXIN
+  try {
+    const menuButton = uni.getMenuButtonBoundingClientRect()
+    if (menuButton) {
+      menuButtonTop.value = menuButton.top
+      menuButtonHeight.value = menuButton.height
+      menuButtonLeft.value = menuButton.left
+    }
+  } catch (e) {
+    console.log('获取胶囊按钮位置失败', e)
+  }
+  // #endif
+
+  loadChecklists()
+})
+
+onShow(() => {
   loadChecklists()
 })
 </script>
@@ -297,8 +352,7 @@ $border-radius-md: 16rpx;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 24rpx 32rpx;
-  padding-top: calc(var(--status-bar-height, 44px) + 24rpx);
+  padding: 0 32rpx;
   background: $card-bg;
 }
 

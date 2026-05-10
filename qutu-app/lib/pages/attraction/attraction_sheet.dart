@@ -67,7 +67,7 @@ class AttractionSheet extends StatelessWidget {
                 item: attractions[index],
                 onTap: () => pushPage(
                   context,
-                  AttractionDetailPage(item: attractions[index]),
+                  AttractionDetailPage(item: attractions[index], cityName: city),
                 ),
               ),
               separatorBuilder: (_, _) => const SizedBox(height: 12),

@@ -75,7 +75,7 @@
     <!-- 旅行账单内容 -->
     <view class="tab-content" v-if="activeTab === 'expense'">
       <view class="expense-header">
-        <view class="budget-btn" @click="showBudgetPopup = true">
+        <view class="budget-btn" @click="openBudgetPopup">
           <text class="budget-text">设置预算</text>
           <text class="budget-arrow">›</text>
         </view>
@@ -113,10 +113,10 @@
     </view>
 
     <!-- 添加物品弹窗 -->
-    <view class="popup-mask" v-if="showAddItem" @click="showAddItem = false"></view>
+    <view class="popup-mask" v-if="showAddItem" @click="closeAddItemPopup"></view>
     <view class="item-popup" :class="{ 'popup-show': showAddItem }">
       <view class="popup-nav">
-        <view class="popup-back" @click="showAddItem = false">
+        <view class="popup-back" @click="closeAddItemPopup">
           <text class="popup-back-icon">‹</text>
         </view>
       </view>
@@ -177,10 +177,10 @@
     </view>
 
     <!-- 添加消费弹窗 -->
-    <view class="popup-mask" v-if="showAddExpense" @click="showAddExpense = false"></view>
+    <view class="popup-mask" v-if="showAddExpense" @click="closeAddExpensePopup"></view>
     <view class="expense-popup" :class="{ 'popup-show': showAddExpense }">
       <view class="popup-nav">
-        <view class="popup-back" @click="showAddExpense = false">
+        <view class="popup-back" @click="closeAddExpensePopup">
           <text class="popup-back-icon">‹</text>
         </view>
       </view>
@@ -246,11 +246,11 @@
     </view>
 
     <!-- 设置预算弹窗 -->
-    <view class="popup-mask" v-if="showBudgetPopup" @click="showBudgetPopup = false"></view>
+    <view class="popup-mask" v-if="showBudgetPopup" @click="closeBudgetPopup"></view>
     <view class="budget-popup" :class="{ 'popup-show': showBudgetPopup }">
       <view class="budget-header">
         <text class="budget-title">设置预算</text>
-        <view class="budget-close" @click="showBudgetPopup = false">
+        <view class="budget-close" @click="closeBudgetPopup">
           <text class="close-icon">×</text>
         </view>
       </view>
@@ -271,7 +271,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
+import { onLoad, onShow } from '@dcloudio/uni-app'
 import SFIcon from '@/components/SFIcon/SFIcon.vue'
 import { getChecklistDetail, toggleChecklistItem, addChecklistItem, deleteChecklistItem, updateChecklist, getExpenses, addExpense, deleteExpense, updateBudget as apiUpdateBudget, getTotalExpense } from '@/api'
 import type { ChecklistDetail, ChecklistItem, ChecklistExpense, ChecklistId } from '@/api/modules/checklist'
@@ -290,6 +290,26 @@ const ensureChecklistReady = () => {
     return false
   }
   return true
+}
+
+const closeAddItemPopup = () => {
+  showAddItem.value = false
+  newItemName.value = ''
+}
+
+const closeAddExpensePopup = () => {
+  showAddExpense.value = false
+  expenseForm.value = { amount: '', note: '' }
+}
+
+const openBudgetPopup = () => {
+  budgetAmount.value = checklistInfo.value.budget != null ? String(checklistInfo.value.budget) : ''
+  showBudgetPopup.value = true
+}
+
+const closeBudgetPopup = () => {
+  showBudgetPopup.value = false
+  budgetAmount.value = checklistInfo.value.budget != null ? String(checklistInfo.value.budget) : ''
 }
 
 // 清单信息
@@ -476,7 +496,7 @@ const addCustomItem = async () => {
       throw new Error('刷新清单失败，请稍后重试')
     }
     uni.showToast({ title: '添加成功', icon: 'success' })
-    showAddItem.value = false
+    closeAddItemPopup()
   } catch (error) {
     console.error('添加自定义物品失败:', error)
     uni.showToast({ title: getErrorMessage(error, '添加失败'), icon: 'none' })
@@ -568,8 +588,7 @@ const submitExpense = async () => {
     if (!refreshed) {
       throw new Error('账单刷新失败，请稍后重试')
     }
-    expenseForm.value = { amount: '', note: '' }
-    showAddExpense.value = false
+    closeAddExpensePopup()
     uni.showToast({ title: '记录成功', icon: 'success' })
   } catch (error) {
     console.error('添加费用失败:', error)
@@ -629,8 +648,8 @@ const saveBudget = async () => {
     if (!success) {
       throw new Error('设置失败')
     }
-    showBudgetPopup.value = false
     checklistInfo.value.budget = amount
+    closeBudgetPopup()
     uni.showToast({ title: '预算设置成功', icon: 'success' })
   } catch (error) {
     console.error('设置预算失败:', error)
@@ -640,7 +659,11 @@ const saveBudget = async () => {
 
 // 返回
 const goBack = () => {
-  uni.navigateBack()
+  uni.navigateBack({
+    fail: () => {
+      uni.redirectTo({ url: '/pages/checklist/index' })
+    }
+  })
 }
 
 // 加载详情
@@ -681,6 +704,12 @@ onLoad((options) => {
     return
   }
   loadDetail()
+})
+
+onShow(() => {
+  if (checklistId.value) {
+    loadDetail()
+  }
 })
 </script>
 

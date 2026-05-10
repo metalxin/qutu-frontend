@@ -7,7 +7,7 @@ export const mockUserInfo = {
   id: 1,
   username: 'traveler',
   nickname: '旅行者小明',
-  avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&q=80',
+  avatar: '',
   phone: '138****8888',
   email: 'traveler@example.com',
   wechatBound: false,

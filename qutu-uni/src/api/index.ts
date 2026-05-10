@@ -164,6 +164,15 @@ export * as collectApi from './modules/collect'
 export * as routeApi from './modules/route'
 
 export {
+  chatWithAI,
+  chatWithHistory
+} from './modules/service'
+
+export type {
+  ChatMessage
+} from './modules/service'
+
+export {
   getRouteRecords,
   getRouteDetail,
   saveRouteRecord,

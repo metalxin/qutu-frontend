@@ -218,7 +218,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { onPageScroll, onShow } from '@dcloudio/uni-app'
 import SFIcon from '@/components/SFIcon/SFIcon.vue'
-import { getSpotDetail, getSpotComments, postComment, replyComment, likeComment as likeCommentApi, favoriteSpot, unfavoriteSpot } from '@/api'
+import { getSpotDetail, getSpotComments, getUserFavoriteSpots, postComment, replyComment, likeComment as likeCommentApi, favoriteSpot, unfavoriteSpot } from '@/api'
 import { getRelatedGuides } from '@/api/modules/guide'
 import type { SpotDetail, Comment, Reply } from '@/api/modules/destination'
 import type { RelatedGuide } from '@/api/modules/guide'
@@ -328,6 +328,11 @@ const loadSpotInfo = async (id: string) => {
     
     spotInfo.value = spotRes
     isFavorite.value = !!spotRes.isFavorite
+    if (!isFavorite.value && isLoggedIn.value) {
+      const favoritePage = await getUserFavoriteSpots({ current: 1, size: 200 })
+      const favoriteRecords = favoritePage?.records || []
+      isFavorite.value = favoriteRecords.some(item => Number(item.id) === Number(id))
+    }
     comments.value = commentsRes
     relatedGuides.value = guidesRes
   } catch (error) {

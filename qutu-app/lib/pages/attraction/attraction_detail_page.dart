@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import '../../models/attraction_item.dart';
+import '../../utils/navigation.dart';
+import 'trip_start_sheet.dart';
+import '../planner/smart_plan_detail_page.dart';
 
 class AttractionDetailPage extends StatelessWidget {
-  const AttractionDetailPage({super.key, required this.item});
+  const AttractionDetailPage({super.key, required this.item, required this.cityName});
 
   final AttractionItem item;
+  final String cityName;
 
   @override
   Widget build(BuildContext context) {
@@ -249,7 +253,19 @@ class AttractionDetailPage extends StatelessWidget {
           child: SizedBox(
             height: 52,
             child: ElevatedButton(
-              onPressed: () {},
+              onPressed: () async {
+                final route = await showTripStartSheet(
+                  context,
+                  spotName: item.name,
+                  cityName: cityName,
+                );
+                if (route != null && context.mounted) {
+                  pushPage(
+                    context,
+                    SmartPlanDetailPage(route: route),
+                  );
+                }
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFFF6A3D),
                 shape: RoundedRectangleBorder(

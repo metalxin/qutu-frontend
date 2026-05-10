@@ -104,12 +104,8 @@
           </view>
         </view>
         <view class="section-actions">
-          <view class="location-action" @click="goToNearbyWithLocation">
-            <SFIcon name="location" :size="22" color="#007AFF" />
-            <text class="location-action-text">定位</text>
-          </view>
-          <view class="section-more" @click="toggleDestinations">
-            <text class="more-text">{{ showAllDestinations ? '收起' : '查看全部' }} ›</text>
+          <view class="section-more" @click="openDestinationListPopup">
+            <text class="more-text">查看全部 ›</text>
           </view>
         </view>
       </view>
@@ -151,19 +147,6 @@
         <text class="empty-text">未找到相关目的地</text>
       </view>
       
-      <!-- 底部显示更多按钮 -->
-      <view class="load-more-wrapper" v-if="!showAllDestinations">
-        <view class="load-more-btn" @click="toggleDestinations">
-          <text class="load-more-text">查看更多目的地</text>
-          <text class="load-more-arrow">↓</text>
-        </view>
-      </view>
-      <view class="collapse-wrapper" v-else>
-        <view class="collapse-btn" @click="toggleDestinations">
-          <text class="collapse-text">收起</text>
-          <text class="collapse-arrow">↑</text>
-        </view>
-      </view>
     </scroll-view>
 
     <!-- 灵感推荐 -->
@@ -171,7 +154,7 @@
       <view class="section-header">
         <view class="section-title-row">
           <text class="section-title">灵感推荐</text>
-          <view class="section-more" @click="goToStoryList">
+          <view class="section-more" @click="openInspirationListPopup">
             <text class="more-text">更多灵感 ›</text>
           </view>
         </view>
@@ -186,6 +169,43 @@
             <view class="inspiration-info">
               <text class="inspiration-title">{{ item.title }}</text>
               <text class="inspiration-location">{{ item.location }}</text>
+            </view>
+          </view>
+        </view>
+      </scroll-view>
+    </view>
+
+    <view class="popup-mask" v-if="showInspirationListPopup" @click="closeInspirationListPopup"></view>
+    <view class="inspiration-list-popup" :class="{ 'popup-show': showInspirationListPopup }">
+      <view class="popup-header">
+        <text class="popup-title">灵感推荐</text>
+        <view class="popup-close" @click="closeInspirationListPopup">
+          <text class="close-icon">×</text>
+        </view>
+      </view>
+      <view class="inspiration-list-subtitle">
+        <text class="spotlist-count">{{ inspirationList.length }}条灵感</text>
+      </view>
+      <scroll-view class="inspiration-list-scroll" scroll-y :show-scrollbar="false">
+        <view class="inspiration-list-empty" v-if="inspirationList.length === 0">
+          <text class="empty-text">暂无灵感内容</text>
+        </view>
+        <view class="inspiration-list-items" v-else>
+          <view
+            class="inspiration-list-item"
+            v-for="item in inspirationList"
+            :key="item.id"
+            @tap="goToInspirationDetail(item)"
+          >
+            <view class="inspiration-list-cover-wrap">
+              <image v-if="item.cover && !item.coverError" class="inspiration-list-cover" :src="item.cover" mode="aspectFill" @error="item.coverError = true" />
+              <view v-else class="inspiration-list-cover inspiration-list-cover-placeholder">
+                <text class="placeholder-emoji">🗺️</text>
+              </view>
+            </view>
+            <view class="inspiration-list-info">
+              <text class="inspiration-list-title">{{ item.title }}</text>
+              <text class="inspiration-list-location">{{ item.location }}</text>
             </view>
           </view>
         </view>
@@ -518,6 +538,55 @@
               </view>
               <text class="spotlist-address">{{ spot.address }}</text>
               <text class="spotlist-opentime">{{ spot.openTime }}</text>
+            </view>
+          </view>
+        </view>
+      </scroll-view>
+    </view>
+
+    <view class="popup-mask" v-if="showDestinationListPopup" @click="closeDestinationListPopup"></view>
+    <view class="destination-list-popup" :class="{ 'popup-show': showDestinationListPopup }">
+      <view class="popup-header">
+        <text class="popup-title">全部目的地</text>
+        <view class="popup-close" @click="closeDestinationListPopup">
+          <text class="close-icon">×</text>
+        </view>
+      </view>
+      <view class="destination-list-subtitle">
+        <text class="spotlist-count">{{ drawerDestinations.length }}个目的地</text>
+      </view>
+      <scroll-view class="destination-list-scroll" scroll-y :show-scrollbar="false">
+        <view class="destination-list-empty" v-if="drawerDestinations.length === 0">
+          <text class="empty-text">暂无目的地数据</text>
+        </view>
+        <view class="destination-list-items" v-else>
+          <view
+            class="destination-list-item"
+            v-for="dest in drawerDestinations"
+            :key="dest.id"
+            @tap="handleDestinationClick(dest)"
+          >
+            <view class="destination-list-cover" :style="{ background: dest.gradient || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }">
+              <image v-if="dest.image" class="destination-list-image" :src="dest.image" mode="aspectFill" @error="handleImageError(dest)" />
+              <view v-else class="destination-list-placeholder">
+                <text class="destination-list-placeholder-text">{{ dest.name }}</text>
+              </view>
+            </view>
+            <view class="destination-list-info">
+              <view class="destination-list-header">
+                <text class="destination-list-name">{{ dest.name }}</text>
+                <text class="destination-list-spots">{{ dest.spots }}个景点</text>
+              </view>
+              <text class="destination-list-subtitle-text">{{ dest.subtitle }}</text>
+              <view class="destination-list-meta">
+                <view class="destination-list-tag" v-if="dest.tag">
+                  <text class="tag-text">{{ dest.tag }}</text>
+                </view>
+                <view class="destination-list-rating">
+                  <SFIcon name="star" :size="22" color="#FFB800" filled />
+                  <text class="destination-list-rating-text">{{ dest.rating }}</text>
+                </view>
+              </view>
             </view>
           </view>
         </view>
@@ -905,15 +974,21 @@ const handleScreenshot = () => {
 }
 
 // 目的地数据
-const showAllDestinations = ref(false)
 const allDestinations = ref<Destination[]>([])
 const searchKeyword = ref('')
+const showDestinationListPopup = ref(false)
+const showInspirationListPopup = ref(false)
 const showSpotListPopup = ref(false)
 const currentDestination = ref<Destination | null>(null)
 const spotList = ref<SpotListItem[]>([])
 const spotListLoading = ref(false)
 
 const currentDestinationName = computed(() => currentDestination.value?.name || '景点列表')
+
+const drawerDestinations = computed(() => {
+  const keyword = searchKeyword.value.trim()
+  return keyword ? filteredDestinations.value : allDestinations.value
+})
 
 const filteredDestinations = computed(() => {
   const keyword = searchKeyword.value.trim()
@@ -931,9 +1006,6 @@ const filteredDestinations = computed(() => {
 // 显示的目的地列表
 const destinations = computed(() => {
   if (searchKeyword.value.trim()) {
-    return filteredDestinations.value
-  }
-  if (showAllDestinations.value) {
     return filteredDestinations.value
   }
   return filteredDestinations.value.slice(0, 4)
@@ -957,19 +1029,31 @@ const loadDestinations = async () => {
 }
 
 // 点击更多
-const toggleDestinations = () => {
-  showAllDestinations.value = !showAllDestinations.value
+const openDestinationListPopup = () => {
+  showDestinationListPopup.value = true
+}
+
+const closeDestinationListPopup = () => {
+  showDestinationListPopup.value = false
+}
+
+const openInspirationListPopup = () => {
+  showInspirationListPopup.value = true
+}
+
+const closeInspirationListPopup = () => {
+  showInspirationListPopup.value = false
 }
 
 const applySearch = () => {
   if (searchKeyword.value.trim()) {
-    showAllDestinations.value = true
+    showDestinationListPopup.value = true
   }
 }
 
 const clearSearch = () => {
   searchKeyword.value = ''
-  showAllDestinations.value = false
+  showDestinationListPopup.value = false
 }
 
 // 图片加载失败处理
@@ -1043,6 +1127,7 @@ const goToSpotDetail = (spot: SpotListItem) => {
 }
 
 const handleDestinationClick = (dest: Destination) => {
+  showDestinationListPopup.value = false
   openSpotList(dest)
 }
 
@@ -1067,6 +1152,7 @@ const goToStoryList = () => {
 
 // 跳转到灵感详情
 const goToInspirationDetail = (item: any) => {
+  showInspirationListPopup.value = false
   uni.navigateTo({
     url: `/pages/guide/detail?id=${item.id}`
   })
@@ -1106,7 +1192,7 @@ const confirmSelection = () => {
     selectedRegion.value = currentRegionName.value
   }
   showDestinationPopup.value = false
-  showAllDestinations.value = false
+  showDestinationListPopup.value = false
   loadDestinations()
 }
 
@@ -1832,12 +1918,13 @@ $shadow-medium: 0 4rpx 30rpx rgba(0, 0, 0, 0.1);
 
 // 灵感推荐
 .inspiration-section {
-  padding: 0 32rpx 28rpx;
+  padding: 0 0 28rpx;
 }
 
 .inspiration-scroll {
   white-space: nowrap;
   margin-top: 20rpx;
+  padding-left: 32rpx;
 }
 
 .inspiration-list {
@@ -2041,7 +2128,7 @@ $shadow-medium: 0 4rpx 30rpx rgba(0, 0, 0, 0.1);
   height: 85vh;
   background: $card-bg;
   border-radius: 40rpx 40rpx 0 0;
-  z-index: 999;
+  z-index: 1000;
   display: flex;
   flex-direction: column;
   transform: translateY(100%);
@@ -2088,6 +2175,252 @@ $shadow-medium: 0 4rpx 30rpx rgba(0, 0, 0, 0.1);
   flex: 1;
   padding: 0 40rpx 40rpx;
   box-sizing: border-box;
+}
+
+// 目的地列表抽屉
+.destination-list-popup {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 82vh;
+  background: $card-bg;
+  border-radius: 40rpx 40rpx 0 0;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  transform: translateY(100%);
+  transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+
+  &.popup-show {
+    transform: translateY(0);
+  }
+}
+
+.destination-list-subtitle {
+  padding: 0 40rpx 20rpx;
+}
+
+.destination-list-scroll {
+  flex: 1;
+  padding: 0 40rpx 40rpx;
+  box-sizing: border-box;
+}
+
+.destination-list-empty {
+  min-height: 320rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.destination-list-items {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.destination-list-item {
+  display: flex;
+  gap: 20rpx;
+  padding: 16rpx;
+  background: $bg-color;
+  border-radius: 28rpx;
+
+  &:active {
+    transform: scale(0.99);
+  }
+}
+
+.destination-list-cover {
+  width: 180rpx;
+  height: 180rpx;
+  border-radius: 22rpx;
+  overflow: hidden;
+  background: #E5E5EA;
+  flex-shrink: 0;
+}
+
+.destination-list-image {
+  width: 100%;
+  height: 100%;
+}
+
+.destination-list-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12rpx;
+  box-sizing: border-box;
+}
+
+.destination-list-placeholder-text {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.92);
+  text-align: center;
+  line-height: 1.25;
+}
+
+.destination-list-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+}
+
+.destination-list-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12rpx;
+}
+
+.destination-list-name {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: $text-primary;
+  line-height: 1.2;
+}
+
+.destination-list-spots {
+  font-size: 22rpx;
+  color: $text-secondary;
+  flex-shrink: 0;
+}
+
+.destination-list-subtitle-text {
+  font-size: 24rpx;
+  color: $text-secondary;
+  line-height: 1.4;
+  display: block;
+}
+
+.destination-list-meta {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12rpx;
+}
+
+.destination-list-tag {
+  padding: 6rpx 14rpx;
+  background: rgba(0, 122, 255, 0.08);
+  border-radius: 999rpx;
+}
+
+.destination-list-rating {
+  display: flex;
+  align-items: center;
+  gap: 4rpx;
+}
+
+.destination-list-rating-text {
+  font-size: 24rpx;
+  color: $text-primary;
+  font-weight: 600;
+}
+
+// 灵感列表抽屉
+.inspiration-list-popup {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 82vh;
+  background: $card-bg;
+  border-radius: 40rpx 40rpx 0 0;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  transform: translateY(100%);
+  transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+
+  &.popup-show {
+    transform: translateY(0);
+  }
+}
+
+.inspiration-list-subtitle {
+  padding: 0 40rpx 20rpx;
+}
+
+.inspiration-list-scroll {
+  flex: 1;
+  padding: 0 40rpx 40rpx;
+  box-sizing: border-box;
+}
+
+.inspiration-list-empty {
+  min-height: 320rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.inspiration-list-items {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.inspiration-list-item {
+  display: flex;
+  gap: 20rpx;
+  padding: 16rpx;
+  background: $bg-color;
+  border-radius: 28rpx;
+
+  &:active {
+    transform: scale(0.99);
+  }
+}
+
+.inspiration-list-cover-wrap {
+  width: 180rpx;
+  height: 180rpx;
+  border-radius: 22rpx;
+  overflow: hidden;
+  background: #E5E5EA;
+  flex-shrink: 0;
+}
+
+.inspiration-list-cover {
+  width: 100%;
+  height: 100%;
+}
+
+.inspiration-list-cover-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.inspiration-list-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10rpx;
+}
+
+.inspiration-list-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: $text-primary;
+  line-height: 1.3;
+}
+
+.inspiration-list-location {
+  font-size: 24rpx;
+  color: $text-secondary;
+  line-height: 1.4;
+  display: block;
 }
 
 .spotlist-loading,

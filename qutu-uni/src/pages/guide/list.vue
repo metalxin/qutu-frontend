@@ -17,7 +17,7 @@
       <view class="search-container">
         <view class="search-box">
           <SFIcon name="search" :size="32" color="#86868B" />
-          <input class="search-input" placeholder="搜索目的地/关键词" v-model="searchKeyword" @confirm="loadGuideList" />
+          <input class="search-input" placeholder="搜索目的地/关键词" v-model="searchKeyword" @confirm="onSearchConfirm" />
         </view>
       </view>
 
@@ -31,7 +31,6 @@
             @click="activeCategory = item.id"
           >
             <text class="category-text">{{ item.name }}</text>
-            <text class="category-icon">{{ item.icon }}</text>
           </view>
         </view>
       </scroll-view>
@@ -60,7 +59,7 @@
               @error="onCoverError(guide)"
             />
             <view v-else class="cover-placeholder">
-              <text class="placeholder-icon">🗺️</text>
+              <SFIcon name="image" :size="48" color="rgba(255,255,255,0.6)" />
             </view>
           </view>
           <view class="card-content">
@@ -68,8 +67,12 @@
             <text class="card-desc" v-if="guide.description">{{ guide.description }}</text>
             <view class="card-meta" v-if="guide.days || guide.likes || guide.views">
               <text class="meta-tag" v-if="guide.days">{{ guide.days }}</text>
-              <text class="meta-item" v-if="guide.likes">👍 {{ guide.likes }}</text>
-              <text class="meta-item" v-if="guide.views">👁 {{ guide.views }}</text>
+              <text class="meta-item" v-if="guide.likes">
+                <SFIcon name="heart" :size="24" color="#86868B" :filled="false" /> {{ guide.likes }}
+              </text>
+              <text class="meta-item" v-if="guide.views">
+                <SFIcon name="eye" :size="24" color="#86868B" /> {{ guide.views }}
+              </text>
             </view>
           </view>
         </view>
@@ -225,6 +228,10 @@ const loadGuideList = async (loadMore = false) => {
   } finally {
     loading.value = false
   }
+}
+
+const onSearchConfirm = () => {
+  loadGuideList()
 }
 
 watch(activeCategory, () => {
@@ -488,5 +495,8 @@ $shadow-light: 0 2rpx 20rpx rgba(0, 0, 0, 0.06);
 .meta-item {
   font-size: 22rpx;
   color: $text-secondary;
+  display: inline-flex;
+  align-items: center;
+  gap: 4rpx;
 }
 </style>

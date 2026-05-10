@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import '../../models/trip_plan.dart';
+import '../../services/planning_api_service.dart';
 
 class SmartPlanDetailPage extends StatefulWidget {
-  const SmartPlanDetailPage({super.key});
+  const SmartPlanDetailPage({super.key, this.route});
+
+  final AIRoute? route;
 
   @override
   State<SmartPlanDetailPage> createState() => _SmartPlanDetailPageState();
@@ -13,43 +17,14 @@ class _SmartPlanDetailPageState extends State<SmartPlanDetailPage>
   late final Animation<double> _fadeAnimation;
   late final Animation<Offset> _slideAnimation;
   int _dayIndex = 0;
+  bool _isSaving = false;
 
-  final List<_DayPlan> _plans = [
-    _DayPlan(
-      title: 'Day 1 第一天',
-      date: '2月24日',
-      totalHours: '8小时',
-      distance: '21km',
-      items: [
-        _TimelineItem('09:00', '12:00', '安徽省博物馆', '博物馆', '3小时', 4.7),
-        _TimelineItem('13:30', '16:30', '三河古镇', '古镇', '3小时', 4.6),
-      ],
-    ),
-    _DayPlan(
-      title: 'Day 2 第二天',
-      date: '2月25日',
-      totalHours: '7小时',
-      distance: '18km',
-      items: [
-        _TimelineItem('09:30', '11:30', '逍遥津', '公园', '2小时', 4.5),
-        _TimelineItem('13:00', '16:00', '包公园', '文化', '3小时', 4.6),
-      ],
-    ),
-    _DayPlan(
-      title: 'Day 3 第三天',
-      date: '2月26日',
-      totalHours: '6小时',
-      distance: '15km',
-      items: [
-        _TimelineItem('10:00', '12:00', '淮河路步行街', '街区', '2小时', 4.4),
-        _TimelineItem('13:30', '16:00', '合柴1972', '艺术', '2.5小时', 4.5),
-      ],
-    ),
-  ];
+  late final List<_DayPlan> _plans;
 
   @override
   void initState() {
     super.initState();
+    _plans = _buildPlans();
     _controller =
         AnimationController(vsync: this, duration: const Duration(milliseconds: 650));
     _fadeAnimation = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
@@ -60,10 +35,187 @@ class _SmartPlanDetailPageState extends State<SmartPlanDetailPage>
     _controller.forward();
   }
 
+  List<_DayPlan> _buildPlans() {
+    final route = widget.route;
+    if (route != null && route.schedule != null && route.schedule!.isNotEmpty) {
+      return route.schedule!.map((day) {
+        return _DayPlan(
+          title: 'Day ${day.day} 第${_chineseNumber(day.day ?? 1)}天',
+          date: day.date ?? '',
+          totalHours: day.totalDuration ?? '',
+          distance: day.totalDistance ?? '',
+          items: (day.spots ?? []).map((spot) {
+            return _TimelineItem(
+              spot.startTime ?? '',
+              spot.endTime ?? '',
+              spot.name ?? '',
+              spot.spotInfo?.category ?? '景点',
+              spot.duration ?? '',
+              spot.spotInfo?.rating ?? 4.5,
+              spot.spotInfo?.price ?? '',
+              spot.spotInfo?.address ?? '',
+              spot.spotInfo?.tips ?? '',
+            );
+          }).toList(),
+          meals: day.meals,
+          hotel: day.hotel,
+        );
+      }).toList();
+    }
+
+    if (route != null && route.spots != null && route.spots!.isNotEmpty) {
+      final Map<int, List<RouteSpot>> grouped = {};
+      for (final spot in route.spots!) {
+        final day = spot.day ?? 1;
+        grouped.putIfAbsent(day, () => []).add(spot);
+      }
+      final sortedKeys = grouped.keys.toList()..sort();
+      return sortedKeys.map((day) {
+        final spots = grouped[day]!;
+        return _DayPlan(
+          title: 'Day $day 第${_chineseNumber(day)}天',
+          date: '',
+          totalHours: '',
+          distance: '',
+          items: spots.map((spot) {
+            return _TimelineItem(
+              spot.startTime ?? '',
+              spot.endTime ?? '',
+              spot.name ?? '',
+              spot.spotInfo?.category ?? '景点',
+              spot.duration ?? '',
+              spot.spotInfo?.rating ?? 4.5,
+              spot.spotInfo?.price ?? '',
+              spot.spotInfo?.address ?? '',
+              spot.spotInfo?.tips ?? '',
+            );
+          }).toList(),
+        );
+      }).toList();
+    }
+
+    return [
+      _DayPlan(
+        title: 'Day 1 第一天',
+        date: '2月24日',
+        totalHours: '8小时',
+        distance: '21km',
+        items: [
+          _TimelineItem('09:00', '12:00', '安徽省博物馆', '博物馆', '3小时', 4.7, '', '', ''),
+          _TimelineItem('13:30', '16:30', '三河古镇', '古镇', '3小时', 4.6, '', '', ''),
+        ],
+      ),
+      _DayPlan(
+        title: 'Day 2 第二天',
+        date: '2月25日',
+        totalHours: '7小时',
+        distance: '18km',
+        items: [
+          _TimelineItem('09:30', '11:30', '逍遥津', '公园', '2小时', 4.5, '', '', ''),
+          _TimelineItem('13:00', '16:00', '包公园', '文化', '3小时', 4.6, '', '', ''),
+        ],
+      ),
+      _DayPlan(
+        title: 'Day 3 第三天',
+        date: '2月26日',
+        totalHours: '6小时',
+        distance: '15km',
+        items: [
+          _TimelineItem('10:00', '12:00', '淮河路步行街', '街区', '2小时', 4.4, '', '', ''),
+          _TimelineItem('13:30', '16:00', '合柴1972', '艺术', '2.5小时', 4.5, '', '', ''),
+        ],
+      ),
+    ];
+  }
+
+  String _chineseNumber(int n) {
+    const nums = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十'];
+    if (n >= 1 && n <= 10) return nums[n - 1];
+    return n.toString();
+  }
+
+  String get _routeName {
+    final route = widget.route;
+    if (route != null && route.name != null && route.name!.isNotEmpty) {
+      return route.name!;
+    }
+    return '合肥3日精华游';
+  }
+
+  String get _routeSubtitle {
+    final route = widget.route;
+    if (route != null) {
+      final start = route.startCity ?? '合肥';
+      final end = route.endCity ?? '合肥';
+      final days = route.days ?? 3;
+      return '$start → $end    $days天行程';
+    }
+    return '合肥 → 合肥    3天行程';
+  }
+
+  String get _totalSpots {
+    final route = widget.route;
+    if (route?.summary?.totalSpots != null) {
+      return route!.summary!.totalSpots.toString();
+    }
+    int count = 0;
+    for (final plan in _plans) {
+      count += plan.items.length;
+    }
+    return count.toString();
+  }
+
+  String get _totalDistance {
+    return widget.route?.summary?.totalDistance ?? '53km';
+  }
+
+  String get _estimatedCost {
+    return widget.route?.summary?.estimatedCost ?? '¥1,200';
+  }
+
+  String get _bestSeason {
+    return widget.route?.summary?.bestSeason ?? '春秋季节';
+  }
+
   @override
   void dispose() {
     _controller.dispose();
     super.dispose();
+  }
+
+  Future<void> _savePlan() async {
+    final route = widget.route;
+    if (route == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('暂无路线数据可保存')),
+      );
+      return;
+    }
+
+    setState(() => _isSaving = true);
+    try {
+      final api = PlanningApiService();
+      final routeId = await api.savePlan(route);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('路线已保存，ID: $routeId'),
+          backgroundColor: const Color(0xFF1BC6A3),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('保存失败: $e'),
+          backgroundColor: Colors.red.shade400,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
   }
 
   @override
@@ -95,9 +247,17 @@ class _SmartPlanDetailPageState extends State<SmartPlanDetailPage>
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
             physics: const BouncingScrollPhysics(),
             children: [
-              _HeroHeader(),
+              _HeroHeader(
+                name: _routeName,
+                subtitle: _routeSubtitle,
+              ),
               const SizedBox(height: 16),
-              _StatCard(),
+              _StatCard(
+                totalSpots: _totalSpots,
+                totalDistance: _totalDistance,
+                estimatedCost: _estimatedCost,
+                bestSeason: _bestSeason,
+              ),
               const SizedBox(height: 16),
               _DayTabs(
                 plans: _plans,
@@ -106,6 +266,10 @@ class _SmartPlanDetailPageState extends State<SmartPlanDetailPage>
               ),
               const SizedBox(height: 12),
               _DaySummary(plan: plan),
+              if (plan.meals != null || plan.hotel != null) ...[
+                const SizedBox(height: 12),
+                _MealsAndHotelCard(plan: plan),
+              ],
               const SizedBox(height: 12),
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 300),
@@ -129,7 +293,7 @@ class _SmartPlanDetailPageState extends State<SmartPlanDetailPage>
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: () {},
+                  onPressed: () => Navigator.of(context).pop(),
                   style: OutlinedButton.styleFrom(
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(26),
@@ -142,14 +306,24 @@ class _SmartPlanDetailPageState extends State<SmartPlanDetailPage>
               const SizedBox(width: 12),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () {},
+                  onPressed: _isSaving ? null : _savePlan,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF57A2E6),
+                    disabledBackgroundColor: const Color(0xFF57A2E6).withAlpha(120),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(26),
                     ),
                   ),
-                  child: const Text('保存并开始'),
+                  child: _isSaving
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text('保存并开始'),
                 ),
               ),
             ],
@@ -161,6 +335,11 @@ class _SmartPlanDetailPageState extends State<SmartPlanDetailPage>
 }
 
 class _HeroHeader extends StatelessWidget {
+  const _HeroHeader({required this.name, required this.subtitle});
+
+  final String name;
+  final String subtitle;
+
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
@@ -194,19 +373,19 @@ class _HeroHeader extends StatelessWidget {
               bottom: 24,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
+                children: [
                   Text(
-                    '合肥3日精华游',
-                    style: TextStyle(
+                    name,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 20,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  SizedBox(height: 4),
+                  const SizedBox(height: 4),
                   Text(
-                    '合肥 → 合肥    3天行程',
-                    style: TextStyle(color: Colors.white70, fontSize: 12),
+                    subtitle,
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
                   ),
                 ],
               ),
@@ -219,6 +398,18 @@ class _HeroHeader extends StatelessWidget {
 }
 
 class _StatCard extends StatelessWidget {
+  const _StatCard({
+    required this.totalSpots,
+    required this.totalDistance,
+    required this.estimatedCost,
+    required this.bestSeason,
+  });
+
+  final String totalSpots;
+  final String totalDistance;
+  final String estimatedCost;
+  final String bestSeason;
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -235,14 +426,14 @@ class _StatCard extends StatelessWidget {
         ],
       ),
       child: Row(
-        children: const [
-          _StatItem(label: '景点数', value: '6'),
-          _DividerLine(),
-          _StatItem(label: '总里程', value: '53km'),
-          _DividerLine(),
-          _StatItem(label: '预计花费', value: '¥1,200'),
-          _DividerLine(),
-          _StatItem(label: '最佳季节', value: '春秋季节'),
+        children: [
+          _StatItem(label: '景点数', value: totalSpots),
+          const _DividerLine(),
+          _StatItem(label: '总里程', value: totalDistance),
+          const _DividerLine(),
+          _StatItem(label: '预计花费', value: estimatedCost),
+          const _DividerLine(),
+          _StatItem(label: '最佳季节', value: bestSeason),
         ],
       ),
     );
@@ -379,16 +570,113 @@ class _DaySummary extends StatelessWidget {
       child: Row(
         children: [
           Text(
-            '预计游玩 ${plan.totalHours}',
+            plan.totalHours.isNotEmpty ? '预计游玩 ${plan.totalHours}' : '行程安排',
             style: const TextStyle(fontWeight: FontWeight.w600),
           ),
           const Spacer(),
-          Text(
-            '行程 ${plan.distance}',
-            style: const TextStyle(color: Color(0xFF8C9099)),
-          ),
+          if (plan.distance.isNotEmpty)
+            Text(
+              '行程 ${plan.distance}',
+              style: const TextStyle(color: Color(0xFF8C9099)),
+            ),
         ],
       ),
+    );
+  }
+}
+
+class _MealsAndHotelCard extends StatelessWidget {
+  const _MealsAndHotelCard({required this.plan});
+
+  final _DayPlan plan;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (plan.meals?.lunch != null) ...[
+            _MealRow(
+              icon: Icons.lunch_dining_outlined,
+              label: '午餐推荐',
+              name: plan.meals!.lunch!.name ?? '',
+              address: plan.meals!.lunch!.address ?? '',
+            ),
+            const SizedBox(height: 10),
+          ],
+          if (plan.meals?.dinner != null) ...[
+            _MealRow(
+              icon: Icons.dinner_dining_outlined,
+              label: '晚餐推荐',
+              name: plan.meals!.dinner!.name ?? '',
+              address: plan.meals!.dinner!.address ?? '',
+            ),
+            const SizedBox(height: 10),
+          ],
+          if (plan.hotel != null) ...[
+            _MealRow(
+              icon: Icons.hotel_outlined,
+              label: '住宿推荐',
+              name: plan.hotel!.name ?? '',
+              address: plan.hotel!.price ?? '',
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _MealRow extends StatelessWidget {
+  const _MealRow({
+    required this.icon,
+    required this.label,
+    required this.name,
+    required this.address,
+  });
+
+  final IconData icon;
+  final String label;
+  final String name;
+  final String address;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: const Color(0xFF2D5BFF)),
+        const SizedBox(width: 8),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            color: Color(0xFF8C9099),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            name,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        Text(
+          address,
+          style: const TextStyle(
+            fontSize: 12,
+            color: Color(0xFF8C9099),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -426,9 +714,12 @@ class _TimelineCard extends StatelessWidget {
           width: 70,
           child: Column(
             children: [
-              Text(item.start, style: const TextStyle(fontWeight: FontWeight.w600)),
-              const SizedBox(height: 4),
-              Text(item.end, style: const TextStyle(color: Color(0xFF8C9099))),
+              if (item.start.isNotEmpty)
+                Text(item.start, style: const TextStyle(fontWeight: FontWeight.w600)),
+              if (item.end.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(item.end, style: const TextStyle(color: Color(0xFF8C9099))),
+              ],
               const SizedBox(height: 10),
               Container(
                 width: 12,
@@ -471,6 +762,27 @@ class _TimelineCard extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
+                if (item.address.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(Icons.location_on_outlined,
+                          size: 12, color: Color(0xFF8C9099)),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          item.address,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Color(0xFF8C9099),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
                 const SizedBox(height: 8),
                 Row(
                   children: [
@@ -491,6 +803,17 @@ class _TimelineCard extends StatelessWidget {
                     const SizedBox(width: 8),
                     Text(item.duration,
                         style: const TextStyle(color: Color(0xFF8C9099))),
+                    if (item.price.isNotEmpty) ...[
+                      const SizedBox(width: 8),
+                      Text(
+                        item.price,
+                        style: const TextStyle(
+                          color: Color(0xFF2D5BFF),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
                     const Spacer(),
                     Text(
                       item.rating.toStringAsFixed(1),
@@ -501,6 +824,32 @@ class _TimelineCard extends StatelessWidget {
                     ),
                   ],
                 ),
+                if (item.tips.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF8E1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.lightbulb_outline,
+                            size: 14, color: Color(0xFFFFA726)),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            item.tips,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: Color(0xFF795548),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -517,6 +866,8 @@ class _DayPlan {
     required this.totalHours,
     required this.distance,
     required this.items,
+    this.meals,
+    this.hotel,
   });
 
   final String title;
@@ -524,6 +875,8 @@ class _DayPlan {
   final String totalHours;
   final String distance;
   final List<_TimelineItem> items;
+  final MealsInfo? meals;
+  final HotelInfo? hotel;
 }
 
 class _TimelineItem {
@@ -534,6 +887,9 @@ class _TimelineItem {
     this.tag,
     this.duration,
     this.rating,
+    this.price,
+    this.address,
+    this.tips,
   );
 
   final String start;
@@ -542,4 +898,7 @@ class _TimelineItem {
   final String tag;
   final String duration;
   final double rating;
+  final String price;
+  final String address;
+  final String tips;
 }

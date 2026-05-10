@@ -234,7 +234,20 @@ import { getRegionGroups } from '@/api'
 
 // 状态栏高度
 const statusBarHeight = ref(44)
+const menuButtonTop = ref(0)
+const menuButtonHeight = ref(32)
+const navBarHeight = ref(88)
 const loading = ref(false)
+
+const navBarStyle = computed(() => {
+  return {
+    paddingTop: statusBarHeight.value + 'px'
+  }
+})
+
+const pagePaddingTop = computed(() => {
+  return navBarHeight.value + 'px'
+})
 
 // 地点数据
 const startLocation = ref('合肥市')
@@ -307,6 +320,19 @@ const loadRegionGroups = async () => {
 onMounted(() => {
   const systemInfo = uni.getSystemInfoSync()
   statusBarHeight.value = systemInfo.statusBarHeight || 20
+  
+  // #ifdef MP-WEIXIN
+  try {
+    const menuButton = uni.getMenuButtonBoundingClientRect()
+    if (menuButton) {
+      menuButtonTop.value = menuButton.top
+      menuButtonHeight.value = menuButton.height
+      navBarHeight.value = menuButtonTop.value + menuButtonHeight.value
+    }
+  } catch (e) {
+    navBarHeight.value = statusBarHeight.value + 44
+  }
+  // #endif
   
   loadPlanningSettings()
   loadHotCities()
@@ -585,15 +611,22 @@ $text-secondary: #86868B;
 .page {
   min-height: 100vh;
   background: $bg-color;
+  padding-top: v-bind(pagePaddingTop);
 }
 
 // 导航栏
 .navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 16rpx 32rpx;
   background: $card-bg;
+  z-index: 100;
+  box-sizing: border-box;
 }
 
 .nav-back {

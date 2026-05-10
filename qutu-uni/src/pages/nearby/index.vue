@@ -679,6 +679,13 @@ const showAddMenuPopup = ref(false)
 const hasMessage = ref(true)
 
 const displayAvatar = computed(() => {
+  // 未登录时不读取缓存头像，避免沿用旧的真人头像
+  try {
+    const token = uni.getStorageSync('token')
+    if (!token) return ''
+  } catch (e) {
+    return ''
+  }
   try {
     const cachedUser = uni.getStorageSync('userInfo')
     if (cachedUser && cachedUser.avatar) return cachedUser.avatar

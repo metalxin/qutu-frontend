@@ -60,12 +60,12 @@
         <!-- 行程概述 -->
         <view class="content-block" v-if="activeDay === 'overview'">
           <view class="block-item" v-if="guideDetail.overview.summary">
-            <text class="item-icon">📝</text>
+            <SFIcon name="doc" :size="32" color="#86868B" />
             <text class="item-label">行程概述：</text>
             <text class="item-text">{{ guideDetail.overview.summary }}</text>
           </view>
           <view class="block-item" v-if="guideDetail.overview.transport">
-            <text class="item-icon">🚇</text>
+            <SFIcon name="route" :size="32" color="#86868B" />
             <text class="item-label">交通：</text>
             <text class="item-text">{{ guideDetail.overview.transport }}</text>
           </view>
@@ -77,7 +77,7 @@
         <!-- 行程概览 -->
         <view class="content-block" v-if="activeDay === 'overview'">
           <view class="block-title">
-            <text class="title-icon">🗓️</text>
+            <SFIcon name="calendar" :size="32" color="#86868B" />
             <text class="title-text">行程概览：</text>
           </view>
           <view class="schedule-list">
@@ -102,22 +102,22 @@
           <!-- 条目卡片 -->
           <view class="spot-card" v-for="(item, idx) in day.items" :key="idx">
             <view class="spot-header">
-              <text class="spot-icon">{{ item.type === 'spot' ? '🏛️' : '📌' }}</text>
+              <SFIcon name="location" :size="28" color="#86868B" />
               <text class="spot-name">{{ item.title || '未命名' }}</text>
               <text class="spot-type-tag" v-if="item.type === 'spot'">景点</text>
             </view>
             <view class="spot-info">
               <view class="info-row" v-if="item.type === 'spot' && item.spotId">
-                <text class="info-icon">🔗</text>
+                <SFIcon name="link" :size="24" color="#86868B" />
                 <text class="info-label">景点ID：</text>
                 <text class="info-value">{{ item.spotId }}</text>
               </view>
               <view class="info-row highlight" v-if="item.type === 'text' && item.content">
-                <text class="info-icon">✅</text>
+                <SFIcon name="check-circle" :size="24" color="#34C759" />
                 <text class="info-value">{{ item.content }}</text>
               </view>
               <view class="info-row" v-if="item.type === 'spot' && item.content">
-                <text class="info-icon">📝</text>
+                <SFIcon name="doc" :size="24" color="#86868B" />
                 <text class="info-value">{{ item.content }}</text>
               </view>
             </view>
@@ -136,11 +136,11 @@
     <!-- 底部操作栏 -->
     <view class="bottom-bar">
       <view class="action-btn collect" @click="toggleCollect">
-        <text class="btn-icon">{{ isCollected ? '🔖' : '📑' }}</text>
+        <SFIcon name="bookmark" :size="32" :color="isCollected ? '#34C759' : '#86868B'" />
         <text class="btn-text">{{ isCollected ? '已收藏' : '收藏' }}</text>
       </view>
       <view class="action-btn share" @click="showSharePopup = true">
-        <text class="btn-icon">📤</text>
+        <SFIcon name="share" :size="32" color="#86868B" />
         <text class="btn-text">分享</text>
       </view>
       <view class="action-btn primary" @click="generateTrip">
@@ -179,7 +179,7 @@
       <view class="share-link">
         <text class="link-text">qutu.com/guide/{{ guideDetail.id }}</text>
         <view class="copy-btn" @tap="copyLink">
-          <text class="copy-icon">📋</text>
+          <SFIcon name="copy" :size="32" color="#86868B" />
           <text class="copy-text">复制</text>
         </view>
       </view>
@@ -188,25 +188,25 @@
       <view class="share-channels">
         <view class="channel-item" @tap="shareToChannel('douyin')">
           <view class="channel-icon douyin">
-            <text class="icon-text">♪</text>
+            <SFIcon name="video" :size="36" color="#FFFFFF" />
           </view>
           <text class="channel-name">抖音</text>
         </view>
         <view class="channel-item" @tap="shareToChannel('wechat')">
           <view class="channel-icon wechat">
-            <text class="icon-text">💬</text>
+            <SFIcon name="wechat" :size="36" color="#FFFFFF" />
           </view>
           <text class="channel-name">微信</text>
         </view>
         <view class="channel-item" @tap="shareToChannel('qq')">
           <view class="channel-icon qq">
-            <text class="icon-text">🐧</text>
+            <SFIcon name="user" :size="36" color="#FFFFFF" />
           </view>
           <text class="channel-name">QQ</text>
         </view>
         <view class="channel-item" @tap="shareToChannel('xiaohongshu')">
           <view class="channel-icon xiaohongshu">
-            <text class="icon-text">📕</text>
+            <SFIcon name="book" :size="36" color="#FFFFFF" />
           </view>
           <text class="channel-name">小红书</text>
         </view>
@@ -539,7 +539,9 @@ $border-radius-md: 16rpx;
 
 .block-item {
   display: flex;
+  align-items: flex-start;
   flex-wrap: wrap;
+  gap: 8rpx;
   margin-bottom: 24rpx;
   line-height: 1.8;
 

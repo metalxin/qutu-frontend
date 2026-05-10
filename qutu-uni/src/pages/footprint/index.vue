@@ -108,15 +108,15 @@
               <view class="simple-divider"></view>
               <text class="simple-count">28万人已点亮</text>
             </view>
-            <view class="card-action dark-action">
-              <text class="action-btn-text">去点亮</text>
-            </view>
             <view class="simple-icon">
               <view class="china-icon">
                 <view class="icon-line"></view>
                 <view class="icon-line"></view>
                 <view class="icon-line"></view>
               </view>
+            </view>
+            <view class="card-action dark-action">
+              <text class="action-btn-text">去点亮</text>
             </view>
           </view>
         </view>
@@ -130,13 +130,13 @@
               <view class="simple-divider"></view>
               <text class="simple-count">13.02万人已点亮</text>
             </view>
-            <view class="card-action dark-action">
-              <text class="action-btn-text">去点亮</text>
-            </view>
             <view class="simple-icon">
               <view class="globe-icon">
                 <SFIcon name="route" :size="80" color="rgba(0,150,200,0.3)" />
               </view>
+            </view>
+            <view class="card-action dark-action">
+              <text class="action-btn-text">去点亮</text>
             </view>
           </view>
         </view>
@@ -620,7 +620,7 @@ onMounted(() => {
 }
 
 .card-simple .card-action {
-  margin: 0 20rpx;
+  margin-right: 32rpx;
   flex-shrink: 0;
   align-self: center;
 }
@@ -648,7 +648,7 @@ onMounted(() => {
 
 // 简单卡片样式
 .card-simple {
-  padding: 32rpx;
+  padding: 32rpx 32rpx 32rpx 0;
   display: flex;
   align-items: center;
   min-height: 220rpx;
@@ -667,6 +667,7 @@ onMounted(() => {
   min-width: 0;
   display: flex;
   flex-direction: column;
+  padding-left: 32rpx;
 }
 
 .simple-title {

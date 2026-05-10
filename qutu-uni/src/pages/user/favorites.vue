@@ -67,9 +67,6 @@
         </view>
         <text class="empty-text">还没有收藏景点</text>
         <text class="empty-desc">去发现感兴趣的景点吧</text>
-        <view class="empty-action" @click="goExplore">
-          <text class="action-text">探索景点</text>
-        </view>
       </view>
 
       <view class="bottom-space"></view>
@@ -179,12 +176,6 @@ const removeFavorite = async (item: FavoriteSpotItem) => {
 const viewDetail = (item: FavoriteSpotItem) => {
   uni.navigateTo({
     url: `/pages/destination/detail?id=${item.id}`
-  })
-}
-
-const goExplore = () => {
-  uni.switchTab({
-    url: '/pages/index/index'
   })
 }
 
@@ -439,19 +430,6 @@ $accent: #007AFF;
 .empty-desc {
   font-size: 24rpx;
   color: $text-secondary;
-}
-
-.empty-action {
-  margin-top: 24rpx;
-  padding: 20rpx 48rpx;
-  background: $accent;
-  border-radius: 40rpx;
-}
-
-.action-text {
-  font-size: 28rpx;
-  color: #FFFFFF;
-  font-weight: 500;
 }
 
 .bottom-space {
