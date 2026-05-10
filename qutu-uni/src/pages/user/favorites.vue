@@ -14,8 +14,10 @@
       class="favorites-list"
       scroll-y
       :show-scrollbar="false"
+      :style="{ paddingTop: navBarHeight + 'px' }"
       @scrolltolower="loadMore"
     >
+      <view class="list-container">
       <view class="favorite-card" v-for="item in favorites" :key="item.id" @click="viewDetail(item)">
         <image
           class="favorite-image"
@@ -71,17 +73,20 @@
       </view>
 
       <view class="bottom-space"></view>
+      </view>
     </scroll-view>
   </view>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, nextTick } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import { getUserFavoriteSpots, unfavoriteSpot } from '@/api'
 import { resolveFileUrl } from '@/api/modules/user'
 import type { FavoriteSpotItem } from '@/api'
 
 const statusBarHeight = ref(0)
+const navBarHeight = ref(0)
 const favorites = ref<FavoriteSpotItem[]>([])
 const loading = ref(false)
 const current = ref(1)
@@ -102,9 +107,12 @@ const loadFavorites = async (reset = false) => {
   }
   loading.value = true
   try {
+    console.log('加载收藏景点, current:', current.value, 'size:', size)
     const res: any = await getUserFavoriteSpots({ current: current.value, size })
+    console.log('收藏景点接口返回:', res)
     const records = res?.records || res?.list || (Array.isArray(res) ? res : [])
     const resTotal = res?.total ?? records.length
+    console.log('解析后的记录数:', records.length, '总数:', resTotal)
     total.value = resTotal
 
     const mapped: FavoriteSpotItem[] = records.map((item: any) => ({
@@ -124,6 +132,7 @@ const loadFavorites = async (reset = false) => {
       viewCount: item.viewCount ?? 0,
       favoriteTime: item.favoriteTime || item.createdAt || ''
     }))
+    console.log('映射后的收藏数据:', mapped)
 
     if (reset) {
       favorites.value = mapped
@@ -186,6 +195,18 @@ const goBack = () => {
 onMounted(() => {
   const systemInfo = uni.getSystemInfoSync()
   statusBarHeight.value = systemInfo.statusBarHeight || 44
+  nextTick(() => {
+    uni
+      .createSelectorQuery()
+      .select('.nav-bar')
+      .boundingClientRect((rect) => {
+        navBarHeight.value = rect?.height || 0
+      })
+      .exec()
+  })
+})
+
+onShow(() => {
   loadFavorites(true)
 })
 </script>
@@ -203,6 +224,11 @@ $accent: #007AFF;
 }
 
 .nav-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
   padding: 24rpx 24rpx 16rpx;
   display: flex;
   align-items: center;
@@ -239,7 +265,10 @@ $accent: #007AFF;
 }
 
 .favorites-list {
-  height: calc(100vh - 100rpx);
+  height: 100vh;
+}
+
+.list-container {
   padding: 24rpx;
 }
 

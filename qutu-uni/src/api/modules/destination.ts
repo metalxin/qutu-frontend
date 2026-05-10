@@ -343,7 +343,7 @@ export function unfavoriteSpot(spotId: number) {
 
 export function getUserFavoriteSpots(params?: { current?: number; size?: number }) {
   return request<any>({
-    url: '/admin/spots/favorites',
+    url: '/admin/spots/user/favorites',
     method: 'GET',
     data: {
       current: params?.current ?? 1,
