@@ -5,16 +5,16 @@
       <image class="cover-image" :src="spotInfo.cover" mode="aspectFill" />
       
       <!-- 顶部操作栏 -->
-      <view class="cover-toolbar" :style="toolbarStyle">
+      <view class="cover-toolbar" :class="{ scrolled: isToolbarScrolled }" :style="toolbarStyle">
         <view class="toolbar-btn back" @click="goBack">
-          <SFIcon name="back" :size="36" color="#1D1D1F" />
+          <SFIcon name="back" :size="36" :color="isToolbarScrolled ? '#1D1D1F' : '#FFFFFF'" />
         </view>
         <view class="toolbar-right">
           <view class="toolbar-btn" :class="{ active: isFavorite }" @click="toggleFavorite">
-            <SFIcon name="heart" :size="36" :color="isFavorite ? '#FF2D55' : '#FFFFFF'" :filled="isFavorite" />
+            <SFIcon name="heart" :size="36" :color="isFavorite ? '#FF2D55' : (isToolbarScrolled ? '#1D1D1F' : '#FFFFFF')" :filled="isFavorite" />
           </view>
           <view class="toolbar-btn" @click="shareSpot">
-            <SFIcon name="share" :size="36" color="#FFFFFF" />
+            <SFIcon name="share" :size="36" :color="isToolbarScrolled ? '#1D1D1F' : '#FFFFFF'" />
           </view>
         </view>
       </view>
@@ -216,6 +216,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
+import { onPageScroll, onShow } from '@dcloudio/uni-app'
 import SFIcon from '@/components/SFIcon/SFIcon.vue'
 import { getSpotDetail, getSpotComments, postComment, replyComment, likeComment as likeCommentApi, favoriteSpot, unfavoriteSpot } from '@/api'
 import { getRelatedGuides } from '@/api/modules/guide'
@@ -231,8 +232,15 @@ const menuButtonSpace = ref(0)
 
 // 收藏状态
 const isFavorite = ref(false)
+const spotId = ref('')
+const isFirstShow = ref(true)
+const isToolbarScrolled = ref(false)
 const token = ref('')
 const isLoggedIn = computed(() => !!token.value)
+
+onPageScroll((e: any) => {
+  isToolbarScrolled.value = e.scrollTop > 100
+})
 
 // 分享弹窗状态
 const showSharePopup = ref(false)
@@ -292,7 +300,18 @@ onMounted(async () => {
   const options = currentPage?.options || {}
   
   if (options.id) {
+    spotId.value = options.id
     await loadSpotInfo(options.id)
+  }
+})
+
+onShow(() => {
+  if (isFirstShow.value) {
+    isFirstShow.value = false
+    return
+  }
+  if (spotId.value) {
+    loadSpotInfo(spotId.value)
   }
 })
 
@@ -333,20 +352,23 @@ const toggleFavorite = async () => {
   try {
     console.log('开始收藏景点, spotId:', spotInfo.value.id, 'isFavorite:', isFavorite.value)
     if (isFavorite.value) {
-      console.log('调用取消收藏接口')
-      await unfavoriteSpot(spotInfo.value.id)
+      console.log('调用取消收藏接口, URL:', `/admin/spots/${spotInfo.value.id}/unfavorite`)
+      const res = await unfavoriteSpot(spotInfo.value.id)
+      console.log('取消收藏接口返回:', res)
     } else {
-      console.log('调用收藏接口')
-      await favoriteSpot(spotInfo.value.id)
+      console.log('调用收藏接口, URL:', `/admin/spots/${spotInfo.value.id}/favorite`)
+      const res = await favoriteSpot(spotInfo.value.id)
+      console.log('收藏接口返回:', res)
     }
     isFavorite.value = !isFavorite.value
     uni.showToast({
       title: isFavorite.value ? '已收藏' : '已取消收藏',
-      icon: 'none'
+      icon: 'success'
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error('收藏操作失败:', error)
-    uni.showToast({ title: '操作失败', icon: 'none' })
+    const errorMsg = error?.message || error?.msg || '操作失败'
+    uni.showToast({ title: errorMsg, icon: 'none' })
   }
 }
 
@@ -599,7 +621,7 @@ $text-secondary: #86868B;
 }
 
 .cover-toolbar {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
@@ -607,7 +629,14 @@ $text-secondary: #86868B;
   justify-content: space-between;
   align-items: center;
   padding: 16rpx 24rpx;
-  z-index: 10;
+  z-index: 100;
+  transition: background 0.3s ease;
+
+  &.scrolled {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
 }
 
 .toolbar-btn {
@@ -616,20 +645,39 @@ $text-secondary: #86868B;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 0.2);
   backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border-radius: 50%;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
 
   &.back {
-    background: rgba(255, 255, 255, 0.9);
-    .btn-icon {
-      color: $text-primary;
-    }
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1rpx solid rgba(255, 255, 255, 0.2);
   }
 
   &.active {
-    background: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1rpx solid rgba(255, 255, 255, 0.2);
+  }
+
+  .scrolled & {
+    background: rgba(0, 0, 0, 0.06);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border: none;
+
+    &.back {
+      background: rgba(0, 0, 0, 0.06);
+    }
+
+    &.active {
+      background: rgba(0, 0, 0, 0.06);
+    }
   }
 
   &:active {
