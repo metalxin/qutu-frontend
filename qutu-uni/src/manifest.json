@@ -63,6 +63,12 @@
             "urlCheck" : false
         },
         "usingComponents" : true,
+        "networkTimeout" : {
+            "request" : 15000,
+            "connectSocket" : 15000,
+            "uploadFile" : 30000,
+            "downloadFile" : 30000
+        },
         "permission" : {
             "scope.userLocation" : {
                 "desc" : "用于获取附近地点与记录行程路线"

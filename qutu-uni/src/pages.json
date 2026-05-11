@@ -81,7 +81,9 @@
 			"path": "pages/destination/detail",
 			"style": {
 				"navigationStyle": "custom",
-				"navigationBarTitleText": "景点详情"
+				"navigationBarTitleText": "景点详情",
+				"enableShareTimeline": true,
+				"enableShareAppMessage": true
 			}
 		},
 		{
@@ -236,6 +238,13 @@
 			"style": {
 				"navigationStyle": "custom",
 				"navigationBarTitleText": "找回密码"
+			}
+		},
+		{
+			"path": "pages/user/wechat-register",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "微信注册"
 			}
 		},
 		{

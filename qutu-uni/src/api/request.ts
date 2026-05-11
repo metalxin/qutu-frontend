@@ -4,13 +4,19 @@
  */
 
 // API基础配置
-export let BASE_URL = 'https://api.qutuyunji.com'
+export let BASE_URL = 'http://116.62.233.72:9999'
 // #ifdef H5
 BASE_URL = ''
 // #endif
 // #ifdef MP-WEIXIN
-BASE_URL = 'http://localhost:9999'
+BASE_URL = 'http://116.62.233.72:9999'
 // #endif
+
+// H5 运行时兜底：确保走 Vite 代理，不直连远程地址
+if (typeof window !== 'undefined') {
+  BASE_URL = ''
+}
+
 const TIMEOUT = 10000 // 请求超时时间
 
 // 是否启用mock模式（开发环境默认关闭，对接真实API）
@@ -56,7 +62,7 @@ export async function request<T = any>(config: RequestConfig): Promise<T> {
     let cleanData: any = data
     if (data && typeof data === 'object') {
       cleanData = Object.fromEntries(
-        Object.entries(data).filter(([, v]) => v !== undefined && v !== null && v !== '')
+        Object.entries(data).filter(([, v]) => v !== undefined && v !== null)
       )
     }
     const finalUrl = /^https?:\/\//i.test(url) ? url : `${BASE_URL}${url}`

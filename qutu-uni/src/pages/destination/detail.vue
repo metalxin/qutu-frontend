@@ -238,6 +238,10 @@
             <view class="loading-spinner" v-else></view>
             <text class="generate-text">{{ isGenerating ? 'AI正在规划中...' : `AI智能规划 ${tripDays}天行程` }}</text>
           </view>
+          <view class="checklist-btn" @tap="createChecklistFromDestination">
+            <text class="checklist-icon">📋</text>
+            <text class="checklist-text">创建旅行清单</text>
+          </view>
         </view>
       </view>
     </view>
@@ -245,79 +249,107 @@
     <!-- 分享弹窗 -->
     <view class="share-overlay" :class="{ show: showSharePopup }" @tap="showSharePopup = false"></view>
     <view class="share-popup" :class="{ show: showSharePopup }">
-      <!-- 弹窗头部 -->
       <view class="share-header">
-        <text class="share-title">分享这个目的地</text>
+        <text class="share-title">分享给朋友</text>
         <view class="share-close" @tap="showSharePopup = false">
           <text class="close-icon">×</text>
         </view>
       </view>
 
-      <!-- 景点信息卡片 -->
       <view class="share-card">
         <image class="share-cover" :src="spotInfo.cover" mode="aspectFill" />
         <view class="share-info">
           <text class="share-name">{{ spotInfo.name }}</text>
-          <text class="share-subtitle">（{{ spotInfo.subtitle }}）</text>
+          <text class="share-subtitle" v-if="spotInfo.subtitle">（{{ spotInfo.subtitle }}）</text>
           <view class="share-meta">
             <text class="share-location">📍 {{ spotInfo.locationTitle }}</text>
             <text class="share-dot">•</text>
             <text class="share-rating">⭐ {{ spotInfo.rating }}</text>
-            <text class="share-reviews">({{ spotInfo.reviewCount || 323 }})</text>
           </view>
         </view>
       </view>
 
-      <!-- 链接复制 -->
-      <view class="share-link">
-        <text class="link-text">plango.com/detail/{{ spotInfo.id }}</text>
-        <view class="copy-btn" @tap="copyLink">
-          <text class="copy-icon">📋</text>
-          <text class="copy-text">复制</text>
+      <view class="share-link-row">
+        <text class="link-text">{{ shareLink }}</text>
+        <view class="copy-btn" @tap="handleCopyLink">
+          <text class="copy-text">复制链接</text>
         </view>
       </view>
 
-      <!-- 分享渠道 -->
       <view class="share-channels">
-        <view class="channel-item" @tap="shareToChannel('douyin')">
-          <view class="channel-icon douyin">
-            <text class="icon-text">♪</text>
-          </view>
-          <text class="channel-name">抖音</text>
+        <view class="channel-item" @tap="handleShareWechatFriend">
+          <button class="channel-btn wechat" open-type="share">
+            <text class="channel-icon-text">💬</text>
+          </button>
+          <text class="channel-name">微信好友</text>
         </view>
-        <view class="channel-item" @tap="shareToChannel('wechat')">
-          <view class="channel-icon wechat">
-            <text class="icon-text">💬</text>
+        <view class="channel-item" @tap="handleShareMoments">
+          <view class="channel-btn moments">
+            <text class="channel-icon-text">◎</text>
           </view>
-          <text class="channel-name">微信</text>
+          <text class="channel-name">朋友圈</text>
         </view>
-        <view class="channel-item" @tap="shareToChannel('qq')">
-          <view class="channel-icon qq">
-            <text class="icon-text">🐧</text>
+        <view class="channel-item" @tap="handleGeneratePoster">
+          <view class="channel-btn poster">
+            <text class="channel-icon-text">🖼️</text>
           </view>
-          <text class="channel-name">QQ</text>
+          <text class="channel-name">生成海报</text>
         </view>
-        <view class="channel-item" @tap="shareToChannel('xiaohongshu')">
-          <view class="channel-icon xiaohongshu">
-            <text class="icon-text">📕</text>
+        <view class="channel-item" @tap="handleCopyLink">
+          <view class="channel-btn link">
+            <text class="channel-icon-text">🔗</text>
           </view>
-          <text class="channel-name">小红书</text>
+          <text class="channel-name">复制链接</text>
         </view>
       </view>
     </view>
+
+    <!-- 海报预览弹窗 -->
+    <view class="poster-overlay" :class="{ show: showPosterPreview }" @tap="showPosterPreview = false"></view>
+    <view class="poster-popup" :class="{ show: showPosterPreview }">
+      <view class="poster-header">
+        <text class="poster-title">分享海报</text>
+        <view class="poster-close" @tap="showPosterPreview = false">
+          <text class="close-icon">×</text>
+        </view>
+      </view>
+      <scroll-view scroll-y class="poster-scroll">
+        <view class="poster-canvas-wrapper">
+          <image v-if="posterImagePath" class="poster-preview-img" :src="posterImagePath" mode="widthFix" />
+        </view>
+      </scroll-view>
+      <view class="poster-actions">
+        <view class="poster-save-btn" @tap="handleSavePoster">
+          <text class="poster-save-text">保存到相册</text>
+        </view>
+        <view class="poster-share-btn" @tap="handleSharePosterToMoments">
+          <text class="poster-share-text">分享到朋友圈</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- Canvas用于海报生成，生成时显示 -->
+    <canvas
+      v-if="isGeneratingPoster"
+      id="sharePosterCanvas"
+      type="2d"
+      :style="{ position: 'fixed', left: '0', top: '0', width: '600px', height: '900px', opacity: '0', zIndex: -1, pointerEvents: 'none' }"
+    ></canvas>
   </view>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
-import { onPageScroll, onShow } from '@dcloudio/uni-app'
+import { ref, onMounted, computed, getCurrentInstance, nextTick } from 'vue'
+import { onPageScroll, onShow, onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
 import SFIcon from '@/components/SFIcon/SFIcon.vue'
-import { getSpotDetail, getSpotComments, getUserFavoriteSpots, postComment, replyComment, likeComment as likeCommentApi, favoriteSpot, unfavoriteSpot } from '@/api'
+import { getSpotDetail, getSpotComments, getUserFavoriteSpots, postComment, replyComment, likeComment as likeCommentApi, favoriteSpot, unfavoriteSpot, createChecklist } from '@/api'
 import { getRelatedGuides } from '@/api/modules/guide'
 import { generateAIRoute, getPreferenceOptions, getTransportModes } from '@/api/modules/planning'
 import type { SpotDetail, Comment, Reply } from '@/api/modules/destination'
 import type { RelatedGuide } from '@/api/modules/guide'
 import type { AIRoute, PreferenceOption, TransportMode } from '@/api/modules/planning'
+import { buildShareConfig, copyShareLink, generateAndSavePoster, saveImageToAlbum, shareToWechatFriend, shareToMoments } from '@/utils/share'
+import type { PosterConfig } from '@/utils/share'
 
 // 加载状态
 const loading = ref(false)
@@ -340,6 +372,42 @@ onPageScroll((e: any) => {
 
 // 分享弹窗状态
 const showSharePopup = ref(false)
+const showPosterPreview = ref(false)
+const posterImagePath = ref('')
+const isGeneratingPoster = ref(false)
+const instance = getCurrentInstance()
+
+const shareLink = computed(() => {
+  return `趣途云迹 · ${spotInfo.value.name} - ${spotInfo.value.locationTitle}`
+})
+
+const currentShareConfig = computed(() => {
+  return buildShareConfig(
+    'spot',
+    spotInfo.value.id,
+    spotInfo.value.name,
+    spotInfo.value.cover,
+    `${spotInfo.value.name} - ${spotInfo.value.locationTitle} | ⭐${spotInfo.value.rating}`
+  )
+})
+
+onShareAppMessage(() => {
+  shareToWechatFriend(currentShareConfig.value)
+  return {
+    title: currentShareConfig.value.title,
+    path: currentShareConfig.value.path,
+    imageUrl: currentShareConfig.value.imageUrl
+  }
+})
+
+onShareTimeline(() => {
+  shareToMoments(currentShareConfig.value)
+  return {
+    title: currentShareConfig.value.title,
+    query: `id=${spotInfo.value.id}&from=share`,
+    imageUrl: currentShareConfig.value.imageUrl
+  }
+})
 
 const toolbarStyle = computed(() => {
   const style: Record<string, string> = {
@@ -473,38 +541,89 @@ const toggleFavorite = async () => {
   }
 }
 
-// 分享
 const shareSpot = () => {
   showSharePopup.value = true
 }
 
-// 复制链接
-const copyLink = () => {
-  const link = `plango.com/detail/${spotInfo.value.id}`
-  uni.setClipboardData({
-    data: link,
-    success: () => {
-      uni.showToast({
-        title: '链接已复制',
-        icon: 'success'
-      })
-    }
-  })
+const handleShareWechatFriend = () => {
+  showSharePopup.value = false
 }
 
-// 分享到渠道
-const shareToChannel = (channel: string) => {
-  const channelNames: any = {
-    douyin: '抖音',
-    wechat: '微信',
-    qq: 'QQ',
-    xiaohongshu: '小红书'
-  }
-  uni.showToast({
-    title: `分享到${channelNames[channel]}`,
-    icon: 'none'
-  })
+const handleShareMoments = () => {
   showSharePopup.value = false
+  handleGeneratePoster()
+}
+
+const handleCopyLink = async () => {
+  try {
+    await copyShareLink(currentShareConfig.value.path)
+    uni.showToast({ title: '链接已复制', icon: 'success' })
+  } catch (e) {
+    uni.showToast({ title: '复制失败', icon: 'none' })
+  }
+}
+
+const handleGeneratePoster = async () => {
+  if (isGeneratingPoster.value) return
+  isGeneratingPoster.value = true
+  showSharePopup.value = false
+
+  try {
+    await nextTick()
+    await new Promise(resolve => setTimeout(resolve, 300))
+
+    const posterConfig: PosterConfig = {
+      coverUrl: spotInfo.value.cover,
+      title: spotInfo.value.name,
+      subtitle: spotInfo.value.subtitle,
+      rating: spotInfo.value.rating,
+      location: spotInfo.value.locationTitle,
+      price: spotInfo.value.price !== '免费' ? spotInfo.value.price : undefined,
+      tags: spotInfo.value.tags
+    }
+
+    const filePath = await generateAndSavePoster('sharePosterCanvas', posterConfig, instance?.proxy)
+    if (filePath) {
+      posterImagePath.value = filePath
+      showPosterPreview.value = true
+    }
+  } catch (e: any) {
+    console.error('海报生成失败:', e)
+    uni.showToast({ title: e?.message || '海报生成失败，请重试', icon: 'none', duration: 2000 })
+  } finally {
+    isGeneratingPoster.value = false
+  }
+}
+
+const handleSavePoster = async () => {
+  if (!posterImagePath.value) {
+    uni.showToast({ title: '请先生成海报', icon: 'none' })
+    return
+  }
+  try {
+    await saveImageToAlbum(posterImagePath.value)
+    uni.showToast({ title: '已保存到相册', icon: 'success' })
+  } catch (e) {
+    console.error('保存失败:', e)
+  }
+}
+
+const handleSharePosterToMoments = async () => {
+  if (!posterImagePath.value) {
+    uni.showToast({ title: '请先生成海报', icon: 'none' })
+    return
+  }
+  try {
+    await saveImageToAlbum(posterImagePath.value)
+    uni.showModal({
+      title: '分享到朋友圈',
+      content: '海报已保存到相册，请打开微信朋友圈，选择该图片发布即可',
+      showCancel: false,
+      confirmText: '我知道了'
+    })
+  } catch (e) {
+    console.error('保存失败:', e)
+  }
 }
 
 // 查看全部图库
@@ -602,6 +721,29 @@ const generateTrip = async () => {
   } catch (error) {
     isGenerating.value = false
     uni.showToast({ title: '规划生成失败，请重试', icon: 'none' })
+  }
+}
+
+const createChecklistFromDestination = async () => {
+  const today = new Date()
+  const endDate = new Date(today)
+  endDate.setDate(today.getDate() + tripDays.value - 1)
+  const formatDate = (d: Date) => d.toISOString().slice(0, 10)
+
+  try {
+    const checklistId = await createChecklist({
+      title: spotInfo.value.name + '之旅',
+      destination: spotInfo.value.locationTitle || spotInfo.value.name,
+      departDate: formatDate(today),
+      returnDate: formatDate(endDate)
+    })
+    showTripSheet.value = false
+    uni.showToast({ title: '清单创建成功', icon: 'success' })
+    setTimeout(() => {
+      uni.navigateTo({ url: `/pages/checklist/detail?id=${checklistId}` })
+    }, 500)
+  } catch (error) {
+    uni.showToast({ title: '创建清单失败', icon: 'none' })
   }
 }
 
@@ -1491,6 +1633,35 @@ $text-secondary: #86868B;
   color: #FFFFFF;
 }
 
+.checklist-btn {
+  width: 100%;
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
+  background: #FFFFFF;
+  border: 2rpx solid #E5E5EA;
+  border-radius: 50rpx;
+  margin-top: 20rpx;
+  transition: all 0.2s ease;
+
+  &:active {
+    transform: scale(0.98);
+    background: #F5F5F7;
+  }
+}
+
+.checklist-icon {
+  font-size: 32rpx;
+}
+
+.checklist-text {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #1D1D1F;
+}
+
 // 分享弹窗遮罩
 .share-overlay {
   position: fixed;
@@ -1621,7 +1792,7 @@ $text-secondary: #86868B;
 }
 
 // 链接复制
-.share-link {
+.share-link-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1632,7 +1803,7 @@ $text-secondary: #86868B;
 }
 
 .link-text {
-  font-size: 26rpx;
+  font-size: 24rpx;
   color: $text-secondary;
   flex: 1;
   overflow: hidden;
@@ -1652,10 +1823,6 @@ $text-secondary: #86868B;
   &:active {
     opacity: 0.7;
   }
-}
-
-.copy-icon {
-  font-size: 24rpx;
 }
 
 .copy-text {
@@ -1681,32 +1848,40 @@ $text-secondary: #86868B;
   }
 }
 
-.channel-icon {
+.channel-btn {
   width: 100rpx;
   height: 100rpx;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 0;
+  margin: 0;
+  border: none;
+  line-height: 1;
 
-  &.douyin {
-    background: #000000;
+  &::after {
+    display: none;
   }
 
   &.wechat {
     background: #07C160;
   }
 
-  &.qq {
-    background: #12B7F5;
+  &.moments {
+    background: linear-gradient(135deg, #FA9D3B, #FF6B00);
   }
 
-  &.xiaohongshu {
-    background: #FE2C55;
+  &.poster {
+    background: linear-gradient(135deg, #5856D6, #AF52DE);
+  }
+
+  &.link {
+    background: linear-gradient(135deg, #007AFF, #5AC8FA);
   }
 }
 
-.icon-text {
+.channel-icon-text {
   font-size: 40rpx;
   color: #FFFFFF;
 }
@@ -1714,6 +1889,140 @@ $text-secondary: #86868B;
 .channel-name {
   font-size: 24rpx;
   color: $text-secondary;
+}
+
+// 海报预览弹窗
+.poster-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+
+  &.show {
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
+.poster-popup {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  top: 0;
+  background: $card-bg;
+  z-index: 1001;
+  display: flex;
+  flex-direction: column;
+  transform: translateY(100%);
+  transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+
+  &.show {
+    transform: translateY(0);
+  }
+}
+
+.poster-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 32rpx;
+  padding-top: calc(32rpx + env(safe-area-inset-top));
+}
+
+.poster-title {
+  font-size: 34rpx;
+  font-weight: 600;
+  color: $text-primary;
+}
+
+.poster-close {
+  width: 56rpx;
+  height: 56rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: $bg-color;
+  border-radius: 50%;
+}
+
+.poster-scroll {
+  flex: 1;
+  overflow: hidden;
+}
+
+.poster-canvas-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32rpx;
+}
+
+.poster-canvas {
+  position: absolute;
+  left: -9999px;
+  top: -9999px;
+}
+
+.poster-preview-img {
+  width: 600rpx;
+  border-radius: 16rpx;
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.15);
+}
+
+.poster-actions {
+  display: flex;
+  gap: 20rpx;
+  padding: 32rpx;
+  padding-bottom: calc(32rpx + env(safe-area-inset-bottom));
+  background: $card-bg;
+  border-top: 1rpx solid #E5E5EA;
+}
+
+.poster-save-btn {
+  flex: 1;
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: $bg-color;
+  border-radius: 50rpx;
+
+  &:active {
+    opacity: 0.7;
+  }
+}
+
+.poster-save-text {
+  font-size: 30rpx;
+  font-weight: 500;
+  color: $text-primary;
+}
+
+.poster-share-btn {
+  flex: 1;
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #07C160;
+  border-radius: 50rpx;
+
+  &:active {
+    opacity: 0.7;
+  }
+}
+
+.poster-share-text {
+  font-size: 30rpx;
+  font-weight: 500;
+  color: #FFFFFF;
 }
 
 // 评论区域

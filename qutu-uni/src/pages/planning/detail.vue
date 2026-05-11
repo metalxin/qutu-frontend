@@ -197,6 +197,10 @@
         <text class="iconfont icon-refresh"></text>
         <text>重新生成</text>
       </view>
+      <view class="action-btn checklist" @tap="createChecklistFromPlan">
+        <text>📋</text>
+        <text>创建清单</text>
+      </view>
       <view class="action-btn primary" @tap="saveAndStart">
         <text class="iconfont icon-save"></text>
         <text>保存并开始</text>
@@ -260,6 +264,7 @@ import { ref, computed, onMounted } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import type { AIRoute, RouteSpot, DaySchedule } from '@/api/modules/planning'
 import { saveRoute } from '@/api/modules/planning'
+import { createChecklist } from '@/api'
 
 // 状态栏高度
 const statusBarHeight = ref(44)
@@ -394,6 +399,29 @@ async function saveAndStart() {
       title: '保存失败',
       icon: 'none'
     })
+  }
+}
+
+async function createChecklistFromPlan() {
+  if (!route.value) return
+  const today = new Date()
+  const endDate = new Date(today)
+  endDate.setDate(today.getDate() + (route.value.days || 1) - 1)
+  const formatDate = (d: Date) => d.toISOString().slice(0, 10)
+
+  try {
+    const checklistId = await createChecklist({
+      title: (route.value.name || route.value.endCity || '') + '之旅',
+      destination: route.value.endCity || '',
+      departDate: formatDate(today),
+      returnDate: formatDate(endDate)
+    })
+    uni.showToast({ title: '清单创建成功', icon: 'success' })
+    setTimeout(() => {
+      uni.navigateTo({ url: `/pages/checklist/detail?id=${checklistId}` })
+    }, 500)
+  } catch (error) {
+    uni.showToast({ title: '创建清单失败', icon: 'none' })
   }
 }
 </script>
@@ -801,6 +829,12 @@ $text-secondary: #86868B;
     &.secondary {
       background: $bg-color;
       color: $text-primary;
+    }
+    
+    &.checklist {
+      background: #FFF3E0;
+      color: #E65100;
+      border: 2rpx solid #FFB74D;
     }
     
     &.primary {

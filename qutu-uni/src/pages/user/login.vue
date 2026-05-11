@@ -159,6 +159,7 @@ import {
   wechatMpLogin,
   getUserInfo,
   getCaptchaImageUrl,
+  fetchCaptchaImageBase64,
 } from '@/api/modules/user'
 import SFIcon from '@/components/SFIcon/SFIcon.vue'
 
@@ -189,9 +190,18 @@ const canLogin = computed(() => {
   }
 })
 
-const refreshCaptcha = () => {
+const refreshCaptcha = async () => {
   randomStr.value = Date.now().toString()
+  // #ifdef MP-WEIXIN
+  try {
+    captchaImg.value = await fetchCaptchaImageBase64(randomStr.value)
+  } catch (e) {
+    captchaImg.value = ''
+  }
+  // #endif
+  // #ifndef MP-WEIXIN
   captchaImg.value = getCaptchaImageUrl(randomStr.value)
+  // #endif
 }
 
 const loadRemembered = () => {
@@ -311,7 +321,21 @@ const onWxLogin = async () => {
     }, 500)
   } catch (e: any) {
     const msg = e?.response?.message || e?.response?.error_description || e?.message || '微信登录失败'
-    uni.showToast({ title: msg, icon: 'none' })
+    if (msg.includes('未绑定') || msg.includes('社交账号') || msg.includes('不存在') || msg.includes('未注册')) {
+      uni.showModal({
+        title: '提示',
+        content: '该微信尚未注册账号，是否前往注册？',
+        confirmText: '去注册',
+        cancelText: '取消',
+        success: (res) => {
+          if (res.confirm) {
+            uni.navigateTo({ url: '/pages/user/wechat-register' })
+          }
+        }
+      })
+    } else {
+      uni.showToast({ title: msg, icon: 'none' })
+    }
   } finally {
     logging.value = false
   }

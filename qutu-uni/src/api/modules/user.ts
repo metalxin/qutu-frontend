@@ -13,14 +13,14 @@ import {
   mockFavoriteLocations 
 } from '../mock/user'
 
-export const DEFAULT_AVATAR = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScxMDAnIGhlaWdodD0nMTAwJyB2aWV3Qm94PScwIDAgMTAwIDEwMCc+CiAgPGNpcmNsZSBjeD0nNTAnIGN5PSc1MCcgcj0nNDgnIGZpbGw9JyNGRkZGRkYnIHN0cm9rZT0nIzExMTExMScgc3Ryb2tlLXdpZHRoPSc0Jy8+CiAgPGNpcmNsZSBjeD0nNTAnIGN5PSc0Micgcj0nMTQnIGZpbGw9J25vbmUnIHN0cm9rZT0nIzExMTExMScgc3Ryb2tlLXdpZHRoPSc0Jy8+CiAgPHBhdGggZD0nTTIyIDgyYzUtMTggMjEtMjYgMjgtMjZzMjMgOCAyOCAyNicgZmlsbD0nbm9uZScgc3Ryb2tlPScjMTExMTExJyBzdHJva2Utd2lkdGg9JzQnIHN0cm9rZS1saW5lY2FwPSdyb3VuZCcvPgo8L3N2Zz4='
+export const DEFAULT_AVATAR = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiB2aWV3Qm94PSIwIDAgMTAwIDEwMCI+CiAgPGNpcmNsZSBjeD0iNTAiIGN5PSI1MCIgcj0iNTAiIGZpbGw9IiNGMkYyRjciLz4KICA8Y2lyY2xlIGN4PSI1MCIgY3k9IjM4IiByPSIxNiIgZmlsbD0iIzhFOEU5MyIvPgogIDxwYXRoIGQ9Ik0yMiA4MGMwLTE0IDEyLjUtMjIgMjgtMjJzMjggOCAyOCAyMiIgZmlsbD0iIzhFOEU5MyIvPgo8L3N2Zz4='
 
 // 类型定义
 export interface UserInfo {
   id: number
   username: string
   nickname: string
-  name: string
+  name?: string
   avatar: string
   phone: string
   email: string
@@ -135,8 +135,29 @@ export function resolveFileUrl(url: string): string {
  * 小程序环境：BASE_URL + 路径 直连后端
  */
 export function getCaptchaImageUrl(randomStr: string): string {
-  // 单体模式下 context-path 为 /admin，验证码路径为 /admin/code/image
   return `${BASE_URL}/admin/code/image?randomStr=${randomStr}`
+}
+
+export function fetchCaptchaImageBase64(randomStr: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    uni.request({
+      url: `${BASE_URL}/admin/code/image?randomStr=${randomStr}`,
+      method: 'GET',
+      responseType: 'arraybuffer',
+      timeout: 10000,
+      success: (res: any) => {
+        if (res.statusCode === 200 && res.data) {
+          const base64 = uni.arrayBufferToBase64(res.data)
+          resolve(`data:image/png;base64,${base64}`)
+        } else {
+          reject(new Error(`验证码请求失败: ${res.statusCode}`))
+        }
+      },
+      fail: (err) => {
+        reject(err)
+      }
+    })
+  })
 }
 
 /**
@@ -267,23 +288,26 @@ export function login(data: { phone: string; code: string }) {
 }
 
 /**
- * 注册用户
+ * 注册用户（支持普通注册和微信快捷注册）
  */
-export function registerUser(data: { username: string; password: string; email: string; code?: string; randomStr?: string }) {
-  const { username, password, email, code, randomStr } = data
+export function registerUser(data: {
+  username?: string
+  password?: string
+  email?: string
+  phone?: string
+  code?: string
+  randomStr?: string
+  miniOpenid?: string
+  nickname?: string
+  avatar?: string
+}) {
   return request<{ success: boolean }>({
     url: '/admin/register/user',
     method: 'POST',
     header: {
       'Content-Type': 'application/json'
     },
-    data: {
-      username,
-      password,
-      email,
-      ...(code ? { code } : {}),
-      ...(randomStr ? { randomStr } : {})
-    },
+    data,
     useMock: false
   })
 }
@@ -421,7 +445,6 @@ export async function loginByPassword(username: string, password: string, code?:
 }
 
 export async function wechatMpLogin() {
-  const authConfig = getAuthConfig()
   // #ifdef MP-WEIXIN
   // 1. 调用wx.login获取code
   const loginRes = await new Promise<any>((resolve, reject) => {
@@ -446,7 +469,6 @@ export async function wechatMpLogin() {
   }
 
   // 3. 用social grant_type + openid进行登录
-  // 与后台管理端一致：设置Basic Auth（social客户端）
   setOauthClient('social', 'social')
   const tokenResp: any = await request({
     url: '/admin/oauth2/token',
@@ -467,6 +489,81 @@ export async function wechatMpLogin() {
   return tokenResp
   // #endif
   return { access_token: '', token_type: 'Bearer' }
+}
+
+/**
+ * 微信小程序登录（仅获取openid，不尝试登录）
+ * 用于注册流程：先获取openid，注册后再登录
+ */
+export async function wechatGetOpenid(): Promise<string> {
+  // #ifdef MP-WEIXIN
+  const loginRes = await new Promise<any>((resolve, reject) => {
+    uni.login({
+      provider: 'weixin',
+      success: resolve,
+      fail: reject
+    })
+  })
+  const wxCode = loginRes?.code
+  const sessionResp: any = await request({
+    url: `/admin/wechat/mini/code2session?code=${wxCode}`,
+    method: 'GET',
+    useMock: false
+  })
+  const openid = sessionResp?.openid || sessionResp?.data?.openid
+  if (!openid) throw new Error('获取微信openid失败')
+  return openid
+  // #endif
+  return ''
+}
+
+/**
+ * 通过微信手机号code获取手机号（新版API）
+ * 小程序端使用 <button open-type="getPhoneNumber"> 获取 phoneCode 后调用此接口
+ */
+export async function getWechatPhoneNumber(phoneCode: string): Promise<{ phoneNumber: string; purePhoneNumber: string; countryCode: string }> {
+  const resp: any = await request({
+    url: `/admin/wechat/mini/getPhoneNumber?phoneCode=${phoneCode}`,
+    method: 'GET',
+    useMock: false
+  })
+  return {
+    phoneNumber: resp?.phoneNumber || '',
+    purePhoneNumber: resp?.purePhoneNumber || '',
+    countryCode: resp?.countryCode || '86'
+  }
+}
+
+/**
+ * 微信快捷注册 + 自动登录
+ * 1. 用手机号+openid注册
+ * 2. 注册成功后用social grant_type自动登录
+ */
+export async function wechatQuickRegisterAndLogin(data: {
+  miniOpenid: string
+  phone: string
+  nickname?: string
+  avatar?: string
+}): Promise<any> {
+  await registerUser(data)
+  setOauthClient('social', 'social')
+  const tokenResp: any = await request({
+    url: '/admin/oauth2/token',
+    method: 'POST',
+    header: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      Authorization: getBasicAuth()
+    },
+    data: {
+      code: data.miniOpenid,
+      state: 'MINI',
+      grant_type: 'social',
+      scope: 'server'
+    },
+    useMock: false
+  })
+  saveToken(tokenResp)
+  return tokenResp
 }
 
 /**

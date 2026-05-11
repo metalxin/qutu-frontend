@@ -9,8 +9,24 @@
 
     <!-- 清单信息 -->
     <view class="checklist-header">
-      <text class="checklist-name">{{ checklistInfo.title }}</text>
+      <view class="header-top">
+        <view class="header-left">
+          <text class="checklist-name">{{ checklistInfo.title }}</text>
+          <view class="status-tag" :class="'status-' + checklistInfo.status">
+            <text class="status-text">{{ statusLabel(checklistInfo.status) }}</text>
+          </view>
+        </view>
+        <view class="header-actions">
+          <view class="action-btn" @click="openEditPopup">
+            <text class="action-icon">✏️</text>
+          </view>
+          <view class="action-btn delete" @click="confirmDeleteChecklist">
+            <text class="action-icon">🗑️</text>
+          </view>
+        </view>
+      </view>
       <text class="checklist-date">{{ (checklistInfo.departDate || '').replace(/-/g, '/') }}-{{ (checklistInfo.returnDate || '').replace(/-/g, '/') }}</text>
+      <text class="checklist-destination" v-if="checklistInfo.destination">{{ checklistInfo.destination }}</text>
     </view>
 
     <!-- Tab切换 -->
@@ -75,8 +91,28 @@
     <!-- 旅行账单内容 -->
     <view class="tab-content" v-if="activeTab === 'expense'">
       <view class="expense-header">
+        <view class="budget-info" v-if="checklistInfo.budget != null && checklistInfo.budget > 0">
+          <view class="budget-row">
+            <text class="budget-label">预算</text>
+            <text class="budget-value">¥{{ checklistInfo.budget.toFixed(2) }}</text>
+          </view>
+          <view class="budget-progress">
+            <view class="progress-bar">
+              <view class="progress-fill" :class="{ over: totalExpense > checklistInfo.budget }" :style="{ width: budgetPercent + '%' }"></view>
+            </view>
+            <text class="progress-percent" :class="{ over: totalExpense > checklistInfo.budget }">{{ budgetPercent.toFixed(0) }}%</text>
+          </view>
+          <view class="budget-row">
+            <text class="budget-label">已支出</text>
+            <text class="budget-value expense">¥{{ totalExpense.toFixed(2) }}</text>
+          </view>
+          <view class="budget-row" v-if="checklistInfo.budget > 0">
+            <text class="budget-label">{{ totalExpense > checklistInfo.budget ? '超支' : '剩余' }}</text>
+            <text class="budget-value" :class="{ over: totalExpense > checklistInfo.budget }">¥{{ Math.abs(checklistInfo.budget - totalExpense).toFixed(2) }}</text>
+          </view>
+        </view>
         <view class="budget-btn" @click="openBudgetPopup">
-          <text class="budget-text">设置预算</text>
+          <text class="budget-text">{{ checklistInfo.budget != null && checklistInfo.budget > 0 ? '修改预算' : '设置预算' }}</text>
           <text class="budget-arrow">›</text>
         </view>
       </view>
@@ -96,15 +132,19 @@
           <text class="summary-label">总支出：</text>
           <text class="summary-value">¥{{ totalExpense.toFixed(2) }}</text>
         </view>
-        <view class="expense-item" v-for="expense in expenseList" :key="expense.id" @click="confirmDeleteExpense(expense)">
+        <view class="expense-item" v-for="expense in expenseList" :key="expense.id">
           <view class="expense-icon-wrapper" :style="{ background: getExpenseColor(expense.category) }">
             <text class="expense-icon">{{ getExpenseIcon(expense.category) }}</text>
           </view>
           <view class="expense-info">
             <text class="expense-category">{{ getExpenseCategoryName(expense.category) }}</text>
             <text class="expense-note">{{ expense.note || getExpenseCategoryName(expense.category) }}</text>
+            <text class="expense-date" v-if="expense.expenseDate">{{ expense.expenseDate.replace(/-/g, '/') }}</text>
           </view>
           <text class="expense-amount">-¥{{ (expense.amount || 0).toFixed(2) }}</text>
+          <view class="expense-delete" @click.stop="confirmDeleteExpense(expense)">
+            <text class="expense-delete-icon">×</text>
+          </view>
         </view>
         <view class="add-expense-btn" @click="openAddExpensePopup">
           <text class="add-expense-text">+ 添加消费</text>
@@ -219,9 +259,9 @@
           <view class="key" @click="inputNumber('7')"><text class="key-text">7</text></view>
           <view class="key" @click="inputNumber('8')"><text class="key-text">8</text></view>
           <view class="key" @click="inputNumber('9')"><text class="key-text">9</text></view>
-          <view class="key date-key">
+          <view class="key date-key" @click="setExpenseDateToday">
             <text class="key-icon">📅</text>
-            <text class="key-text">今天</text>
+            <text class="key-text">{{ expenseForm.expenseDate ? '已选' : '今天' }}</text>
           </view>
         </view>
         <view class="keyboard-row">
@@ -257,13 +297,73 @@
       <view class="budget-content">
         <input 
           class="budget-input" 
-          type="number"
+          type="digit"
           v-model="budgetAmount"
           placeholder="请输入预算金额"
         />
       </view>
       <view class="budget-submit" @click="saveBudget">
         <text class="submit-text">确定</text>
+      </view>
+    </view>
+
+    <!-- 编辑清单弹窗 -->
+    <view class="popup-mask" v-if="showEditPopup" @click="closeEditPopup"></view>
+    <view class="add-popup" :class="{ 'popup-show': showEditPopup }">
+      <view class="popup-back" @click="closeEditPopup">
+        <text class="popup-back-icon">‹</text>
+      </view>
+      <view class="popup-banner">
+        <image class="banner-image" src="https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800&q=80" mode="aspectFill" />
+      </view>
+      <view class="popup-form">
+        <view class="form-group">
+          <text class="form-label">旅游名称</text>
+          <view class="form-input-wrapper">
+            <input 
+              class="form-input" 
+              v-model="editForm.title"
+              placeholder="为旅行起一个名字吧"
+              :maxlength="12"
+            />
+          </view>
+        </view>
+        <view class="form-group">
+          <text class="form-label">目的地</text>
+          <view class="form-input-wrapper">
+            <input 
+              class="form-input" 
+              v-model="editForm.destination"
+              placeholder="请输入目的地（选填）"
+              :maxlength="20"
+            />
+          </view>
+        </view>
+        <view class="form-group">
+          <text class="form-label">开始时间</text>
+          <picker mode="date" :value="editForm.departDate" @change="onEditStartDateChange">
+            <view class="form-input-wrapper picker">
+              <text class="picker-text" :class="{ placeholder: !editForm.departDate }">
+                {{ editForm.departDate ? editForm.departDate.replace(/-/g, '/') : '请选择旅行开始时间' }}
+              </text>
+              <text class="picker-icon">📅</text>
+            </view>
+          </picker>
+        </view>
+        <view class="form-group">
+          <text class="form-label">结束时间</text>
+          <picker mode="date" :value="editForm.returnDate" @change="onEditEndDateChange">
+            <view class="form-input-wrapper picker">
+              <text class="picker-text" :class="{ placeholder: !editForm.returnDate }">
+                {{ editForm.returnDate ? editForm.returnDate.replace(/-/g, '/') : '请选择旅行结束时间' }}
+              </text>
+              <text class="picker-icon">📅</text>
+            </view>
+          </picker>
+        </view>
+        <view class="form-submit" @click="submitEditChecklist">
+          <text class="submit-text">保存</text>
+        </view>
       </view>
     </view>
   </view>
@@ -273,9 +373,9 @@
 import { ref, computed } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import SFIcon from '@/components/SFIcon/SFIcon.vue'
-import { getChecklistDetail, toggleChecklistItem, addChecklistItem, deleteChecklistItem, updateChecklist, getExpenses, addExpense, deleteExpense, updateBudget as apiUpdateBudget, getTotalExpense } from '@/api'
+import { getChecklistDetail, toggleChecklistItem, addChecklistItem, deleteChecklistItem, updateChecklist, deleteChecklist as apiDeleteChecklist, getExpenses, addExpense, deleteExpense, updateBudget as apiUpdateBudget } from '@/api'
 import type { ChecklistDetail, ChecklistItem, ChecklistExpense, ChecklistId } from '@/api/modules/checklist'
-import { getItemCategories, categoryLabel, EXPENSE_CATEGORY_MAP, EXPENSE_CATEGORY_REVERSE_MAP } from '@/api/modules/checklist'
+import { getItemCategories, categoryLabel, EXPENSE_CATEGORY_MAP } from '@/api/modules/checklist'
 
 // 清单ID
 const checklistId = ref<ChecklistId>('')
@@ -299,7 +399,104 @@ const closeAddItemPopup = () => {
 
 const closeAddExpensePopup = () => {
   showAddExpense.value = false
-  expenseForm.value = { amount: '', note: '' }
+  expenseForm.value = { amount: '', note: '', expenseDate: '' }
+}
+
+const statusLabel = (status: number) => {
+  const map: Record<number, string> = { 0: '未开始', 1: '进行中', 2: '已完成' }
+  return map[status] || '未知'
+}
+
+const budgetPercent = computed(() => {
+  if (!checklistInfo.value.budget || checklistInfo.value.budget <= 0) return 0
+  const pct = (totalExpense.value / checklistInfo.value.budget) * 100
+  return Math.min(pct, 100)
+})
+
+const showEditPopup = ref(false)
+const editForm = ref({
+  title: '',
+  destination: '',
+  departDate: '',
+  returnDate: ''
+})
+
+const openEditPopup = () => {
+  editForm.value = {
+    title: checklistInfo.value.title || '',
+    destination: checklistInfo.value.destination || '',
+    departDate: checklistInfo.value.departDate || '',
+    returnDate: checklistInfo.value.returnDate || ''
+  }
+  showEditPopup.value = true
+}
+
+const closeEditPopup = () => {
+  showEditPopup.value = false
+}
+
+const onEditStartDateChange = (e: any) => {
+  editForm.value.departDate = e.detail.value
+}
+
+const onEditEndDateChange = (e: any) => {
+  editForm.value.returnDate = e.detail.value
+}
+
+const submitEditChecklist = async () => {
+  if (!editForm.value.title.trim()) {
+    uni.showToast({ title: '请输入旅游名称', icon: 'none' })
+    return
+  }
+  if (!editForm.value.departDate) {
+    uni.showToast({ title: '请选择开始时间', icon: 'none' })
+    return
+  }
+  if (!editForm.value.returnDate) {
+    uni.showToast({ title: '请选择结束时间', icon: 'none' })
+    return
+  }
+  if (editForm.value.returnDate < editForm.value.departDate) {
+    uni.showToast({ title: '结束日期不能早于开始日期', icon: 'none' })
+    return
+  }
+  try {
+    await updateChecklist(checklistId.value, {
+      title: editForm.value.title.trim(),
+      destination: editForm.value.destination.trim(),
+      departDate: editForm.value.departDate,
+      returnDate: editForm.value.returnDate
+    })
+    await loadDetail()
+    closeEditPopup()
+    uni.showToast({ title: '更新成功', icon: 'success' })
+  } catch (error) {
+    uni.showToast({ title: getErrorMessage(error, '更新失败'), icon: 'none' })
+  }
+}
+
+const confirmDeleteChecklist = () => {
+  uni.showModal({
+    title: '确认删除',
+    content: `确定要删除清单"${checklistInfo.value.title}"吗？删除后不可恢复。`,
+    success: async (res) => {
+      if (res.confirm) {
+        try {
+          await apiDeleteChecklist(checklistId.value)
+          uni.showToast({ title: '删除成功', icon: 'success' })
+          setTimeout(() => {
+            uni.navigateBack()
+          }, 500)
+        } catch (error) {
+          uni.showToast({ title: getErrorMessage(error, '删除失败'), icon: 'none' })
+        }
+      }
+    }
+  })
+}
+
+const setExpenseDateToday = () => {
+  expenseForm.value.expenseDate = new Date().toISOString().slice(0, 10)
 }
 
 const openBudgetPopup = () => {
@@ -433,7 +630,6 @@ const toggleCommonItem = async (name: string) => {
   if (!ensureChecklistReady()) return
 
   if (isItemAdded(name)) {
-    // 移除
     const item = luggageItems.value.find(i => i.content === name)
     if (item) {
       try {
@@ -441,20 +637,17 @@ const toggleCommonItem = async (name: string) => {
         if (!success) {
           throw new Error('删除失败')
         }
-        // 重新加载详情
         const refreshed = await loadDetail()
         if (!refreshed) {
           throw new Error('刷新清单失败，请稍后重试')
         }
         uni.showToast({ title: '已移除', icon: 'success' })
-        showAddItem.value = false
       } catch (error) {
         console.error('删除物品失败:', error)
         uni.showToast({ title: getErrorMessage(error, '移除失败'), icon: 'none' })
       }
     }
   } else {
-    // 添加
     try {
       const itemId = await addChecklistItem(checklistId.value, {
         category: activeItemCategory.value,
@@ -469,7 +662,6 @@ const toggleCommonItem = async (name: string) => {
         throw new Error('刷新清单失败，请稍后重试')
       }
       uni.showToast({ title: '已添加', icon: 'success' })
-      showAddItem.value = false
     } catch (error) {
       console.error('添加物品失败:', error)
       uni.showToast({ title: getErrorMessage(error, '添加失败'), icon: 'none' })
@@ -496,7 +688,6 @@ const addCustomItem = async () => {
       throw new Error('刷新清单失败，请稍后重试')
     }
     uni.showToast({ title: '添加成功', icon: 'success' })
-    closeAddItemPopup()
   } catch (error) {
     console.error('添加自定义物品失败:', error)
     uni.showToast({ title: getErrorMessage(error, '添加失败'), icon: 'none' })
@@ -509,13 +700,13 @@ const expenseList = ref<ChecklistExpense[]>([])
 const selectedExpenseType = ref('transport')
 const expenseForm = ref({
   amount: '',
-  note: ''
+  note: '',
+  expenseDate: ''
 })
 
 const openAddExpensePopup = () => {
   if (!ensureChecklistReady()) return
-  // 重置表单
-  expenseForm.value = { amount: '', note: '' }
+  expenseForm.value = { amount: '', note: '', expenseDate: '' }
   selectedExpenseType.value = 'transport'
   showAddExpense.value = true
 }
@@ -538,11 +729,17 @@ const totalExpense = computed(() => {
 // 输入数字
 const inputNumber = (num: string) => {
   if (num === '+' || num === '-') return
-  if (num === '.' && expenseForm.value.amount.includes('.')) return
-  if (num === '.' && !expenseForm.value.amount) {
+  const current = expenseForm.value.amount
+  if (num === '.' && current.includes('.')) return
+  if (num === '.' && !current) {
     expenseForm.value.amount = '0.'
     return
   }
+  if (current.includes('.')) {
+    const decimalPart = current.split('.')[1]
+    if (decimalPart && decimalPart.length >= 2) return
+  }
+  if (current.length >= 10) return
   expenseForm.value.amount += num
 }
 
@@ -568,8 +765,8 @@ const loadExpenses = async () => {
 const submitExpense = async () => {
   if (!ensureChecklistReady()) return
   const amount = parseFloat(expenseForm.value.amount)
-  if (!amount || isNaN(amount)) {
-    uni.showToast({ title: '请输入金额', icon: 'none' })
+  if (!amount || isNaN(amount) || amount <= 0) {
+    uni.showToast({ title: '请输入有效金额', icon: 'none' })
     return
   }
 
@@ -579,7 +776,7 @@ const submitExpense = async () => {
       category: type?.key || selectedExpenseType.value || 'other',
       amount,
       note: expenseForm.value.note || type?.name || '其他',
-      expenseDate: new Date().toISOString().slice(0, 10)
+      expenseDate: expenseForm.value.expenseDate || new Date().toISOString().slice(0, 10)
     })
     if (!expenseId) {
       throw new Error('记账失败或无权限')
@@ -638,16 +835,25 @@ const budgetAmount = ref('')
 
 const saveBudget = async () => {
   if (!ensureChecklistReady()) return
-  const amount = parseFloat(budgetAmount.value)
-  if (isNaN(amount)) {
+  const trimmed = budgetAmount.value.trim()
+  if (trimmed === '') {
+    try {
+      await apiUpdateBudget(checklistId.value, 0)
+      checklistInfo.value.budget = null
+      closeBudgetPopup()
+      uni.showToast({ title: '已清除预算', icon: 'success' })
+    } catch (error) {
+      uni.showToast({ title: '设置失败', icon: 'none' })
+    }
+    return
+  }
+  const amount = parseFloat(trimmed)
+  if (isNaN(amount) || amount < 0) {
     uni.showToast({ title: '请输入有效金额', icon: 'none' })
     return
   }
   try {
-    const success = await apiUpdateBudget(checklistId.value, amount)
-    if (!success) {
-      throw new Error('设置失败')
-    }
+    await apiUpdateBudget(checklistId.value, amount)
     checklistInfo.value.budget = amount
     closeBudgetPopup()
     uni.showToast({ title: '预算设置成功', icon: 'success' })
@@ -692,6 +898,7 @@ const loadDetail = async () => {
 }
 
 // 加载数据
+const isFirstLoad = ref(true)
 onLoad((options) => {
   const id = options?.id
   if (!id) {
@@ -704,10 +911,11 @@ onLoad((options) => {
     return
   }
   loadDetail()
+  isFirstLoad.value = false
 })
 
 onShow(() => {
-  if (checklistId.value) {
+  if (checklistId.value && !isFirstLoad.value) {
     loadDetail()
   }
 })
@@ -754,6 +962,73 @@ $border-radius-md: 16rpx;
   padding: 0 32rpx 32rpx;
 }
 
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  flex: 1;
+}
+
+.header-actions {
+  display: flex;
+  gap: 16rpx;
+}
+
+.action-btn {
+  width: 64rpx;
+  height: 64rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: $bg-color;
+
+  &.delete {
+    .action-icon {
+      font-size: 28rpx;
+    }
+  }
+}
+
+.action-icon {
+  font-size: 28rpx;
+}
+
+.status-tag {
+  padding: 4rpx 16rpx;
+  border-radius: 100rpx;
+  font-size: 22rpx;
+  flex-shrink: 0;
+
+  &.status-0 {
+    background: #E5E5EA;
+  }
+  &.status-1 {
+    background: rgba(0, 184, 169, 0.15);
+  }
+  &.status-2 {
+    background: rgba(52, 199, 89, 0.15);
+  }
+}
+
+.status-text {
+  font-size: 22rpx;
+  color: $text-secondary;
+
+  .status-1 & {
+    color: $primary-color;
+  }
+  .status-2 & {
+    color: #34C759;
+  }
+}
+
 .checklist-name {
   font-size: 48rpx;
   font-weight: 700;
@@ -765,6 +1040,13 @@ $border-radius-md: 16rpx;
 .checklist-date {
   font-size: 28rpx;
   color: $text-secondary;
+}
+
+.checklist-destination {
+  font-size: 26rpx;
+  color: $text-secondary;
+  margin-top: 4rpx;
+  display: block;
 }
 
 // Tab栏
@@ -929,8 +1211,83 @@ $border-radius-md: 16rpx;
 // 账单头部
 .expense-header {
   display: flex;
-  justify-content: flex-end;
+  flex-direction: column;
+  gap: 24rpx;
   margin-bottom: 32rpx;
+}
+
+.budget-info {
+  background: $bg-color;
+  border-radius: $border-radius-md;
+  padding: 24rpx;
+}
+
+.budget-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12rpx;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.budget-label {
+  font-size: 26rpx;
+  color: $text-secondary;
+}
+
+.budget-value {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: $text-primary;
+
+  &.expense {
+    color: #FF3B30;
+  }
+
+  &.over {
+    color: #FF3B30;
+  }
+}
+
+.budget-progress {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-bottom: 12rpx;
+}
+
+.progress-bar {
+  flex: 1;
+  height: 12rpx;
+  background: #E5E5EA;
+  border-radius: 6rpx;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: $primary-color;
+  border-radius: 6rpx;
+  transition: width 0.3s ease;
+
+  &.over {
+    background: #FF3B30;
+  }
+}
+
+.progress-percent {
+  font-size: 24rpx;
+  color: $primary-color;
+  font-weight: 500;
+  min-width: 60rpx;
+  text-align: right;
+
+  &.over {
+    color: #FF3B30;
+  }
 }
 
 .budget-btn {
@@ -1049,9 +1406,32 @@ $border-radius-md: 16rpx;
   color: $text-secondary;
 }
 
+.expense-date {
+  font-size: 22rpx;
+  color: $text-secondary;
+  margin-top: 4rpx;
+  display: block;
+}
+
 .expense-amount {
   font-size: 32rpx;
   font-weight: 600;
+  color: #FF3B30;
+}
+
+.expense-delete {
+  width: 48rpx;
+  height: 48rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(255, 59, 48, 0.1);
+  margin-left: 8rpx;
+}
+
+.expense-delete-icon {
+  font-size: 28rpx;
   color: #FF3B30;
 }
 

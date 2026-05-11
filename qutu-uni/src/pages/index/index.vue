@@ -2003,11 +2003,10 @@ $shadow-medium: 0 4rpx 30rpx rgba(0, 0, 0, 0.1);
   width: 88rpx;
   height: 88rpx;
   border-radius: 44rpx;
-  background: linear-gradient(135deg, #FF8A65, #FF6B3D);
+  background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 6rpx 24rpx rgba(255, 107, 61, 0.3);
   transition: transform 0.2s ease;
 
   &:active {

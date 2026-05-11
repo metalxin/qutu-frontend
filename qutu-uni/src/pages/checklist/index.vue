@@ -44,7 +44,13 @@
         @click="goToDetail(item)"
       >
         <view class="card-content">
-          <text class="card-title">{{ item.title }}</text>
+          <view class="card-title-row">
+            <text class="card-title">{{ item.title }}</text>
+            <view class="card-status" :class="'status-' + item.status">
+              <text class="status-text">{{ getStatusLabel(item.status) }}</text>
+            </view>
+          </view>
+          <text class="card-destination" v-if="item.destination">📍 {{ item.destination }}</text>
           <view class="card-dates">
             <text class="date-row">始：{{ (item.departDate || '').replace(/-/g, '/') }}</text>
             <text class="date-row">末：{{ (item.returnDate || '').replace(/-/g, '/') }}</text>
@@ -87,6 +93,18 @@
               :maxlength="12"
             />
             <text class="input-count">{{ formData.name.length }}/12</text>
+          </view>
+        </view>
+
+        <view class="form-group">
+          <text class="form-label">目的地</text>
+          <view class="form-input-wrapper">
+            <input 
+              class="form-input" 
+              v-model="formData.destination"
+              placeholder="请输入目的地（选填）"
+              :maxlength="20"
+            />
           </view>
         </view>
 
@@ -170,6 +188,7 @@ const editingId = ref<string | number | null>(null)
 // 表单数据
 const formData = ref({
   name: '',
+  destination: '',
   startDate: '',
   endDate: ''
 })
@@ -178,8 +197,13 @@ const getErrorMessage = (error: any, fallback = '操作失败') => {
   return error?.response?.msg || error?.response?.message || error?.message || fallback
 }
 
+const getStatusLabel = (status: number) => {
+  const map: Record<number, string> = { 0: '未开始', 1: '进行中', 2: '已完成' }
+  return map[status] || '未知'
+}
+
 const resetForm = () => {
-  formData.value = { name: '', startDate: '', endDate: '' }
+  formData.value = { name: '', destination: '', startDate: '', endDate: '' }
   editingId.value = null
 }
 
@@ -243,12 +267,19 @@ const submitChecklist = async () => {
     uni.showToast({ title: '请选择结束时间', icon: 'none' })
     return
   }
+  const departDate = formData.value.startDate.replace(/\//g, '-')
+  const returnDate = formData.value.endDate.replace(/\//g, '-')
+  if (returnDate < departDate) {
+    uni.showToast({ title: '结束日期不能早于开始日期', icon: 'none' })
+    return
+  }
 
   try {
     const submitData = {
       title: formData.value.name,
-      departDate: formData.value.startDate.replace(/\//g, '-'),
-      returnDate: formData.value.endDate.replace(/\//g, '-')
+      destination: formData.value.destination.trim(),
+      departDate,
+      returnDate
     }
 
     if (editingId.value) {
@@ -280,6 +311,7 @@ const editChecklist = (item: Checklist) => {
   editingId.value = item.id
   formData.value = {
     name: item.title,
+    destination: item.destination || '',
     startDate: (item.departDate || '').replace(/-/g, '/'),
     endDate: (item.returnDate || '').replace(/-/g, '/')
   }
@@ -307,6 +339,7 @@ const confirmDelete = (item: Checklist) => {
 }
 
 // 页面加载
+const isFirstLoad = ref(true)
 onMounted(() => {
   const systemInfo = uni.getSystemInfoSync()
   statusBarHeight.value = systemInfo.statusBarHeight || 44
@@ -326,10 +359,13 @@ onMounted(() => {
   // #endif
 
   loadChecklists()
+  isFirstLoad.value = false
 })
 
 onShow(() => {
-  loadChecklists()
+  if (!isFirstLoad.value) {
+    loadChecklists()
+  }
 })
 </script>
 
@@ -474,11 +510,51 @@ $border-radius-md: 16rpx;
   flex: 1;
 }
 
+.card-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-bottom: 8rpx;
+}
+
 .card-title {
   font-size: 32rpx;
   font-weight: 600;
   color: $text-primary;
-  margin-bottom: 16rpx;
+}
+
+.card-status {
+  padding: 2rpx 12rpx;
+  border-radius: 100rpx;
+  flex-shrink: 0;
+
+  &.status-0 {
+    background: #E5E5EA;
+  }
+  &.status-1 {
+    background: rgba(0, 184, 169, 0.15);
+  }
+  &.status-2 {
+    background: rgba(52, 199, 89, 0.15);
+  }
+}
+
+.status-text {
+  font-size: 20rpx;
+  color: $text-secondary;
+
+  .status-1 & {
+    color: $primary-color;
+  }
+  .status-2 & {
+    color: #34C759;
+  }
+}
+
+.card-destination {
+  font-size: 24rpx;
+  color: $text-secondary;
+  margin-bottom: 8rpx;
   display: block;
 }
 
