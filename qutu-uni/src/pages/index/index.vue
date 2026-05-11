@@ -232,7 +232,19 @@
     <!-- 悬浮小途助手 -->
     <view class="ai-float-btn" @click="goToAIService">
       <view class="ai-float-icon">
-        <text class="ai-float-emoji">🌴</text>
+        <svg class="ai-float-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="aiGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" style="stop-color:#667EEA;stop-opacity:1" />
+              <stop offset="50%" style="stop-color:#764BA2;stop-opacity:1" />
+              <stop offset="100%" style="stop-color:#F093FB;stop-opacity:1" />
+            </linearGradient>
+          </defs>
+          <circle cx="50" cy="50" r="45" fill="url(#aiGradient)"/>
+          <circle cx="35" cy="42" r="5" fill="white"/>
+          <circle cx="65" cy="42" r="5" fill="white"/>
+          <path d="M30 60 Q50 75 70 60" stroke="white" stroke-width="4" fill="none" stroke-linecap="round"/>
+        </svg>
       </view>
     </view>
 
@@ -2014,8 +2026,9 @@ $shadow-medium: 0 4rpx 30rpx rgba(0, 0, 0, 0.1);
   }
 }
 
-.ai-float-emoji {
-  font-size: 42rpx;
+.ai-float-svg {
+  width: 72rpx;
+  height: 72rpx;
 }
 
 // 底部TabBar
