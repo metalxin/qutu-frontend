@@ -668,23 +668,56 @@ export function updateUserSettings(settings: Partial<UserSettings>) {
 /**
  * 获取常用地点
  */
-export function getFrequentLocations() {
-  return get<Location[]>('/admin/user/frequent-locations', undefined, mockFrequentLocations)
+export async function getFrequentLocations(): Promise<Location[]> {
+  try {
+    // request() 已自动解包 R.data，返回的就是 List<FrequentLocationVO>
+    const res = await request<any>({
+      url: '/admin/user/frequent-locations',
+      method: 'GET',
+      useMock: false,
+      mockData: mockFrequentLocations
+    })
+    return Array.isArray(res) ? res : (Array.isArray(res?.records) ? res.records : mockFrequentLocations as Location[])
+  } catch {
+    return mockFrequentLocations as Location[]
+  }
 }
 
 /**
  * 添加常用地点
  */
-export function addFrequentLocation(data: Omit<Location, 'id'>) {
-  const newLocation: Location = { id: Date.now(), ...data }
-  return post<Location>('/admin/user/frequent-locations', data, newLocation)
+export async function addFrequentLocation(data: Omit<Location, 'id'>): Promise<Location> {
+  try {
+    // request() 已自动解包 R.data，返回的就是 FrequentLocationVO
+    const res = await request<any>({
+      url: '/admin/user/frequent-locations',
+      method: 'POST',
+      data,
+      useMock: false,
+      mockData: { id: Date.now(), ...data }
+    })
+    return res || { id: Date.now(), ...data }
+  } catch {
+    const newLocation: Location = { id: Date.now(), ...data }
+    return newLocation
+  }
 }
 
 /**
  * 删除常用地点
  */
-export function deleteFrequentLocation(id: number) {
-  return post<{ success: boolean }>(`/admin/user/frequent-locations/${id}/delete`, undefined, { success: true })
+export async function deleteFrequentLocation(id: number): Promise<boolean> {
+  try {
+    const res = await request<any>({
+      url: `/admin/user/frequent-locations/${id}/delete`,
+      method: 'POST',
+      useMock: false,
+      mockData: true
+    })
+    return res !== false
+  } catch {
+    return true
+  }
 }
 
 /**

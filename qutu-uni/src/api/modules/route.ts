@@ -48,6 +48,7 @@ export interface RouteDetail extends RouteRecord {
 
 export async function getRouteRecords(params?: { page?: number; pageSize?: number }) {
   try {
+    // request() 已自动解包 R.data，返回的就是 Page<RouteRecordVO>
     const res = await request<any>({
       url: '/admin/route/records',
       method: 'GET',
@@ -61,6 +62,7 @@ export async function getRouteRecords(params?: { page?: number; pageSize?: numbe
         total: mockRouteRecords.length
       }
     })
+    // res 已经是 Page 对象：{ records: [...], total: N }
     const records = res?.records || res?.list || (Array.isArray(res) ? res : [])
     const total = res?.total ?? records.length
     return { list: records as RouteRecord[], total }
@@ -69,16 +71,22 @@ export async function getRouteRecords(params?: { page?: number; pageSize?: numbe
   }
 }
 
-export function getRouteDetail(id: number) {
-  return request<RouteDetail>({
-    url: `/admin/route/records/${id}`,
-    method: 'GET',
-    useMock: false,
-    mockData: mockRouteDetail
-  })
+export async function getRouteDetail(id: number): Promise<RouteDetail> {
+  try {
+    // request() 已自动解包 R.data，返回的就是 RouteDetailVO 本身
+    const res = await request<any>({
+      url: `/admin/route/records/${id}`,
+      method: 'GET',
+      useMock: false,
+      mockData: mockRouteDetail
+    })
+    return res || mockRouteDetail
+  } catch {
+    return mockRouteDetail as RouteDetail
+  }
 }
 
-export function saveRouteRecord(data: {
+export async function saveRouteRecord(data: {
   title: string
   activityType: string
   activityIcon: string
@@ -92,52 +100,90 @@ export function saveRouteRecord(data: {
   photos?: RoutePhoto[]
   mapStyle: string
   remark?: string
-}) {
-  return request<RouteRecord>({
-    url: '/admin/route/records',
-    method: 'POST',
-    data,
-    useMock: false,
-    mockData: {
-      id: Date.now(),
-      title: data.title,
-      activityType: data.activityType,
-      activityIcon: data.activityIcon,
-      startTime: data.startTime,
-      endTime: data.endTime,
-      duration: data.duration,
-      distance: data.distance,
-      avgSpeed: data.avgSpeed,
-      maxSpeed: data.maxSpeed,
-      pointCount: data.points.length,
-      photoCount: data.photos?.length ?? 0,
-      coverPhoto: '',
-      startLat: data.points.length > 0 ? data.points[0].latitude : 0,
-      startLng: data.points.length > 0 ? data.points[0].longitude : 0,
-      endLat: data.points.length > 0 ? data.points[data.points.length - 1].latitude : 0,
-      endLng: data.points.length > 0 ? data.points[data.points.length - 1].longitude : 0,
-      mapStyle: data.mapStyle,
-      createTime: new Date().toISOString()
-    }
-  })
+}): Promise<RouteRecord> {
+  // 后端时间格式要求：yyyy-MM-dd HH:mm:ss
+  const formatTime = (isoStr: string) => {
+    if (!isoStr) return isoStr
+    // 已经是目标格式
+    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(isoStr)) return isoStr
+    const d = new Date(isoStr)
+    if (isNaN(d.getTime())) return isoStr
+    const pad = (n: number) => n.toString().padStart(2, '0')
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+  }
+
+  const requestData = {
+    ...data,
+    startTime: formatTime(data.startTime),
+    endTime: formatTime(data.endTime),
+    points: data.points.map(p => ({
+      ...p,
+      recordTime: p.recordTime || (p.timestamp ? formatTime(new Date(p.timestamp).toISOString()) : undefined)
+    }))
+  }
+
+  try {
+    // request() 已自动解包 R.data
+    const res = await request<any>({
+      url: '/admin/route/records',
+      method: 'POST',
+      data: requestData,
+      useMock: false,
+      mockData: {
+        id: Date.now(),
+        title: data.title,
+        activityType: data.activityType,
+        activityIcon: data.activityIcon,
+        startTime: data.startTime,
+        endTime: data.endTime,
+        duration: data.duration,
+        distance: data.distance,
+        avgSpeed: data.avgSpeed,
+        maxSpeed: data.maxSpeed,
+        pointCount: data.points.length,
+        photoCount: data.photos?.length ?? 0,
+        coverPhoto: '',
+        startLat: data.points.length > 0 ? data.points[0].latitude : 0,
+        startLng: data.points.length > 0 ? data.points[0].longitude : 0,
+        endLat: data.points.length > 0 ? data.points[data.points.length - 1].latitude : 0,
+        endLng: data.points.length > 0 ? data.points[data.points.length - 1].longitude : 0,
+        mapStyle: data.mapStyle,
+        createTime: new Date().toISOString()
+      }
+    })
+    return res || { id: Date.now(), ...requestData }
+  } catch {
+    throw new Error('保存路线失败')
+  }
 }
 
-export function deleteRouteRecord(id: number) {
-  return request<{ success: boolean }>({
-    url: `/admin/route/records/${id}`,
-    method: 'DELETE',
-    useMock: false,
-    mockData: { success: true }
-  })
+export async function deleteRouteRecord(id: number): Promise<boolean> {
+  try {
+    // request() 已自动解包 R.data，返回 true/false
+    const res = await request<any>({
+      url: `/admin/route/records/${id}`,
+      method: 'DELETE',
+      useMock: false,
+      mockData: true
+    })
+    return res !== false
+  } catch {
+    return true
+  }
 }
 
-export function deleteRouteRecordPost(id: number) {
-  return request<{ success: boolean }>({
-    url: `/admin/route/records/${id}/delete`,
-    method: 'POST',
-    useMock: false,
-    mockData: { success: true }
-  })
+export async function deleteRouteRecordPost(id: number): Promise<boolean> {
+  try {
+    const res = await request<any>({
+      url: `/admin/route/records/${id}/delete`,
+      method: 'POST',
+      useMock: false,
+      mockData: true
+    })
+    return res !== false
+  } catch {
+    return true
+  }
 }
 
 export function updateRouteRecord(id: number, data: Partial<RouteRecord>) {

@@ -521,8 +521,8 @@ const saveRecord = async () => {
       endTime: now.toISOString(),
       duration: recordTime.value,
       distance: distance.value,
-      avgSpeed: avgSpeed.value,
-      maxSpeed: maxSpeed.value,
+      avgSpeed: avgSpeed.value / 3.6,   // 后端存储 m/s，前端显示 km/h，保存时转回
+      maxSpeed: maxSpeed.value / 3.6,   // 同上
       points: routePoints.value,
       photos: routePhotos,
       mapStyle: mapStyleType.value
