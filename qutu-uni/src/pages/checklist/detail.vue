@@ -17,6 +17,9 @@
           </view>
         </view>
         <view class="header-actions">
+          <view class="action-btn" @click="openShareCodePopup">
+            <text class="action-icon">🔗</text>
+          </view>
           <view class="action-btn" @click="openEditPopup">
             <text class="action-icon">✏️</text>
           </view>
@@ -366,6 +369,33 @@
         </view>
       </view>
     </view>
+
+    <!-- 分享口令弹窗 -->
+    <view class="popup-mask" v-if="showShareCode" @click="closeShareCodePopup"></view>
+    <view class="share-code-popup" :class="{ 'popup-show': showShareCode }">
+      <view class="sc-header">
+        <text class="sc-title">分享清单</text>
+        <view class="sc-close" @click="closeShareCodePopup">
+          <text class="close-icon">×</text>
+        </view>
+      </view>
+      <view class="sc-body" v-if="!shareCodeValue">
+        <text class="sc-desc">生成口令后，好友输入口令即可复制你的清单</text>
+        <view class="sc-generate" @click="doGenerateShareCode">
+          <text class="sc-generate-text">{{ generatingCode ? '生成中...' : '生成口令' }}</text>
+        </view>
+      </view>
+      <view class="sc-body" v-else>
+        <text class="sc-desc">将以下口令分享给好友</text>
+        <view class="sc-code-display">
+          <text class="sc-code-text">{{ shareCodeValue }}</text>
+        </view>
+        <view class="sc-copy" @click="copyShareCode">
+          <text class="sc-copy-text">复制口令</text>
+        </view>
+        <text class="sc-hint">好友在「添加清单 → 使用口令」中输入即可导入</text>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -373,12 +403,47 @@
 import { ref, computed } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import SFIcon from '@/components/SFIcon/SFIcon.vue'
-import { getChecklistDetail, toggleChecklistItem, addChecklistItem, deleteChecklistItem, updateChecklist, deleteChecklist as apiDeleteChecklist, getExpenses, addExpense, deleteExpense, updateBudget as apiUpdateBudget } from '@/api'
+import { getChecklistDetail, toggleChecklistItem, addChecklistItem, deleteChecklistItem, updateChecklist, deleteChecklist as apiDeleteChecklist, getExpenses, addExpense, deleteExpense, updateBudget as apiUpdateBudget, generateShareCode } from '@/api'
 import type { ChecklistDetail, ChecklistItem, ChecklistExpense, ChecklistId } from '@/api/modules/checklist'
 import { getItemCategories, categoryLabel, EXPENSE_CATEGORY_MAP } from '@/api/modules/checklist'
 
 // 清单ID
 const checklistId = ref<ChecklistId>('')
+
+const showShareCode = ref(false)
+const shareCodeValue = ref('')
+const generatingCode = ref(false)
+
+const openShareCodePopup = () => {
+  shareCodeValue.value = ''
+  showShareCode.value = true
+}
+
+const closeShareCodePopup = () => {
+  showShareCode.value = false
+}
+
+const doGenerateShareCode = async () => {
+  if (!checklistId.value || generatingCode.value) return
+  generatingCode.value = true
+  try {
+    const code = await generateShareCode(checklistId.value)
+    shareCodeValue.value = code
+  } catch (error: any) {
+    uni.showToast({ title: getErrorMessage(error, '生成失败'), icon: 'none' })
+  } finally {
+    generatingCode.value = false
+  }
+}
+
+const copyShareCode = () => {
+  uni.setClipboardData({
+    data: shareCodeValue.value,
+    success: () => {
+      uni.showToast({ title: '已复制口令', icon: 'success' })
+    }
+  })
+}
 
 const getErrorMessage = (error: any, fallback = '操作失败') => {
   return error?.response?.msg || error?.response?.message || error?.message || fallback
@@ -2049,5 +2114,122 @@ $border-radius-md: 16rpx;
   &:active {
     transform: scale(0.98);
   }
+}
+
+// ========== 分享口令弹窗 ==========
+.share-code-popup {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: $card-bg;
+  border-radius: 40rpx 40rpx 0 0;
+  z-index: 999;
+  transform: translateY(100%);
+  transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+  padding-bottom: env(safe-area-inset-bottom);
+
+  &.popup-show {
+    transform: translateY(0);
+  }
+}
+
+.sc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 36rpx 40rpx 24rpx;
+}
+
+.sc-title {
+  font-size: 34rpx;
+  font-weight: 600;
+  color: $text-primary;
+}
+
+.sc-close {
+  width: 56rpx;
+  height: 56rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sc-body {
+  padding: 0 40rpx 48rpx;
+}
+
+.sc-desc {
+  font-size: 28rpx;
+  color: $text-secondary;
+  display: block;
+  margin-bottom: 32rpx;
+  line-height: 1.6;
+}
+
+.sc-generate {
+  padding: 28rpx 40rpx;
+  background: #FF9500;
+  border-radius: $border-radius-md;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
+
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
+.sc-generate-text {
+  font-size: 32rpx;
+  color: #FFFFFF;
+  font-weight: 600;
+}
+
+.sc-code-display {
+  padding: 40rpx;
+  background: $bg-color;
+  border-radius: $border-radius-lg;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24rpx;
+}
+
+.sc-code-text {
+  font-size: 56rpx;
+  font-weight: 700;
+  color: #FF9500;
+  letter-spacing: 16rpx;
+}
+
+.sc-copy {
+  padding: 24rpx 40rpx;
+  background: #FF9500;
+  border-radius: $border-radius-md;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24rpx;
+  transition: transform 0.2s ease;
+
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
+.sc-copy-text {
+  font-size: 30rpx;
+  color: #FFFFFF;
+  font-weight: 600;
+}
+
+.sc-hint {
+  font-size: 24rpx;
+  color: $text-secondary;
+  display: block;
+  text-align: center;
+  line-height: 1.6;
 }
 </style>

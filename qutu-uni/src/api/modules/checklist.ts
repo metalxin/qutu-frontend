@@ -268,3 +268,54 @@ export function getTotalExpense(checklistId: ChecklistId) {
 export function updateBudget(checklistId: ChecklistId, budget: number) {
   return put<boolean>(`${API_PREFIX}/checklists/${checklistId}/budget`, { budget })
 }
+
+// ========== 智能导入 & 口令 API ==========
+
+export interface SmartImportResult {
+  title: string
+  destination: string
+  departDate: string
+  returnDate: string
+  items: SmartImportItem[]
+}
+
+export interface SmartImportItem {
+  category: string
+  categoryName: string
+  content: string
+}
+
+export interface ShareCodeImportResult {
+  title: string
+  destination: string
+  remark: string
+  items: ShareCodeImportItem[]
+}
+
+export interface ShareCodeImportItem {
+  category: string
+  content: string
+}
+
+/**
+ * 智能导入 - 解析文本提取目的地、日期和物品清单
+ */
+export function smartImport(text: string) {
+  return post<SmartImportResult>(`${API_PREFIX}/checklists/smart-import`, { text })
+}
+
+/**
+ * 生成分享口令
+ */
+export function generateShareCode(checklistId: ChecklistId, maxUseCount?: number) {
+  return post<string>(`${API_PREFIX}/checklists/${checklistId}/share-code`, {
+    maxUseCount: maxUseCount || 0
+  })
+}
+
+/**
+ * 使用口令导入清单
+ */
+export function importByShareCode(shareCode: string) {
+  return post<ShareCodeImportResult>(`${API_PREFIX}/checklists/import-by-code`, { shareCode })
+}
