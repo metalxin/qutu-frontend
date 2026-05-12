@@ -153,6 +153,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import SFIcon from '@/components/SFIcon/SFIcon.vue'
 import { getNearbyCategories, getNearbyPois, getPoiDetail, favoritePoi, unfavoritePoi, checkinPoi } from '@/api'
 import type { NearbyCategory, NearbyPoi, NearbyPoiDetail } from '@/api'
@@ -415,6 +416,12 @@ onMounted(() => {
   try { const mb = uni.getMenuButtonBoundingClientRect(); if (mb) { menuButtonLeft.value = mb.left; menuButtonTop.value = mb.top; menuButtonHeight.value = mb.height; menuButtonSpace.value = windowWidth.value - mb.left + 10; navBarHeight.value = (mb.top - statusBarHeight.value) * 2 + mb.height + statusBarHeight.value } } catch {}
   // #endif
   generateMarkerIcons(); loadCategories(); locateMe()
+})
+
+onShow(() => {
+  if (hasLoaded.value) {
+    loadPois()
+  }
 })
 </script>
 
