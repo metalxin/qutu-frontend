@@ -9,6 +9,7 @@ import { resolveFileUrl } from './user'
 // 类型定义
 export interface Diary {
   id: number
+  title?: string
   content: string
   image: string
   images?: string[]
@@ -86,6 +87,7 @@ export async function getDiaryDetail(id: number) {
  * 后端：POST /stories
  */
 export async function createDiary(data: {
+  title?: string
   content: string
   image?: string
   images?: string[]
@@ -96,6 +98,7 @@ export async function createDiary(data: {
 }) {
   try {
     const dto: any = {
+      title: data.title || '',
       content: data.content,
       locationName: data.location || '',
       recordDate: data.date?.replace(/\//g, '-') || new Date().toISOString().slice(0, 10),
@@ -275,6 +278,7 @@ function mapStoryListVO(item: any): Diary {
 
   return {
     id: item.id,
+    title: item.title || '',
     content: item.content || '',
     image: item.firstImage ? resolveFileUrl(item.firstImage) : '',
     imagesCount: item.imagesCount || 0,
@@ -300,6 +304,7 @@ function mapStoryDetailVO(item: any): Diary {
 
   return {
     id: item.id,
+    title: item.title || '',
     content: item.content || '',
     image: firstImage,
     images,

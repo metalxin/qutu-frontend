@@ -45,7 +45,10 @@ export {
   getInspirations,
   likeGuide,
   collectGuide,
+  uncollectGuide,
   toggleGuideCollect,
+  checkGuideFavorite,
+  getUserFavoriteGuides,
   generateGuideTrip
 } from './modules/guide'
 
@@ -56,15 +59,29 @@ export type {
   GuideListItem,
   GuideTag,
   RelatedGuide,
-  InspirationItem
+  InspirationItem,
+  FavoriteGuideItem,
+  FavoriteGuidePage
 } from './modules/guide'
 
 export {
   getNearbyCategories,
   getNearbyPois,
   getPoiDetail,
+  favoritePoi,
+  unfavoritePoi,
+  checkinPoi,
+  checkFavorite,
   getCityList,
-  getMapMarkers
+  getMapMarkers,
+  getCityListLegacy
+} from './modules/nearby'
+
+export type {
+  NearbyCategory,
+  NearbyPoi,
+  NearbyPoiDetail,
+  CityInfo
 } from './modules/nearby'
 
 export {

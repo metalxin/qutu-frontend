@@ -274,19 +274,81 @@ export function likeGuide(guideId: number) {
  * 收藏攻略
  */
 export function collectGuide(guideId: number) {
-  return post<{ success: boolean; collects: number }>(`/api/guides/${guideId}/collect`, undefined, { 
-    success: true, 
-    collects: mockGuideDetail.collects + 1 
+  return request<boolean>({
+    url: `/admin/guides/${guideId}/favorite`,
+    method: 'POST',
+    useMock: false
+  })
+}
+
+/**
+ * 取消收藏攻略
+ */
+export function uncollectGuide(guideId: number) {
+  return request<boolean>({
+    url: `/admin/guides/${guideId}/unfavorite`,
+    method: 'POST',
+    useMock: false
   })
 }
 
 /**
  * 切换收藏状态
  */
-export function toggleGuideCollect(guideId: number, isCollect: boolean) {
-  return post<{ success: boolean; isCollected: boolean }>(`/api/guides/${guideId}/toggle-collect`, { isCollect }, { 
-    success: true, 
-    isCollected: isCollect 
+export async function toggleGuideCollect(guideId: number, isCollect: boolean) {
+  if (isCollect) {
+    await collectGuide(guideId)
+    return { success: true, isCollected: true }
+  } else {
+    await uncollectGuide(guideId)
+    return { success: true, isCollected: false }
+  }
+}
+
+/**
+ * 检查攻略收藏状态
+ */
+export function checkGuideFavorite(guideId: number) {
+  return request<boolean>({
+    url: `/admin/guides/${guideId}/favorite`,
+    method: 'GET',
+    useMock: false
+  })
+}
+
+/**
+ * 获取用户收藏的攻略列表
+ */
+export interface FavoriteGuideItem {
+  id: number
+  title: string
+  cover: string
+  summary: string
+  durationText: string
+  likeCount: number
+  viewCount: number
+  tag: string
+  cityName: string
+  favoriteTime: string
+}
+
+export interface FavoriteGuidePage {
+  records: FavoriteGuideItem[]
+  total: number
+  size: number
+  current: number
+  pages: number
+}
+
+export function getUserFavoriteGuides(params?: { current?: number; size?: number }) {
+  return request<FavoriteGuidePage>({
+    url: '/admin/guides/user/favorites',
+    method: 'GET',
+    data: {
+      current: params?.current ?? 1,
+      size: params?.size ?? 20
+    },
+    useMock: false
   })
 }
 
