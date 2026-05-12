@@ -1873,7 +1873,7 @@ $shadow-medium: 0 4rpx 30rpx rgba(0, 0, 0, 0.1);
 
 // 目的地卡片
 .destination-scroll {
-  height: calc(100vh - 680rpx);
+  max-height: 520rpx;
 }
 
 .destination-grid {
@@ -2044,12 +2044,13 @@ $shadow-medium: 0 4rpx 30rpx rgba(0, 0, 0, 0.1);
 
 // 灵感推荐
 .inspiration-section {
-  padding: 0 0 28rpx;
+  padding: 0 0 60rpx;
+  margin-top: -8rpx;
 }
 
 .inspiration-scroll {
   white-space: nowrap;
-  margin-top: 20rpx;
+  margin-top: 16rpx;
   padding-left: 32rpx;
 }
 
