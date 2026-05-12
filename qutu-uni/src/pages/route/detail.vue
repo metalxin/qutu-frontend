@@ -544,7 +544,7 @@ $accent: #FF6D00;
 /* 地图区域 */
 .map-container {
   width: 100%;
-  height: 480rpx;
+  height: 640rpx;
   position: relative;
 }
 
@@ -634,7 +634,7 @@ $accent: #FF6D00;
 
 /* 详情面板 */
 .detail-panel {
-  height: calc(100vh - 480rpx);
+  height: calc(100vh - 640rpx);
   padding: 0 32rpx;
   box-sizing: border-box;
 }
