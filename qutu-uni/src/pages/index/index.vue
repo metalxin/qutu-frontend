@@ -40,18 +40,9 @@
 
     <!-- 搜索框 -->
     <view class="search-container" :style="{ marginTop: headerHeight + 'px' }">
-      <view class="search-box">
+      <view class="search-box" @click="openDestinationListPopup">
         <SFIcon name="search" :size="32" color="#86868B" />
-        <input
-          class="search-input"
-          v-model="searchKeyword"
-          placeholder="按目的地探索"
-          confirm-type="search"
-          @confirm="applySearch"
-        />
-        <view class="search-clear" v-if="searchKeyword" @click="clearSearch">
-          <SFIcon name="close" :size="24" color="#8E8E93" />
-        </view>
+        <text class="search-placeholder">按目的地探索</text>
       </view>
 
       <!-- 功能入口 -->
@@ -143,8 +134,8 @@
           </view>
         </view>
       </view>
-      <view class="search-empty" v-if="searchKeyword && destinations.length === 0">
-        <text class="empty-text">未找到相关目的地</text>
+      <view class="search-empty" v-if="destinations.length === 0">
+        <text class="empty-text">暂无目的地数据</text>
       </view>
       
     </scroll-view>
@@ -183,17 +174,34 @@
           <text class="close-icon">×</text>
         </view>
       </view>
+      <view class="popup-search-bar">
+        <SFIcon name="search" :size="28" color="#86868B" />
+        <input
+          class="popup-search-input"
+          v-model="inspirationSearchKeyword"
+          placeholder="搜索灵感"
+          confirm-type="search"
+          @confirm="doInspirationSearch"
+          @input="onInspirationSearchInput"
+        />
+        <view class="popup-search-clear" v-if="inspirationSearchKeyword" @click="clearInspirationSearch">
+          <SFIcon name="close" :size="22" color="#8E8E93" />
+        </view>
+      </view>
       <view class="inspiration-list-subtitle">
-        <text class="spotlist-count">{{ inspirationList.length }}条灵感</text>
+        <text class="spotlist-count">{{ displayInspirationList.length }}条灵感</text>
       </view>
       <scroll-view class="inspiration-list-scroll" scroll-y :show-scrollbar="false">
-        <view class="inspiration-list-empty" v-if="inspirationList.length === 0">
-          <text class="empty-text">暂无灵感内容</text>
+        <view class="inspiration-list-empty" v-if="inspirationSearchLoading">
+          <text class="loading-text">搜索中...</text>
+        </view>
+        <view class="inspiration-list-empty" v-else-if="displayInspirationList.length === 0">
+          <text class="empty-text">{{ inspirationSearchKeyword ? '未找到相关灵感' : '暂无灵感内容' }}</text>
         </view>
         <view class="inspiration-list-items" v-else>
           <view
             class="inspiration-list-item"
-            v-for="item in inspirationList"
+            v-for="item in displayInspirationList"
             :key="item.id"
             @tap="goToInspirationDetail(item)"
           >
@@ -552,12 +560,29 @@
           <text class="close-icon">×</text>
         </view>
       </view>
+      <view class="popup-search-bar">
+        <SFIcon name="search" :size="28" color="#86868B" />
+        <input
+          class="popup-search-input"
+          v-model="destSearchKeyword"
+          placeholder="搜索目的地"
+          confirm-type="search"
+          @confirm="doDestSearch"
+          @input="onDestSearchInput"
+        />
+        <view class="popup-search-clear" v-if="destSearchKeyword" @click="clearDestSearch">
+          <SFIcon name="close" :size="22" color="#8E8E93" />
+        </view>
+      </view>
       <view class="destination-list-subtitle">
         <text class="spotlist-count">{{ drawerDestinations.length }}个目的地</text>
       </view>
       <scroll-view class="destination-list-scroll" scroll-y :show-scrollbar="false">
-        <view class="destination-list-empty" v-if="drawerDestinations.length === 0">
-          <text class="empty-text">暂无目的地数据</text>
+        <view class="destination-list-empty" v-if="destSearchLoading">
+          <text class="loading-text">搜索中...</text>
+        </view>
+        <view class="destination-list-empty" v-else-if="drawerDestinations.length === 0">
+          <text class="empty-text">{{ destSearchKeyword ? '未找到相关目的地' : '暂无目的地数据' }}</text>
         </view>
         <view class="destination-list-items" v-else>
           <view
@@ -702,7 +727,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import SFIcon from '@/components/SFIcon/SFIcon.vue'
-import { getDestinations, getRegionGroups, getHotCities, getDestinationSpots, getInspirations } from '@/api'
+import { getDestinations, getRegionGroups, getHotCities, getDestinationSpots, getInspirations, searchDestinations, searchInspirations } from '@/api'
 import { getUserInfo, bindWechat as bindWechatApi, logout as logoutApi, DEFAULT_AVATAR } from '@/api/modules/user'
 import type { Destination, SpotListItem } from '@/api/modules/destination'
 import type { UserInfo } from '@/api/modules/user'
@@ -982,7 +1007,6 @@ const handleScreenshot = () => {
 
 // 目的地数据
 const allDestinations = ref<Destination[]>([])
-const searchKeyword = ref('')
 const showDestinationListPopup = ref(false)
 const showInspirationListPopup = ref(false)
 const showSpotListPopup = ref(false)
@@ -993,30 +1017,102 @@ const spotListLoading = ref(false)
 const currentDestinationName = computed(() => currentDestination.value?.name || '景点列表')
 
 const drawerDestinations = computed(() => {
-  const keyword = searchKeyword.value.trim()
-  return keyword ? filteredDestinations.value : allDestinations.value
-})
-
-const filteredDestinations = computed(() => {
-  const keyword = searchKeyword.value.trim()
-  if (!keyword) {
-    return allDestinations.value
+  if (destSearchKeyword.value.trim()) {
+    return destSearchResults.value
   }
-  return allDestinations.value.filter(dest => {
-    const name = dest.name || ''
-    const subtitle = dest.subtitle || ''
-    const tag = dest.tag || ''
-    return name.includes(keyword) || subtitle.includes(keyword) || tag.includes(keyword)
-  })
+  return allDestinations.value
 })
 
-// 显示的目的地列表
 const destinations = computed(() => {
-  if (searchKeyword.value.trim()) {
-    return filteredDestinations.value
-  }
-  return filteredDestinations.value.slice(0, 4)
+  return allDestinations.value.slice(0, 4)
 })
+
+const destSearchKeyword = ref('')
+const destSearchLoading = ref(false)
+const destSearchResults = ref<Destination[]>([])
+let destSearchTimer: ReturnType<typeof setTimeout> | null = null
+
+const doDestSearch = async () => {
+  const keyword = destSearchKeyword.value.trim()
+  if (!keyword) {
+    destSearchResults.value = []
+    return
+  }
+  destSearchLoading.value = true
+  try {
+    const results = await searchDestinations(keyword, 50)
+    destSearchResults.value = results
+  } catch (e) {
+    console.error('搜索目的地失败:', e)
+    destSearchResults.value = []
+  } finally {
+    destSearchLoading.value = false
+  }
+}
+
+const onDestSearchInput = () => {
+  if (destSearchTimer) clearTimeout(destSearchTimer)
+  const keyword = destSearchKeyword.value.trim()
+  if (!keyword) {
+    destSearchResults.value = []
+    return
+  }
+  destSearchTimer = setTimeout(() => {
+    doDestSearch()
+  }, 500)
+}
+
+const clearDestSearch = () => {
+  destSearchKeyword.value = ''
+  destSearchResults.value = []
+}
+
+const inspirationSearchKeyword = ref('')
+const inspirationSearchLoading = ref(false)
+const inspirationSearchResults = ref<any[]>([])
+let inspirationSearchTimer: ReturnType<typeof setTimeout> | null = null
+
+const displayInspirationList = computed(() => {
+  if (inspirationSearchKeyword.value.trim()) {
+    return inspirationSearchResults.value
+  }
+  return inspirationList.value
+})
+
+const doInspirationSearch = async () => {
+  const keyword = inspirationSearchKeyword.value.trim()
+  if (!keyword) {
+    inspirationSearchResults.value = []
+    return
+  }
+  inspirationSearchLoading.value = true
+  try {
+    const results = await searchInspirations(keyword, 50)
+    inspirationSearchResults.value = results
+  } catch (e) {
+    console.error('搜索灵感失败:', e)
+    inspirationSearchResults.value = []
+  } finally {
+    inspirationSearchLoading.value = false
+  }
+}
+
+const onInspirationSearchInput = () => {
+  if (inspirationSearchTimer) clearTimeout(inspirationSearchTimer)
+  const keyword = inspirationSearchKeyword.value.trim()
+  if (!keyword) {
+    inspirationSearchResults.value = []
+    return
+  }
+  inspirationSearchTimer = setTimeout(() => {
+    doInspirationSearch()
+  }, 500)
+}
+
+const clearInspirationSearch = () => {
+  inspirationSearchKeyword.value = ''
+  inspirationSearchResults.value = []
+}
 
 // 加载目的地数据
 const loadDestinations = async () => {
@@ -1050,17 +1146,6 @@ const openInspirationListPopup = () => {
 
 const closeInspirationListPopup = () => {
   showInspirationListPopup.value = false
-}
-
-const applySearch = () => {
-  if (searchKeyword.value.trim()) {
-    showDestinationListPopup.value = true
-  }
-}
-
-const clearSearch = () => {
-  searchKeyword.value = ''
-  showDestinationListPopup.value = false
 }
 
 // 图片加载失败处理
@@ -1535,6 +1620,12 @@ $shadow-medium: 0 4rpx 30rpx rgba(0, 0, 0, 0.1);
   border: 2rpx solid #E5E5EA;
 }
 
+.search-placeholder {
+  flex: 1;
+  font-size: 28rpx;
+  color: #86868B;
+}
+
 .search-input {
   flex: 1;
   font-size: 28rpx;
@@ -1545,6 +1636,34 @@ $shadow-medium: 0 4rpx 30rpx rgba(0, 0, 0, 0.1);
 .search-clear {
   width: 40rpx;
   height: 40rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #E5E5EA;
+  border-radius: 50%;
+}
+
+.popup-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin: 0 40rpx 16rpx;
+  padding: 18rpx 24rpx;
+  background: $bg-color;
+  border-radius: 100rpx;
+  border: 2rpx solid #E5E5EA;
+}
+
+.popup-search-input {
+  flex: 1;
+  font-size: 26rpx;
+  color: $text-primary;
+  background: transparent;
+}
+
+.popup-search-clear {
+  width: 36rpx;
+  height: 36rpx;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1754,8 +1873,7 @@ $shadow-medium: 0 4rpx 30rpx rgba(0, 0, 0, 0.1);
 
 // 目的地卡片
 .destination-scroll {
-  height: auto;
-  max-height: calc(100vh - 680rpx);
+  height: calc(100vh - 680rpx);
 }
 
 .destination-grid {
@@ -2137,6 +2255,7 @@ $shadow-medium: 0 4rpx 30rpx rgba(0, 0, 0, 0.1);
   z-index: 1000;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
   transform: translateY(100%);
   transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
 
@@ -2179,6 +2298,7 @@ $shadow-medium: 0 4rpx 30rpx rgba(0, 0, 0, 0.1);
 
 .spotlist-scroll {
   flex: 1;
+  height: 0;
   padding: 0 40rpx 40rpx;
   box-sizing: border-box;
 }
@@ -2195,6 +2315,7 @@ $shadow-medium: 0 4rpx 30rpx rgba(0, 0, 0, 0.1);
   z-index: 999;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
   transform: translateY(100%);
   transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
 
@@ -2209,6 +2330,7 @@ $shadow-medium: 0 4rpx 30rpx rgba(0, 0, 0, 0.1);
 
 .destination-list-scroll {
   flex: 1;
+  height: 0;
   padding: 0 40rpx 40rpx;
   box-sizing: border-box;
 }
@@ -2309,20 +2431,26 @@ $shadow-medium: 0 4rpx 30rpx rgba(0, 0, 0, 0.1);
   margin-top: auto;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 12rpx;
 }
 
 .destination-list-tag {
   padding: 6rpx 14rpx;
-  background: rgba(0, 122, 255, 0.08);
+  background: linear-gradient(135deg, #FF6B6B, #FF8E53);
   border-radius: 999rpx;
+}
+
+.destination-list-tag .tag-text {
+  font-size: 20rpx;
+  color: #FFFFFF;
+  font-weight: 600;
 }
 
 .destination-list-rating {
   display: flex;
   align-items: center;
   gap: 4rpx;
+  margin-left: auto;
 }
 
 .destination-list-rating-text {
@@ -2343,6 +2471,7 @@ $shadow-medium: 0 4rpx 30rpx rgba(0, 0, 0, 0.1);
   z-index: 999;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
   transform: translateY(100%);
   transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
 
@@ -2357,6 +2486,7 @@ $shadow-medium: 0 4rpx 30rpx rgba(0, 0, 0, 0.1);
 
 .inspiration-list-scroll {
   flex: 1;
+  height: 0;
   padding: 0 40rpx 40rpx;
   box-sizing: border-box;
 }

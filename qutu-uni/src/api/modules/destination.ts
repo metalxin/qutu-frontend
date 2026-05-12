@@ -360,3 +360,21 @@ export function getUserFavoriteSpots(params?: { current?: number; size?: number 
     useMock: false
   })
 }
+
+export async function searchDestinations(keyword: string, limit: number = 20) {
+  try {
+    const list = await request<Destination[]>({
+      url: '/admin/destinations/search',
+      method: 'GET',
+      useMock: false,
+      data: { keyword, limit }
+    })
+    const records = (Array.isArray(list) ? list : []).map((item: any) => ({
+      ...item,
+      image: resolveFileUrl(item.image || item.coverUrl || '')
+    }))
+    return records
+  } catch {
+    return []
+  }
+}

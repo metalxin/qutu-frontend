@@ -402,3 +402,15 @@ export async function getInspirations(limit: number = 6) {
     ]
   }
 }
+
+export async function searchInspirations(keyword: string, limit: number = 20) {
+  try {
+    const list = await get<InspirationItem[]>('/admin/guides/inspirations/search', { keyword, limit })
+    return Array.isArray(list) ? list.map(item => ({
+      ...item,
+      cover: resolveFileUrl(item.cover || '')
+    })) : []
+  } catch {
+    return []
+  }
+}

@@ -28,7 +28,8 @@ export {
   unfavoriteSpot,
   getUserFavoriteSpots,
   getRegionGroups,
-  getHotCities
+  getHotCities,
+  searchDestinations
 } from './modules/destination'
 
 export type {
@@ -43,6 +44,7 @@ export {
   getGuideDetail,
   getRelatedGuides,
   getInspirations,
+  searchInspirations,
   likeGuide,
   collectGuide,
   uncollectGuide,
@@ -115,7 +117,10 @@ export {
   getTotalExpense,
   updateBudget,
   EXPENSE_CATEGORY_MAP,
-  EXPENSE_CATEGORY_REVERSE_MAP
+  EXPENSE_CATEGORY_REVERSE_MAP,
+  smartImport,
+  generateShareCode,
+  importByShareCode
 } from './modules/checklist'
 
 export {
