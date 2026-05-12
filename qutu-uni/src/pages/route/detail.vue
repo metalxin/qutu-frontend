@@ -588,7 +588,8 @@ $accent: #FF6D00;
 /* 详情面板 */
 .detail-panel {
   height: calc(100vh - 480rpx);
-  padding: 0 24rpx;
+  padding: 0 32rpx;
+  box-sizing: border-box;
 }
 
 .panel-header {
