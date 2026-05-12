@@ -419,9 +419,7 @@ onMounted(() => {
 })
 
 onShow(() => {
-  if (hasLoaded.value) {
-    loadPois()
-  }
+  loadPois()
 })
 </script>
 
