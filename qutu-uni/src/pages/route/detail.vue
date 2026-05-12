@@ -26,7 +26,7 @@
           <text class="back-btn-text">‹</text>
         </view>
 
-        <view class="map-style-btn" @click="showMapStylePicker = true">
+        <view class="map-style-btn" :style="mapStyleBtnStyle" @click="showMapStylePicker = true">
           <text class="map-style-icon">☊</text>
         </view>
 
@@ -234,6 +234,7 @@ const mapScale = ref(14)
 
 // 胶囊按钮位置（微信小程序）
 const menuButtonTop = ref(0)
+const menuButtonLeft = ref(0)
 const menuButtonHeight = ref(32)
 const statusBarHeight = ref(20)
 
@@ -247,6 +248,21 @@ const backBtnStyle = computed(() => {
   // #endif
   return { top: '48rpx' }
 })
+
+// 地图样式按钮动态样式，放在胶囊按钮左侧
+const mapStyleBtnStyle = computed(() => {
+  // #ifdef MP-WEIXIN
+  if (menuButtonTop.value > 0) {
+    const top = menuButtonTop.value
+    const right = (windowWidth.value - menuButtonLeft.value) + 'px'
+    return { top: top + 'px', right: right }
+  }
+  // #endif
+  return { top: '48rpx', right: '24rpx' }
+})
+
+// 窗口宽度
+const windowWidth = ref(375)
 
 const mapStyleOptions = [
   { value: 'normal', label: '标准地图', desc: '默认地图样式', icon: '🗺️' },
@@ -453,12 +469,14 @@ onMounted(() => {
   // 获取系统信息
   const systemInfo = uni.getSystemInfoSync()
   statusBarHeight.value = systemInfo.statusBarHeight || 20
+  windowWidth.value = systemInfo.windowWidth || 375
   
   // #ifdef MP-WEIXIN
   try {
     const menuButton = uni.getMenuButtonBoundingClientRect()
     if (menuButton) {
       menuButtonTop.value = menuButton.top
+      menuButtonLeft.value = menuButton.left
       menuButtonHeight.value = menuButton.height
     }
   } catch (e) {
@@ -558,8 +576,6 @@ $accent: #FF6D00;
 
 .map-style-btn {
   position: absolute;
-  top: calc(48rpx + env(safe-area-inset-top));
-  right: 24rpx;
   width: 72rpx;
   height: 72rpx;
   background: rgba(255, 255, 255, 0.95);
