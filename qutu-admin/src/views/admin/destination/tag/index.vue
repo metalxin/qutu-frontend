@@ -19,10 +19,10 @@
 			>
 				<el-table-column label="标签ID" prop="id" width="200" />
 				<el-table-column label="标签名称" prop="name" min-width="200" show-overflow-tooltip />
-				<el-table-column label="操作" width="150" fixed="right">
+				<el-table-column label="操作" width="180" fixed="right">
 					<template #default="scope">
-						<el-button icon="edit-pen" @click="dialogRef.openDialog(scope.row.id, scope.row)" text type="primary" v-auth="'destination_tag_edit'">编辑</el-button>
-						<el-button icon="delete" @click="handleDelete(scope.row.id)" text type="primary" v-auth="'destination_tag_del'">删除</el-button>
+						<el-button icon="edit-pen" @click="dialogRef.openDialog(scope.row.id, scope.row)" text type="primary" v-auth="'destination_tag_edit'" size="small">编辑</el-button>
+						<el-button icon="delete" @click="handleDelete(scope.row.id)" text type="primary" v-auth="'destination_tag_del'" size="small">删除</el-button>
 					</template>
 				</el-table-column>
 			</el-table>

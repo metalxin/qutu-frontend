@@ -65,13 +65,26 @@
         <text class="stat-value">{{ stats.spots }}</text>
         <text class="stat-label">地点</text>
       </view>
-      <view class="stat-item">
+      <view class="stat-item" @click="goToFavoriteGuides">
         <text class="stat-value">{{ stats.guides }}</text>
         <text class="stat-label">攻略</text>
       </view>
       <view class="stat-item">
         <text class="stat-value">{{ stats.footprints }}</text>
         <text class="stat-label">足迹</text>
+      </view>
+    </view>
+
+    <!-- 我的收藏 -->
+    <view class="section-title">我的收藏</view>
+    <view class="form-card">
+      <view class="form-item" @click="goToFavoriteSpots">
+        <text class="form-label">收藏景点</text>
+        <SFIcon name="chevron-right" :size="32" color="#C7C7CC" />
+      </view>
+      <view class="form-item" @click="goToFavoriteGuides">
+        <text class="form-label">收藏攻略</text>
+        <SFIcon name="chevron-right" :size="32" color="#C7C7CC" />
       </view>
     </view>
 
@@ -388,6 +401,14 @@ const onWechatClick = () => {
 }
 
 const goBack = () => { uni.navigateBack() }
+
+const goToFavoriteSpots = () => {
+  uni.navigateTo({ url: '/pages/user/favorites' })
+}
+
+const goToFavoriteGuides = () => {
+  uni.navigateTo({ url: '/pages/user/favorite-guides' })
+}
 
 const navBarStyle = computed(() => {
   if (menuButtonSpace.value > 0) {

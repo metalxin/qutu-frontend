@@ -18,7 +18,9 @@
 			"path": "pages/guide/detail",
 			"style": {
 				"navigationStyle": "custom",
-				"navigationBarTitleText": "攻略详情"
+				"navigationBarTitleText": "攻略详情",
+				"enableShareAppMessage": true,
+				"enableShareTimeline": true
 			}
 		},
 		{
@@ -32,14 +34,18 @@
 			"path": "pages/story/detail",
 			"style": {
 				"navigationStyle": "custom",
-				"navigationBarTitleText": "故事详情"
+				"navigationBarTitleText": "故事详情",
+				"enableShareAppMessage": true,
+				"enableShareTimeline": true
 			}
 		},
 		{
 			"path": "pages/story/share",
 			"style": {
 				"navigationStyle": "custom",
-				"navigationBarTitleText": "分享故事"
+				"navigationBarTitleText": "分享故事",
+				"enableShareAppMessage": true,
+				"enableShareTimeline": true
 			}
 		},
 		{
@@ -210,6 +216,13 @@
 			"style": {
 				"navigationStyle": "custom",
 				"navigationBarTitleText": "收藏地点"
+			}
+		},
+		{
+			"path": "pages/user/favorite-guides",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "收藏攻略"
 			}
 		},
 		{

@@ -103,8 +103,8 @@
 						<el-descriptions-item label="点赞数">{{ previewData.likeCount ?? 0 }}</el-descriptions-item>
 						<el-descriptions-item label="浏览量">{{ previewData.viewCount ?? 0 }}</el-descriptions-item>
 						<el-descriptions-item label="摘要" :span="3">{{ previewData.summary || '-' }}</el-descriptions-item>
-						<el-descriptions-item label="创建时间">{{ previewData.createdAt || '-' }}</el-descriptions-item>
-						<el-descriptions-item label="更新时间" :span="2">{{ previewData.updatedAt || '-' }}</el-descriptions-item>
+						<el-descriptions-item label="创建时间">{{ formatDateTime(previewData.createdAt) }}</el-descriptions-item>
+						<el-descriptions-item label="更新时间" :span="2">{{ formatDateTime(previewData.updatedAt) }}</el-descriptions-item>
 					</el-descriptions>
 				</el-card>
 
@@ -140,6 +140,12 @@
 import { BasicTableProps, useTable } from '/@/hooks/table';
 import { delGuide, fetchGuidePage, getGuideObj } from '/@/api/admin/guide';
 import { useMessage, useMessageBox } from '/@/hooks/message';
+import { parseTime } from '/@/utils/formatTime';
+
+const formatDateTime = (val: string) => {
+	if (!val) return '-';
+	return parseTime(val, '{y}-{m}-{d} {h}:{i}:{s}');
+};
 
 const GuideDialog = defineAsyncComponent(() => import('./form.vue'));
 
