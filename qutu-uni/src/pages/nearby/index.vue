@@ -42,10 +42,14 @@
     <!-- 地图区域 -->
     <view class="map-container" :style="{ top: (navBarHeight + 80) + 'px' }">
       <map id="nearbyMap" class="nearby-map" :latitude="mapCenter.latitude" :longitude="mapCenter.longitude" :scale="mapScale" :markers="mapMarkers" :show-location="true" @markertap="onMarkerTap" />
-      <view class="map-controls">
-        <view class="control-btn" @click="locateMe"><SFIcon name="crosshair" :size="40" color="#1D1D1F" /></view>
-        <view class="control-btn" @click="refreshPois"><SFIcon name="refresh" :size="36" color="#1D1D1F" /></view>
-      </view>
+      <cover-view class="map-controls">
+        <cover-view class="control-btn" @click="locateMe">
+          <cover-image class="control-icon" :src="locateIconSrc" />
+        </cover-view>
+        <cover-view class="control-btn" @click="refreshPois">
+          <cover-image class="control-icon" :src="refreshIconSrc" />
+        </cover-view>
+      </cover-view>
       <view class="loading-overlay" v-if="loading">
         <view class="loading-spinner"></view>
         <text class="loading-text">搜索附近...</text>
@@ -142,6 +146,8 @@
       </view>
       <view class="popup-footer"><view class="footer-cancel" @click="showCityPopup = false"><text class="cancel-text">取消</text></view><view class="footer-confirm" @click="confirmCitySelection"><text class="confirm-text">确认选择</text></view></view>
     </view>
+
+    <canvas canvas-id="markerCanvas" class="marker-canvas" :style="{ width: markerCanvasSize + 'px', height: markerCanvasSize + 'px' }" />
   </view>
 </template>
 
@@ -192,12 +198,105 @@ const menuButtonTop = ref(0); const menuButtonHeight = ref(32); const windowWidt
 const topBarStyle = computed(() => ({ paddingTop: statusBarHeight.value + 'px', height: navBarHeight.value + 'px' }))
 const displayAvatar = computed(() => { try { const t = uni.getStorageSync('token'); if (!t) return ''; const u = uni.getStorageSync('userInfo'); return u?.avatar || '' } catch { return '' } })
 
+const locateIconSrc = computed(() => {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#1D1D1F" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>`
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`
+})
+
+const refreshIconSrc = computed(() => {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#1D1D1F" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>`
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`
+})
+
 const mapMarkers = computed(() => allPois.value.map(poi => ({
   id: poi.id, latitude: poi.latitude, longitude: poi.longitude,
-  iconPath: poi.categoryType === 'food' ? '/static/icons/marker-food.png' : '/static/icons/marker-place.png',
-  width: 40, height: 40,
-  callout: { content: poi.title, display: 'ALWAYS' as const, padding: 8, borderRadius: 8, bgColor: '#FFFFFF', fontSize: 12, color: '#1D1D1F' }
+  iconPath: markerIconMap.value[poi.categoryType] || markerIconMap.value['place'] || '',
+  width: 44, height: 52,
+  callout: { content: poi.title, display: 'ALWAYS' as const, padding: 8, borderRadius: 8, bgColor: '#FFFFFF', fontSize: 12, color: '#1D1D1F' },
+  anchor: { x: 0.5, y: 1 }
 })))
+
+const markerCanvasSize = ref(52)
+
+const categoryMarkerConfig: Record<string, { color: string; bg: string; emoji: string; label: string }> = {
+  food: { color: '#FF6B35', bg: '#FFF0EB', emoji: '🍴', label: '美食' },
+  scenic: { color: '#4CAF50', bg: '#E8F5E9', emoji: '🏞️', label: '景点' },
+  shopping: { color: '#9C27B0', bg: '#F3E5F5', emoji: '🛍️', label: '购物' },
+  entertainment: { color: '#FF9800', bg: '#FFF3E0', emoji: '🎮', label: '娱乐' },
+  hotel: { color: '#2196F3', bg: '#E3F2FD', emoji: '🏨', label: '住宿' },
+  place: { color: '#8E8E93', bg: '#F2F2F7', emoji: '📍', label: '地点' }
+}
+
+const markerIconMap = ref<Record<string, string>>({})
+
+const generateMarkerIcons = () => {
+  const ctx = uni.createCanvasContext('markerCanvas')
+  const size = markerCanvasSize.value
+  const entries = Object.entries(categoryMarkerConfig)
+
+  const drawOne = (index: number): Promise<void> => {
+    return new Promise(resolve => {
+      const cfg = entries[index]
+      if (!cfg) { resolve(); return }
+      const [key, config] = cfg
+      const cx = size / 2
+      const pinRadius = 18
+      const pinBottom = size - 4
+
+      ctx.clearRect(0, 0, size, size)
+
+      ctx.setShadow(0, 2, 8, 'rgba(0,0,0,0.2)')
+      ctx.beginPath()
+      ctx.arc(cx, cx - 2, pinRadius, 0, Math.PI * 2)
+      ctx.setFillStyle(config.color)
+      ctx.fill()
+      ctx.setShadow(0, 0, 0, 'rgba(0,0,0,0)')
+
+      ctx.beginPath()
+      ctx.moveTo(cx - 8, cx + pinRadius - 6)
+      ctx.lineTo(cx, pinBottom)
+      ctx.lineTo(cx + 8, cx + pinRadius - 6)
+      ctx.closePath()
+      ctx.setFillStyle(config.color)
+      ctx.fill()
+
+      ctx.beginPath()
+      ctx.arc(cx, cx - 2, pinRadius - 3, 0, Math.PI * 2)
+      ctx.setFillStyle('#FFFFFF')
+      ctx.fill()
+
+      ctx.setFontSize(18)
+      ctx.setTextAlign('center')
+      ctx.setTextBaseline('middle')
+      ctx.fillText(config.emoji, cx, cx - 2)
+
+      ctx.draw(false, () => {
+        uni.canvasToTempFilePath({
+          canvasId: 'markerCanvas',
+          width: size,
+          height: size,
+          destWidth: size * 3,
+          destHeight: size * 3,
+          success: (res: any) => {
+            markerIconMap.value[key] = res.tempFilePath
+            resolve()
+          },
+          fail: () => {
+            markerIconMap.value[key] = ''
+            resolve()
+          }
+        })
+      })
+    })
+  }
+
+  const run = async () => {
+    for (let i = 0; i < entries.length; i++) {
+      await drawOne(i)
+    }
+  }
+  run()
+}
 
 // ========== 数据加载 ==========
 const loadCategories = async () => {
@@ -315,7 +414,7 @@ onMounted(() => {
   // #ifdef MP-WEIXIN
   try { const mb = uni.getMenuButtonBoundingClientRect(); if (mb) { menuButtonLeft.value = mb.left; menuButtonTop.value = mb.top; menuButtonHeight.value = mb.height; menuButtonSpace.value = windowWidth.value - mb.left + 10; navBarHeight.value = (mb.top - statusBarHeight.value) * 2 + mb.height + statusBarHeight.value } } catch {}
   // #endif
-  loadCategories(); locateMe()
+  generateMarkerIcons(); loadCategories(); locateMe()
 })
 </script>
 
@@ -334,8 +433,9 @@ onMounted(() => {
 .icon-btn { width: 64rpx; height: 64rpx; display: flex; align-items: center; justify-content: center; background: #F5F5F7; border-radius: 50%; }
 .map-container { position: fixed; left: 0; right: 0; bottom: 160rpx; }
 .nearby-map { width: 100%; height: 100%; background: linear-gradient(135deg, #E8F5F3 0%, #D4EDE9 100%); }
-.map-controls { position: absolute; right: 32rpx; bottom: 180rpx; display: flex; flex-direction: column; gap: 24rpx; }
-.control-btn { width: 80rpx; height: 80rpx; background: #FFF; border-radius: 20rpx; box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; &:active { transform: scale(0.95); } }
+.map-controls { position: absolute; right: 24rpx; bottom: 200rpx; display: flex; flex-direction: column; gap: 20rpx; z-index: 10; }
+.control-btn { width: 88rpx; height: 88rpx; background: rgba(255, 255, 255, 0.92); backdrop-filter: blur(20px); border-radius: 44rpx; box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.12), 0 1rpx 4rpx rgba(0, 0, 0, 0.06); display: flex; align-items: center; justify-content: center; border: 1rpx solid rgba(0, 0, 0, 0.06); transition: all 0.2s ease; }
+.control-icon { width: 44rpx; height: 44rpx; }
 .loading-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); display: flex; flex-direction: column; align-items: center; gap: 16rpx; background: rgba(255,255,255,0.9); padding: 32rpx 48rpx; border-radius: 24rpx; box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.1); }
 .loading-spinner { width: 48rpx; height: 48rpx; border: 4rpx solid #E5E5EA; border-top-color: #007AFF; border-radius: 50%; animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -423,4 +523,5 @@ onMounted(() => {
 .option-desc { font-size: 24rpx; color: #86868B; }
 .option-icon-wrapper { width: 56rpx; height: 56rpx; display: flex; align-items: center; justify-content: center; &.light { width: 48rpx; height: 48rpx; } }
 .menu-close { width: 96rpx; height: 96rpx; margin: 48rpx auto 0; display: flex; align-items: center; justify-content: center; background: rgba(128,128,128,0.6); border-radius: 50%; }
+.marker-canvas { position: fixed; left: -9999px; top: -9999px; }
 </style>

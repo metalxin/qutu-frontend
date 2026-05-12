@@ -180,8 +180,25 @@ export async function checkFavorite(poiId: number): Promise<boolean> {
 
 // ==================== 数据映射 ====================
 
+const categoryTypeMap: Record<number, string> = {
+  1: 'food',
+  2: 'scenic',
+  3: 'shopping',
+  4: 'entertainment',
+  5: 'hotel'
+}
+
+function getCategoryType(categoryId?: number, categoryName?: string): string {
+  if (categoryId && categoryTypeMap[categoryId]) return categoryTypeMap[categoryId]
+  if (categoryName) {
+    const nameMap: Record<string, string> = { '美食': 'food', '景点': 'scenic', '购物': 'shopping', '娱乐': 'entertainment', '住宿': 'hotel' }
+    if (nameMap[categoryName]) return nameMap[categoryName]
+  }
+  return 'place'
+}
+
 function mapPoi(item: any): NearbyPoi {
-  const catType = item.categoryId === 1 || item.categoryName === '美食' ? 'food' : 'place'
+  const catType = getCategoryType(item.categoryId, item.categoryName)
   return {
     id: item.id,
     name: item.name,
