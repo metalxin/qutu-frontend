@@ -107,7 +107,7 @@ interface PageResponse<T> {
  */
 export async function getDestinations(params?: { region?: string; page?: number; pageSize?: number }) {
   const current = params?.page ?? 1
-  const size = params?.pageSize ?? 10
+  const size = params?.pageSize ?? 1000
   try {
     const page = await request<PageResponse<Destination>>({
       url: '/admin/destinations/page',
