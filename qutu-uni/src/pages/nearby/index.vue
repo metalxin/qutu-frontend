@@ -43,11 +43,11 @@
     <view class="map-container" :style="{ top: (navBarHeight + 80) + 'px' }">
       <map id="nearbyMap" class="nearby-map" :latitude="mapCenter.latitude" :longitude="mapCenter.longitude" :scale="mapScale" :markers="mapMarkers" :show-location="true" @markertap="onMarkerTap" />
       <cover-view class="map-controls">
+        <cover-view class="control-btn" @click="showMapStylePicker = true">
+          <cover-image class="control-icon" :src="mapStyleIconSrc" />
+        </cover-view>
         <cover-view class="control-btn" @click="locateMe">
           <cover-image class="control-icon" :src="locateIconSrc" />
-        </cover-view>
-        <cover-view class="control-btn" @click="refreshPois">
-          <cover-image class="control-icon" :src="refreshIconSrc" />
         </cover-view>
       </cover-view>
       <view class="loading-overlay" v-if="loading">
@@ -148,6 +148,49 @@
     </view>
 
     <canvas canvas-id="markerCanvas" class="marker-canvas" :style="{ width: markerCanvasSize + 'px', height: markerCanvasSize + 'px' }" />
+
+    <!-- 地图样式弹窗 -->
+    <view class="popup-mask" v-if="showMapStylePicker" @click="showMapStylePicker = false">
+      <view class="style-popup" @click.stop>
+        <view class="style-popup-header">
+          <text class="style-popup-title">地图样式</text>
+          <view class="style-popup-close" @click="showMapStylePicker = false">
+            <text class="close-icon">✕</text>
+          </view>
+        </view>
+        <view class="style-list">
+          <view
+            class="style-item"
+            v-for="style in mapStyleOptions"
+            :key="style.value"
+            :class="{ active: mapStyleType === style.value }"
+            @click="selectMapStyle(style.value)"
+          >
+            <view class="style-preview" :class="style.value">
+              <text class="style-preview-icon">{{ style.icon }}</text>
+            </view>
+            <view class="style-info">
+              <text class="style-name">{{ style.label }}</text>
+              <text class="style-desc">{{ style.desc }}</text>
+            </view>
+            <view class="style-check" v-if="mapStyleType === style.value">
+              <text class="check-icon">✓</text>
+            </view>
+          </view>
+        </view>
+        <view class="style-option-row">
+          <view class="style-option-item">
+            <text class="style-option-label">路况信息</text>
+            <switch
+              :checked="showTraffic"
+              @change="showTraffic = ($event as any).detail.value"
+              color="#007AFF"
+              style="transform: scale(0.8)"
+            />
+          </view>
+        </view>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -182,6 +225,9 @@ const citySearchText = ref('')
 const selectedCityTemp = ref('')
 const hotCities = ref(['北京','上海','广州','深圳','杭州','合肥','马鞍山','成都','重庆','西安','南京','武汉'])
 const showAddMenuPopup = ref(false)
+const showMapStylePicker = ref(false)
+const mapStyleType = ref('normal')
+const showTraffic = ref(false)
 
 // 城市坐标映射
 const cityCoords: Record<string, { lat: number; lng: number }> = {
@@ -208,6 +254,21 @@ const refreshIconSrc = computed(() => {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#1D1D1F" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>`
   return `data:image/svg+xml,${encodeURIComponent(svg)}`
 })
+
+const mapStyleIconSrc = computed(() => {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#1D1D1F" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>`
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`
+})
+
+const mapStyleOptions = [
+  { value: 'normal', label: '标准地图', desc: '默认地图样式', icon: '🗺️' },
+  { value: 'satellite', label: '卫星地图', desc: '卫星影像视图', icon: '🛰️' }
+]
+
+const selectMapStyle = (value: string) => {
+  mapStyleType.value = value
+  showMapStylePicker.value = false
+}
 
 const mapMarkers = computed(() => allPois.value.map(poi => ({
   id: poi.id, latitude: poi.latitude, longitude: poi.longitude,
@@ -529,4 +590,145 @@ onShow(() => {
 .option-icon-wrapper { width: 56rpx; height: 56rpx; display: flex; align-items: center; justify-content: center; &.light { width: 48rpx; height: 48rpx; } }
 .menu-close { width: 96rpx; height: 96rpx; margin: 48rpx auto 0; display: flex; align-items: center; justify-content: center; background: rgba(128,128,128,0.6); border-radius: 50%; }
 .marker-canvas { position: fixed; left: -9999px; top: -9999px; }
+
+.popup-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+}
+
+.style-popup {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #FFF;
+  border-radius: 32rpx 32rpx 0 0;
+  padding: 32rpx;
+  padding-bottom: calc(32rpx + env(safe-area-inset-bottom));
+}
+
+.style-popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32rpx;
+}
+
+.style-popup-title {
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #1D1D1F;
+}
+
+.style-popup-close {
+  width: 60rpx;
+  height: 60rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.close-icon {
+  font-size: 28rpx;
+  color: #666;
+}
+
+.style-list {
+  display: flex;
+  gap: 20rpx;
+  margin-bottom: 32rpx;
+}
+
+.style-item {
+  flex: 1;
+  padding: 24rpx;
+  border-radius: 20rpx;
+  background: #F5F5F7;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12rpx;
+  border: 3rpx solid transparent;
+  transition: all 0.2s ease;
+
+  &.active {
+    border-color: #007AFF;
+    background: #E3F2FD;
+  }
+}
+
+.style-preview {
+  width: 100rpx;
+  height: 80rpx;
+  border-radius: 12rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &.normal {
+    background: linear-gradient(135deg, #E8F5E9, #C8E6C9);
+  }
+
+  &.satellite {
+    background: linear-gradient(135deg, #1B5E20, #2E7D32);
+  }
+}
+
+.style-preview-icon {
+  font-size: 40rpx;
+}
+
+.style-info {
+  text-align: center;
+}
+
+.style-name {
+  display: block;
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #1D1D1F;
+}
+
+.style-desc {
+  display: block;
+  font-size: 22rpx;
+  color: #86868B;
+}
+
+.style-check {
+  width: 36rpx;
+  height: 36rpx;
+  background: #007AFF;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.check-icon {
+  font-size: 22rpx;
+  color: #FFFFFF;
+  font-weight: 700;
+}
+
+.style-option-row {
+  border-top: 1rpx solid #E5E5EA;
+  padding-top: 24rpx;
+}
+
+.style-option-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.style-option-label {
+  font-size: 28rpx;
+  color: #1D1D1F;
+}
 </style>
