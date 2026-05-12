@@ -505,7 +505,7 @@ $accent: #FF6D00;
 
 .back-btn {
   position: absolute;
-  top: calc(24rpx + env(safe-area-inset-top));
+  top: calc(48rpx + env(safe-area-inset-top));
   left: 24rpx;
   width: 72rpx;
   height: 72rpx;
@@ -527,7 +527,7 @@ $accent: #FF6D00;
 
 .map-style-btn {
   position: absolute;
-  top: calc(24rpx + env(safe-area-inset-top));
+  top: calc(48rpx + env(safe-area-inset-top));
   right: 24rpx;
   width: 72rpx;
   height: 72rpx;
