@@ -6,18 +6,7 @@
         <text class="back-icon">‹</text>
       </view>
       <text class="nav-title">故事详情</text>
-      <view class="nav-actions" :style="navActionsStyle">
-        <view class="action-btn" @click="shareStory">
-          <text class="action-icon">↗</text>
-        </view>
-        <view class="action-btn" @click="showMoreMenu = true">
-          <view class="more-dots">
-            <view class="dot"></view>
-            <view class="dot"></view>
-            <view class="dot"></view>
-          </view>
-        </view>
-      </view>
+      <view class="nav-right-placeholder"></view>
     </view>
 
     <scroll-view class="detail-content" scroll-y>
@@ -100,9 +89,15 @@
         <text class="btn-icon">✏️</text>
         <text class="btn-text">编辑</text>
       </view>
+      <view class="bottom-btn share-btn-wrapper">
+        <button class="share-btn-inner" open-type="share">
+          <SFIcon name="wechat" :size="32" color="#FFFFFF" />
+          <text class="btn-text" style="color:#fff">微信分享</text>
+        </button>
+      </view>
       <view class="bottom-btn primary" @click="shareStory">
         <text class="btn-icon">↗</text>
-        <text class="btn-text">分享</text>
+        <text class="btn-text">更多</text>
       </view>
     </view>
 
@@ -223,6 +218,8 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
+import { onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
+import SFIcon from '@/components/SFIcon/SFIcon.vue'
 import { deleteDiary, updateDiary, getDiaryDetail, uploadDiaryImage } from '@/api'
 
 interface Story {
@@ -366,7 +363,7 @@ onMounted(async () => {
         story.value = {
           ...story.value,
           id: detail.id,
-          title: detail.location ? `${detail.location}之旅` : '旅行日记',
+          title: detail.title || (detail.location ? `${detail.location}之旅` : '旅行日记'),
           day: detail.day || '',
           weekday: detail.weekday || '',
           date: detail.date || '',
@@ -555,6 +552,7 @@ const deleteConfirm = () => {
       if (res.confirm) {
         try {
           await deleteDiary(storyId.value)
+          uni.$emit('diaryUpdated')
           uni.showToast({ title: '删除成功', icon: 'success' })
           setTimeout(() => {
             uni.navigateBack()
@@ -566,6 +564,24 @@ const deleteConfirm = () => {
     }
   })
 }
+
+// 微信分享配置
+onShareAppMessage(() => {
+  return {
+    title: story.value.title || '我的旅行故事',
+    path: `/pages/story/detail?id=${storyId.value}&from=share`,
+    imageUrl: story.value.image || ''
+  }
+})
+
+// 朋友圈分享配置
+onShareTimeline(() => {
+  return {
+    title: story.value.title || '我的旅行故事',
+    path: `/pages/story/detail?id=${storyId.value}&from=share`,
+    imageUrl: story.value.image || ''
+  }
+})
 </script>
 
 <style lang="scss" scoped>
@@ -595,6 +611,11 @@ const deleteConfirm = () => {
   border-radius: 50%;
 }
 
+.nav-right-placeholder {
+  width: 60rpx;
+  height: 60rpx;
+}
+
 .back-icon {
   font-size: 44rpx;
   color: #333;
@@ -621,6 +642,27 @@ const deleteConfirm = () => {
   justify-content: center;
   background: #f5f5f5;
   border-radius: 50%;
+}
+
+.share-friend-btn {
+  background: rgba(7, 193, 96, 0.1);
+}
+
+.nav-share-btn {
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  border: none;
+  line-height: 1;
+  width: 60rpx;
+  height: 60rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &::after {
+    display: none;
+  }
 }
 
 .action-icon {
@@ -658,6 +700,18 @@ const deleteConfirm = () => {
   border-radius: 24rpx;
   padding: 30rpx;
   box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 6rpx;
+    background: linear-gradient(90deg, #4A90D9, #67B8DE, #4A90D9);
+  }
 }
 
 .stamp-border {
@@ -857,19 +911,41 @@ const deleteConfirm = () => {
     height: 88rpx;
     border-radius: 44rpx;
     background: #F5F5F7;
-    
+
     &.primary {
       background: linear-gradient(135deg, #4A90D9, #67B8DE);
-      
+
       .btn-icon, .btn-text {
         color: #fff;
       }
     }
-    
+
+    &.share-btn-wrapper {
+      background: #07C160;
+      padding: 0;
+
+      .share-btn-inner {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10rpx;
+        background: transparent;
+        border: none;
+        border-radius: 44rpx;
+        padding: 0;
+
+        &::after {
+          display: none;
+        }
+      }
+    }
+
     .btn-icon {
       font-size: 32rpx;
     }
-    
+
     .btn-text {
       font-size: 28rpx;
       color: #333;

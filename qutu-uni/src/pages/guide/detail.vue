@@ -143,8 +143,104 @@
         <SFIcon name="share" :size="32" color="#86868B" />
         <text class="btn-text">分享</text>
       </view>
-      <view class="action-btn primary" @click="generateTrip">
+      <view class="action-btn primary" @click="showTripSheet = true">
         <text class="btn-text">一键生成行程</text>
+      </view>
+    </view>
+
+    <!-- 行程配置弹窗遮罩 -->
+    <view class="trip-overlay" :class="{ show: showTripSheet }" @tap="showTripSheet = false"></view>
+
+    <!-- 行程配置弹窗 -->
+    <view class="trip-sheet" :class="{ show: showTripSheet }">
+      <view class="trip-sheet-content" @tap.stop>
+        <!-- 拖拽指示条 -->
+        <view class="sheet-handle">
+          <view class="handle-bar"></view>
+        </view>
+
+        <!-- 标题区域 -->
+        <view class="sheet-header">
+          <view class="header-icon">
+            <text class="icon-emoji">🚀</text>
+          </view>
+          <view class="header-info">
+            <text class="header-title">一键生成行程</text>
+            <text class="header-subtitle">基于攻略: {{ guideDetail.title }}</text>
+          </view>
+          <view class="header-close" @tap="showTripSheet = false">
+            <text class="close-icon">×</text>
+          </view>
+        </view>
+
+        <!-- 天数选择 -->
+        <view class="config-section">
+          <view class="section-label">
+            <text class="label-icon">📅</text>
+            <text class="label-text">行程天数</text>
+            <text class="label-value">{{ tripDays }}天</text>
+          </view>
+          <view class="days-grid">
+            <view 
+              v-for="day in 7" 
+              :key="day"
+              class="day-item"
+              :class="{ active: tripDays === day }"
+              @tap="tripDays = day"
+            >
+              <text class="day-text">{{ day }}</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 偏好选择 -->
+        <view class="config-section">
+          <view class="section-label">
+            <text class="label-icon">🎯</text>
+            <text class="label-text">规划偏好</text>
+          </view>
+          <view class="preference-list">
+            <view 
+              v-for="pref in preferenceOptions" 
+              :key="pref.id"
+              class="preference-item"
+              :class="{ active: tripPreference === pref.id }"
+              @tap="tripPreference = pref.id"
+            >
+              <text class="pref-name">{{ pref.name }}</text>
+              <text class="pref-desc">{{ pref.desc }}</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 交通方式 -->
+        <view class="config-section">
+          <view class="section-label">
+            <text class="label-icon">🚗</text>
+            <text class="label-text">交通方式</text>
+          </view>
+          <view class="transport-list">
+            <view 
+              v-for="transport in transportModes" 
+              :key="transport.id"
+              class="transport-item"
+              :class="{ active: tripTransport === transport.id }"
+              @tap="tripTransport = transport.id"
+            >
+              <text class="transport-icon">{{ transport.icon }}</text>
+              <text class="transport-name">{{ transport.name }}</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 生成按钮 -->
+        <view class="generate-area">
+          <view class="generate-btn" :class="{ loading: isGenerating }" @tap="generateTrip">
+            <text class="generate-icon" v-if="!isGenerating">✨</text>
+            <view class="loading-spinner" v-else></view>
+            <text class="generate-text">{{ isGenerating ? 'AI正在规划中...' : `AI智能规划 ${tripDays}天行程` }}</text>
+          </view>
+        </view>
       </view>
     </view>
 
@@ -175,50 +271,70 @@
         </view>
       </view>
 
-      <!-- 链接复制 -->
-      <view class="share-link">
-        <text class="link-text">qutu.com/guide/{{ guideDetail.id }}</text>
-        <view class="copy-btn" @tap="copyLink">
-          <SFIcon name="copy" :size="32" color="#86868B" />
-          <text class="copy-text">复制</text>
+      <!-- 分享渠道 -->
+      <view class="share-channels">
+        <view class="channel-item">
+          <button class="channel-btn" open-type="share">
+            <view class="channel-icon wechat">
+              <SFIcon name="wechat" :size="36" color="#FFFFFF" />
+            </view>
+          </button>
+          <text class="channel-name">微信好友</text>
+        </view>
+        <view class="channel-item" @tap="savePoster">
+          <view class="channel-icon poster">
+            <SFIcon name="image" :size="36" color="#FFFFFF" />
+          </view>
+          <text class="channel-name">生成海报</text>
+        </view>
+        <view class="channel-item" @tap="copyLink">
+          <view class="channel-icon link">
+            <SFIcon name="copy" :size="36" color="#FFFFFF" />
+          </view>
+          <text class="channel-name">复制链接</text>
+        </view>
+        <view class="channel-item" @tap="shareToMoments">
+          <view class="channel-icon moments">
+            <SFIcon name="share" :size="36" color="#FFFFFF" />
+          </view>
+          <text class="channel-name">朋友圈</text>
         </view>
       </view>
 
-      <!-- 分享渠道 -->
-      <view class="share-channels">
-        <view class="channel-item" @tap="shareToChannel('douyin')">
-          <view class="channel-icon douyin">
-            <SFIcon name="video" :size="36" color="#FFFFFF" />
+      <!-- 海报预览 -->
+      <view class="poster-preview" v-if="posterImagePath">
+        <view class="poster-mask" @tap="posterImagePath = ''"></view>
+        <view class="poster-content">
+          <image class="poster-image" :src="posterImagePath" mode="widthFix" />
+          <view class="poster-actions">
+            <view class="poster-btn" @tap="savePosterToAlbum">
+              <SFIcon name="import" :size="32" color="#FFFFFF" />
+              <text class="poster-btn-text">保存到相册</text>
+            </view>
+            <view class="poster-btn secondary" @tap="posterImagePath = ''">
+              <text class="poster-btn-text">关闭</text>
+            </view>
           </view>
-          <text class="channel-name">抖音</text>
-        </view>
-        <view class="channel-item" @tap="shareToChannel('wechat')">
-          <view class="channel-icon wechat">
-            <SFIcon name="wechat" :size="36" color="#FFFFFF" />
-          </view>
-          <text class="channel-name">微信</text>
-        </view>
-        <view class="channel-item" @tap="shareToChannel('qq')">
-          <view class="channel-icon qq">
-            <SFIcon name="user" :size="36" color="#FFFFFF" />
-          </view>
-          <text class="channel-name">QQ</text>
-        </view>
-        <view class="channel-item" @tap="shareToChannel('xiaohongshu')">
-          <view class="channel-icon xiaohongshu">
-            <SFIcon name="book" :size="36" color="#FFFFFF" />
-          </view>
-          <text class="channel-name">小红书</text>
         </view>
       </view>
     </view>
+
+    <!-- 海报 Canvas（隐藏） -->
+    <canvas id="guidePosterCanvas" type="2d" style="position:fixed;left:-9999px;top:-9999px;width:600px;height:960px;"></canvas>
   </view>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, getCurrentInstance } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
+import { onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
 import SFIcon from '@/components/SFIcon/SFIcon.vue'
-import { getGuideDetail, toggleGuideCollect, generateGuideTrip, type GuideDetail as GuideDetailType, type GuideDay } from '@/api'
+import { getGuideDetail, toggleGuideCollect, checkGuideFavorite, type GuideDetail as GuideDetailType, type GuideDay } from '@/api'
+import { generateAIRoute, getPreferenceOptions, getTransportModes } from '@/api/modules/planning'
+import type { PreferenceOption, TransportMode } from '@/api/modules/planning'
+import { generateGuidePoster, saveImageToAlbum, copyShareLink, trackShare } from '@/utils/share'
+
+const instance = getCurrentInstance()
 
 const scrollTop = ref(0)
 const activeDay = ref('overview')
@@ -267,6 +383,14 @@ const loadGuideDetail = async () => {
       // 默认选中总览
       activeDay.value = 'overview'
     }
+    // 查询收藏状态
+    try {
+      const collected = await checkGuideFavorite(guideId.value)
+      isCollected.value = !!collected
+    } catch {
+      // 未登录或查询失败，默认未收藏
+      isCollected.value = false
+    }
   } catch (error) {
     console.error('加载攻略详情失败:', error)
   } finally {
@@ -300,9 +424,8 @@ const toggleCollect = async () => {
       icon: 'none'
     })
   } catch (error) {
-    isCollected.value = !isCollected.value
     uni.showToast({
-      title: isCollected.value ? '已收藏' : '已取消收藏',
+      title: '操作失败，请重试',
       icon: 'none'
     })
   }
@@ -310,53 +433,145 @@ const toggleCollect = async () => {
 
 // 复制链接
 const copyLink = () => {
-  const link = `qutu.com/guide/${guideDetail.value.id}`
-  uni.setClipboardData({
-    data: link,
-    success: () => {
-      uni.showToast({
-        title: '链接已复制',
-        icon: 'success'
-      })
-    }
-  })
-}
-
-// 分享到渠道
-const shareToChannel = (channel: string) => {
-  const channelNames: any = {
-    douyin: '抖音',
-    wechat: '微信',
-    qq: 'QQ',
-    xiaohongshu: '小红书'
-  }
-  uni.showToast({
-    title: `分享到${channelNames[channel]}`,
-    icon: 'none'
-  })
-  showSharePopup.value = false
-}
-
-// 生成行程
-const generateTrip = async () => {
-  uni.showToast({
-    title: '行程生成中...',
-    icon: 'loading'
-  })
-  
-  try {
-    const res = await generateGuideTrip(guideId.value)
-    if (res?.success) {
-      uni.showToast({
-        title: '行程已生成',
-        icon: 'success'
-      })
-    }
-  } catch (error) {
-    uni.showToast({
-      title: '生成成功',
-      icon: 'success'
+  const path = `/pages/guide/detail?id=${guideDetail.value.id}`
+  copyShareLink(path).then(() => {
+    uni.showToast({ title: '链接已复制', icon: 'success' })
+  }).catch(() => {
+    uni.setClipboardData({
+      data: path,
+      success: () => uni.showToast({ title: '链接已复制', icon: 'success' })
     })
+  })
+  trackShare('copy_link', path)
+}
+
+// 海报图片路径
+const posterImagePath = ref('')
+
+// 生成海报
+const savePoster = async () => {
+  uni.showLoading({ title: '生成海报中...' })
+  try {
+    const path = await generateGuidePoster('guidePosterCanvas', {
+      coverUrl: guideDetail.value.cover,
+      title: guideDetail.value.title,
+      description: guideDetail.value.description,
+      city: guideDetail.value.city,
+      days: guideDetail.value.days,
+      tag: guideDetail.value.tag,
+      likes: guideDetail.value.likes,
+      views: guideDetail.value.views,
+      guideId: guideDetail.value.id
+    }, instance?.proxy)
+    posterImagePath.value = path
+    uni.hideLoading()
+  } catch (e) {
+    uni.hideLoading()
+    console.error('生成海报失败:', e)
+    uni.showToast({ title: '海报生成失败', icon: 'none' })
+  }
+}
+
+// 保存海报到相册
+const savePosterToAlbum = async () => {
+  if (!posterImagePath.value) return
+  try {
+    await saveImageToAlbum(posterImagePath.value)
+    uni.showToast({ title: '海报已保存到相册', icon: 'success' })
+    trackShare('save_poster', `/pages/guide/detail?id=${guideDetail.value.id}`)
+  } catch (e) {
+    console.error('保存海报失败:', e)
+  }
+}
+
+// 分享到朋友圈（引导保存海报）
+const shareToMoments = () => {
+  savePoster()
+}
+
+// 微信分享配置
+onShareAppMessage(() => {
+  trackShare('wechat_friend', `/pages/guide/detail?id=${guideDetail.value.id}`)
+  return {
+    title: `${guideDetail.value.title} - 趣途云迹`,
+    path: `/pages/guide/detail?id=${guideDetail.value.id}&from=share`,
+    imageUrl: guideDetail.value.cover || ''
+  }
+})
+
+// 朋友圈分享配置
+onShareTimeline(() => {
+  trackShare('moments', `/pages/guide/detail?id=${guideDetail.value.id}`)
+  return {
+    title: `${guideDetail.value.title} - 趣途云迹`,
+    path: `/pages/guide/detail?id=${guideDetail.value.id}&from=share`,
+    imageUrl: guideDetail.value.cover || ''
+  }
+})
+
+// 生成行程（行程配置弹窗）
+const showTripSheet = ref(false)
+const tripDays = ref(3)
+const tripPreference = ref('auto')
+const tripTransport = ref('driving')
+const isGenerating = ref(false)
+
+const preferenceOptions = ref<PreferenceOption[]>([
+  { id: 'auto', name: '自动推荐', desc: 'AI智能规划最优路线' },
+  { id: 'spots', name: '只规划景点', desc: '不含餐饮住宿推荐' },
+  { id: 'relax', name: '休闲模式', desc: '每天2-3个景点，节奏慢' },
+  { id: 'intensive', name: '特种兵模式', desc: '紧凑安排，玩遍更多' }
+])
+
+const transportModes = ref<TransportMode[]>([
+  { id: 'driving', name: '自驾', icon: '🚗' },
+  { id: 'public', name: '公共交通', icon: '🚇' },
+  { id: 'walking', name: '步行', icon: '🚶' },
+  { id: 'cycling', name: '骑行', icon: '🚲' }
+])
+
+const loadPlanningOptions = async () => {
+  try {
+    const [prefs, transports] = await Promise.all([
+      getPreferenceOptions(),
+      getTransportModes()
+    ])
+    if (prefs && prefs.length > 0) preferenceOptions.value = prefs
+    if (transports && transports.length > 0) transportModes.value = transports
+  } catch (e) {
+    console.warn('加载规划选项失败，使用默认值', e)
+  }
+}
+
+// 弹窗打开时加载选项
+import { watch } from 'vue'
+watch(showTripSheet, (val) => {
+  if (val) loadPlanningOptions()
+})
+
+const generateTrip = async () => {
+  if (isGenerating.value) return
+  isGenerating.value = true
+
+  const cityName = guideDetail.value.city || ''
+
+  try {
+    const route = await generateAIRoute({
+      startCity: cityName,
+      endCity: cityName,
+      days: tripDays.value,
+      preference: tripPreference.value,
+      transport: tripTransport.value
+    })
+
+    isGenerating.value = false
+    showTripSheet.value = false
+
+    uni.setStorageSync('currentRoute', JSON.stringify(route))
+    uni.navigateTo({ url: '/pages/planning/detail' })
+  } catch (error) {
+    isGenerating.value = false
+    uni.showToast({ title: '规划生成失败，请重试', icon: 'none' })
   }
 }
 
@@ -918,54 +1133,13 @@ $border-radius-md: 16rpx;
   color: $text-secondary;
 }
 
-// 链接复制
-.share-link {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20rpx 24rpx;
-  background: $bg-color;
-  border-radius: 12rpx;
-  margin-bottom: 32rpx;
-}
-
-.link-text {
-  font-size: 26rpx;
-  color: $text-secondary;
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.copy-btn {
-  display: flex;
-  align-items: center;
-  gap: 8rpx;
-  padding: 12rpx 20rpx;
-  background: $card-bg;
-  border-radius: 8rpx;
-  margin-left: 16rpx;
-
-  &:active {
-    opacity: 0.7;
-  }
-}
-
-.copy-icon {
-  font-size: 24rpx;
-}
-
-.copy-text {
-  font-size: 26rpx;
-  color: $primary-color;
-  font-weight: 500;
-}
+// 链接复制 - removed, now in share channels
 
 // 分享渠道
 .share-channels {
   display: flex;
   justify-content: space-around;
+  padding-top: 8rpx;
 }
 
 .channel-item {
@@ -979,6 +1153,18 @@ $border-radius-md: 16rpx;
   }
 }
 
+.channel-btn {
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  border: none;
+  line-height: 1;
+
+  &::after {
+    display: none;
+  }
+}
+
 .channel-icon {
   width: 100rpx;
   height: 100rpx;
@@ -987,30 +1173,380 @@ $border-radius-md: 16rpx;
   align-items: center;
   justify-content: center;
 
-  &.douyin {
-    background: #000000;
-  }
-
   &.wechat {
     background: #07C160;
   }
 
-  &.qq {
-    background: #12B7F5;
+  &.poster {
+    background: linear-gradient(135deg, #FF9500, #FF5E3A);
   }
 
-  &.xiaohongshu {
-    background: #FE2C55;
+  &.link {
+    background: #5856D6;
   }
-}
 
-.icon-text {
-  font-size: 40rpx;
-  color: #FFFFFF;
+  &.moments {
+    background: linear-gradient(135deg, #FA9D3B, #FF6B00);
+  }
 }
 
 .channel-name {
   font-size: 24rpx;
   color: $text-secondary;
+}
+
+// 海报预览
+.poster-preview {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2000;
+}
+
+.poster-mask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.poster-content {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 80%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32rpx;
+}
+
+.poster-image {
+  width: 100%;
+  border-radius: 16rpx;
+  box-shadow: 0 8rpx 40rpx rgba(0, 0, 0, 0.3);
+}
+
+.poster-actions {
+  display: flex;
+  gap: 24rpx;
+  width: 100%;
+}
+
+.poster-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  height: 88rpx;
+  border-radius: 44rpx;
+  background: linear-gradient(135deg, #00C853, #00BFA5);
+
+  &.secondary {
+    background: rgba(255, 255, 255, 0.2);
+  }
+}
+
+.poster-btn-text {
+  font-size: 28rpx;
+  color: #FFFFFF;
+  font-weight: 500;
+}
+
+// 行程配置弹窗遮罩
+.trip-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 998;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+
+  &.show {
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
+.trip-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999;
+  transform: translateY(100%);
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &.show {
+    transform: translateY(0);
+  }
+}
+
+.trip-sheet-content {
+  background: #FFFFFF;
+  border-radius: 32rpx 32rpx 0 0;
+  padding-bottom: env(safe-area-inset-bottom);
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.sheet-handle {
+  display: flex;
+  justify-content: center;
+  padding: 20rpx 0 8rpx;
+}
+
+.handle-bar {
+  width: 72rpx;
+  height: 8rpx;
+  background: #E0E0E0;
+  border-radius: 4rpx;
+}
+
+.sheet-header {
+  display: flex;
+  align-items: center;
+  padding: 16rpx 32rpx 24rpx;
+  gap: 20rpx;
+}
+
+.header-icon {
+  width: 80rpx;
+  height: 80rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #E8F5E9, #C8E6C9);
+  border-radius: 24rpx;
+}
+
+.icon-emoji {
+  font-size: 40rpx;
+}
+
+.header-info {
+  flex: 1;
+}
+
+.header-title {
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #1A1A1A;
+  display: block;
+}
+
+.header-subtitle {
+  font-size: 24rpx;
+  color: #999;
+  margin-top: 4rpx;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.header-close {
+  width: 56rpx;
+  height: 56rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #F5F5F5;
+  border-radius: 50%;
+}
+
+.config-section {
+  padding: 16rpx 32rpx 24rpx;
+}
+
+.section-label {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  margin-bottom: 20rpx;
+}
+
+.label-icon {
+  font-size: 28rpx;
+}
+
+.label-text {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.label-value {
+  font-size: 26rpx;
+  color: #00C853;
+  font-weight: 600;
+  margin-left: auto;
+}
+
+.days-grid {
+  display: flex;
+  gap: 16rpx;
+}
+
+.day-item {
+  flex: 1;
+  height: 72rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #F5F5F7;
+  border-radius: 16rpx;
+  border: 2rpx solid transparent;
+  transition: all 0.2s ease;
+
+  &.active {
+    background: #E8F5E9;
+    border-color: #00C853;
+  }
+}
+
+.day-text {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #666;
+
+  .day-item.active & {
+    color: #00C853;
+    font-weight: 700;
+  }
+}
+
+.preference-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.preference-item {
+  display: flex;
+  align-items: center;
+  padding: 24rpx;
+  background: #F5F5F7;
+  border-radius: 20rpx;
+  border: 2rpx solid transparent;
+  transition: all 0.2s ease;
+
+  &.active {
+    background: #E8F5E9;
+    border-color: #00C853;
+  }
+}
+
+.pref-name {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #333;
+  margin-right: 16rpx;
+
+  .preference-item.active & {
+    color: #00C853;
+  }
+}
+
+.pref-desc {
+  font-size: 24rpx;
+  color: #999;
+  margin-left: auto;
+}
+
+.transport-list {
+  display: flex;
+  gap: 16rpx;
+}
+
+.transport-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8rpx;
+  padding: 20rpx 0;
+  background: #F5F5F7;
+  border-radius: 20rpx;
+  border: 2rpx solid transparent;
+  transition: all 0.2s ease;
+
+  &.active {
+    background: #E8F5E9;
+    border-color: #00C853;
+  }
+}
+
+.transport-icon {
+  font-size: 36rpx;
+}
+
+.transport-name {
+  font-size: 24rpx;
+  color: #666;
+
+  .transport-item.active & {
+    color: #00C853;
+    font-weight: 600;
+  }
+}
+
+.generate-area {
+  padding: 24rpx 32rpx 32rpx;
+}
+
+.generate-btn {
+  width: 100%;
+  height: 100rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
+  background: linear-gradient(135deg, #00C853, #00BFA5);
+  border-radius: 50rpx;
+  box-shadow: 0 8rpx 24rpx rgba(0, 200, 83, 0.3);
+  transition: all 0.2s ease;
+
+  &:active {
+    transform: scale(0.98);
+  }
+
+  &.loading {
+    opacity: 0.85;
+    pointer-events: none;
+  }
+}
+
+.generate-icon {
+  font-size: 32rpx;
+}
+
+.loading-spinner {
+  width: 32rpx;
+  height: 32rpx;
+  border: 4rpx solid rgba(255, 255, 255, 0.3);
+  border-top-color: #FFFFFF;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.generate-text {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #FFFFFF;
 }
 </style>

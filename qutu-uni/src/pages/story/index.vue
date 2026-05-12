@@ -91,10 +91,11 @@
         <view class="template-section">
           <view class="section-title">快捷模板</view>
           <scroll-view scroll-x class="template-list">
-            <view 
-              class="template-item" 
-              v-for="tpl in storyTemplates" 
+            <view
+              class="template-item"
+              v-for="tpl in storyTemplates"
               :key="tpl.id"
+              :class="{ active: activeTemplate === tpl.id }"
               @click="useTemplate(tpl)"
             >
               <text class="template-icon">{{ tpl.icon }}</text>
@@ -118,11 +119,22 @@
           </view>
         </view>
 
+        <!-- 标题输入 -->
+        <view class="title-section">
+          <view class="section-title">日记标题</view>
+          <input
+            class="title-input"
+            v-model="diaryForm.title"
+            placeholder="给日记起个标题（可选）"
+            maxlength="30"
+          />
+        </view>
+
         <!-- 内容输入 -->
         <view class="input-section">
           <view class="section-title">日记内容</view>
-          <textarea 
-            class="content-input" 
+          <textarea
+            class="content-input"
             v-model="diaryForm.content"
             :placeholder="contentPlaceholder"
             :maxlength="500"
@@ -156,9 +168,9 @@
         <view class="mood-section">
           <view class="section-title">今日心情</view>
           <view class="mood-list">
-            <view 
-              class="mood-item" 
-              v-for="mood in moodOptions" 
+            <view
+              class="mood-item"
+              v-for="mood in moodOptions"
               :key="mood.value"
               :class="{ active: diaryForm.mood === mood.value }"
               @click="selectMood(mood)"
@@ -173,9 +185,9 @@
         <view class="weather-section">
           <view class="section-title">当日天气</view>
           <view class="weather-list">
-            <view 
-              class="weather-item" 
-              v-for="weather in weatherOptions" 
+            <view
+              class="weather-item"
+              v-for="weather in weatherOptions"
               :key="weather.value"
               :class="{ active: diaryForm.weather === weather.value }"
               @click="selectWeather(weather)"
@@ -220,6 +232,7 @@ const statusBarHeight = ref(44)
 
 interface Diary {
   id: number
+  title?: string
   day: string
   weekday: string
   date: string
@@ -296,6 +309,7 @@ const datePickerValue = ref([6, 0, 0]) // 默认2026年1月1日
 
 // 日记表单
 const diaryForm = reactive({
+  title: '',
   image: '',
   content: '',
   location: '',
@@ -306,8 +320,12 @@ const diaryForm = reactive({
   weatherIcon: ''
 })
 
+// 当前选中模板
+const activeTemplate = ref(0)
+
 // 使用模板
 const useTemplate = (tpl: StoryTemplate) => {
+  activeTemplate.value = tpl.id
   switch (tpl.id) {
     case 1: // 旅途日记
       contentPlaceholder.value = '今天的旅途中，我看到了...'
@@ -322,7 +340,6 @@ const useTemplate = (tpl: StoryTemplate) => {
       contentPlaceholder.value = '旅行让我明白了...'
       break
   }
-  uni.showToast({ title: `已选择${tpl.name}模板`, icon: 'none' })
 }
 
 // 选择位置
@@ -483,7 +500,7 @@ const saveDiary = async () => {
   const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
   const dateParts = diaryForm.date.split('/')
   const dateObj = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]))
-  
+
   const newDiary: Diary = {
     id: Date.now(),
     day: `${dateParts[1]}/${dateParts[2]}`,
@@ -500,6 +517,7 @@ const saveDiary = async () => {
 
   try {
     const res = await createDiary({
+      title: diaryForm.title,
       image: diaryForm.image,
       images: diaryForm.image ? [diaryForm.image] : [],
       content: diaryForm.content,
@@ -508,7 +526,7 @@ const saveDiary = async () => {
       mood: diaryForm.mood,
       weather: diaryForm.weather
     })
-    
+
     if (res && res.id) {
       newDiary.id = res.id
     }
@@ -516,7 +534,8 @@ const saveDiary = async () => {
     console.error('保存日记失败:', error)
   }
 
-  diaryList.value.unshift(newDiary)
+  // 刷新列表
+  await loadDiaryList()
 
   // 重置表单
   resetDiaryForm()
@@ -530,6 +549,7 @@ const saveDiary = async () => {
 
 // 重置表单
 const resetDiaryForm = () => {
+  diaryForm.title = ''
   diaryForm.image = ''
   diaryForm.content = ''
   diaryForm.location = ''
@@ -537,6 +557,7 @@ const resetDiaryForm = () => {
   diaryForm.moodIcon = ''
   diaryForm.weather = ''
   diaryForm.weatherIcon = ''
+  activeTemplate.value = 0
   contentPlaceholder.value = '记录旅行中的美好瞬间...'
 }
 
@@ -545,7 +566,7 @@ const viewDiaryDetail = (diary: Diary) => {
   const year = diary.date.split('-')[0]
   const storyData = {
     id: diary.id,
-    title: diary.location ? `${diary.location}之旅` : '旅行日记',
+    title: (diary as any).title || (diary.location ? `${diary.location}之旅` : '旅行日记'),
     day: diary.day,
     weekday: diary.weekday,
     date: diary.date,
@@ -559,7 +580,7 @@ const viewDiaryDetail = (diary: Diary) => {
     weatherIcon: diary.weatherIcon,
     createdAt: diary.date
   }
-  
+
   uni.setStorageSync('currentStory', JSON.stringify(storyData))
   uni.navigateTo({
     url: `/pages/story/detail?id=${diary.id}`
@@ -571,7 +592,7 @@ const shareDiary = (diary: Diary) => {
   const year = diary.date.split('-')[0]
   const storyData = {
     id: diary.id,
-    title: diary.location ? `${diary.location}之旅` : '旅行日记',
+    title: (diary as any).title || (diary.location ? `${diary.location}之旅` : '旅行日记'),
     day: diary.day,
     weekday: diary.weekday,
     date: diary.date,
@@ -584,7 +605,7 @@ const shareDiary = (diary: Diary) => {
     weather: diary.weather,
     weatherIcon: diary.weatherIcon
   }
-  
+
   uni.setStorageSync('shareStory', JSON.stringify(storyData))
   uni.navigateTo({
     url: `/pages/story/share?id=${diary.id}`
@@ -752,6 +773,11 @@ $border-radius-md: 16rpx;
   background: $card-bg;
   border-radius: $border-radius-lg;
   padding: 32rpx;
+  transition: transform 0.2s ease;
+
+  &:active {
+    transform: scale(0.99);
+  }
 }
 
 .item-header {
@@ -809,6 +835,10 @@ $border-radius-md: 16rpx;
   font-size: 28rpx;
   color: $text-primary;
   line-height: 1.8;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .item-location {
@@ -832,15 +862,21 @@ $border-radius-md: 16rpx;
   padding: 12rpx 24rpx;
   background: #F5F5F7;
   border-radius: 30rpx;
-  
+  transition: all 0.2s ease;
+
+  &:active {
+    background: rgba(0, 184, 169, 0.12);
+  }
+
   .action-icon {
     font-size: 28rpx;
-    color: #4A90D9;
+    color: $primary-color;
   }
-  
+
   .action-text {
     font-size: 26rpx;
-    color: #4A90D9;
+    color: $primary-color;
+    font-weight: 500;
   }
 }
 
@@ -945,7 +981,14 @@ $border-radius-md: 16rpx;
   background: $bg-color;
   border-radius: 16rpx;
   margin-right: 20rpx;
+  border: 2rpx solid transparent;
+  transition: all 0.2s ease;
   
+  &.active {
+    background: rgba(0, 184, 169, 0.12);
+    border-color: $primary-color;
+  }
+
   &:active {
     background: color.adjust(#F5F5F7, $lightness: -5%);
   }
@@ -1042,6 +1085,22 @@ $border-radius-md: 16rpx;
   right: 16rpx;
   font-size: 22rpx;
   color: $text-secondary;
+}
+
+// 标题输入
+.title-section {
+  margin-bottom: 32rpx;
+}
+
+.title-input {
+  width: 100%;
+  height: 80rpx;
+  padding: 0 24rpx;
+  background: $bg-color;
+  border-radius: $border-radius-md;
+  font-size: 28rpx;
+  color: $text-primary;
+  box-sizing: border-box;
 }
 
 // 位置选择

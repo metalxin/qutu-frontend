@@ -55,6 +55,12 @@
           <text class="desc-text">{{ story.content.slice(1, 80) }}{{ story.content.length > 80 ? '...' : '' }}</text>
         </view>
 
+        <!-- 心情天气 -->
+        <view class="card-mood" v-if="story.moodIcon || story.weatherIcon">
+          <text class="mood-item" v-if="story.moodIcon">{{ story.moodIcon }} {{ story.mood }}</text>
+          <text class="mood-item" v-if="story.weatherIcon">{{ story.weatherIcon }} {{ story.weather }}</text>
+        </view>
+
         <!-- 分割线 -->
         <view class="card-divider dashed"></view>
 
@@ -83,58 +89,71 @@
           v-for="(color, index) in cardColors" 
           :key="index"
           :style="{ background: color.value }"
-          :class="{ active: cardBackground === color.value }"
-          @click="selectColor(color.value)"
+          :class="{ active: selectedColorIndex === index }"
+          @click="selectColor(index)"
         >
-          <text class="color-check" v-if="cardBackground === color.value">✓</text>
+          <text class="color-check" v-if="selectedColorIndex === index">✓</text>
         </view>
       </scroll-view>
     </view>
 
     <!-- 分享操作栏 -->
     <view class="share-actions">
-      <view class="action-item" @click="saveImage">
+      <view class="action-item" @click="savePoster">
         <view class="action-icon save">
-          <view class="icon-save">
-            <view class="save-arrow"></view>
-            <view class="save-line"></view>
-          </view>
+          <text class="icon-text">↓</text>
         </view>
-        <text class="action-label">保存图片</text>
+        <text class="action-label">生成海报</text>
       </view>
       <view class="action-item">
         <button class="share-button" open-type="share">
           <view class="action-icon wechat">
-            <view class="icon-wechat"></view>
+            <text class="icon-text">👥</text>
           </view>
         </button>
         <text class="action-label">微信好友</text>
       </view>
       <view class="action-item" @click="shareToMoments">
         <view class="action-icon moments">
-          <view class="icon-moments">
-            <view class="moments-inner"></view>
-          </view>
+          <text class="icon-text">◎</text>
         </view>
         <text class="action-label">朋友圈</text>
       </view>
-      <view class="action-item" @click="shareMore">
-        <view class="action-icon more">
-          <view class="icon-more">
-            <view class="more-dot"></view>
-            <view class="more-dot"></view>
-            <view class="more-dot"></view>
-          </view>
+      <view class="action-item" @click="copyStoryLink">
+        <view class="action-icon link">
+          <text class="icon-text">⎘</text>
         </view>
-        <text class="action-label">更多</text>
+        <text class="action-label">复制链接</text>
       </view>
     </view>
+
+    <!-- 海报预览 -->
+    <view class="poster-preview" v-if="posterImagePath">
+      <view class="poster-mask" @tap="posterImagePath = ''"></view>
+      <view class="poster-content">
+        <image class="poster-image" :src="posterImagePath" mode="widthFix" />
+        <view class="poster-actions">
+          <view class="poster-btn" @tap="savePosterToAlbum">
+            <text class="poster-btn-text">保存到相册</text>
+          </view>
+          <view class="poster-btn secondary" @tap="posterImagePath = ''">
+            <text class="poster-btn-text">关闭</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 海报 Canvas（隐藏） -->
+    <canvas id="storyPosterCanvas" type="2d" style="position:fixed;left:-9999px;top:-9999px;width:600px;height:900px;"></canvas>
   </view>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { onShareAppMessage } from '@dcloudio/uni-app'
+import { ref, onMounted, getCurrentInstance } from 'vue'
+import { onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
+import { generateStoryPoster, saveImageToAlbum, copyShareLink, trackShare } from '@/utils/share'
+
+const instance = getCurrentInstance()
 
 interface Story {
   id: number
@@ -146,6 +165,10 @@ interface Story {
   image?: string
   content: string
   location?: string
+  mood?: string
+  moodIcon?: string
+  weather?: string
+  weatherIcon?: string
 }
 
 // 状态栏高度
@@ -161,8 +184,11 @@ const cardColors = [
   { name: '简约', value: 'linear-gradient(180deg, #F5F5F5 0%, #E0E0E0 100%)' }
 ]
 
+// 选中色索引
+const selectedColorIndex = ref(0)
+
 // 卡片背景色
-const cardBackground = ref('linear-gradient(180deg, #FFD89E 0%, #FFCB7C 100%)')
+const cardBackground = ref(cardColors[0].value)
 
 // 用户信息
 const userInfo = ref({
@@ -181,28 +207,42 @@ const story = ref<Story>({
   location: ''
 })
 
+// 海报图片路径
+const posterImagePath = ref('')
+
 // 获取系统信息和参数
 onMounted(() => {
   const systemInfo = uni.getSystemInfoSync()
   statusBarHeight.value = systemInfo.statusBarHeight || 44
-  
+
   // 尝试从本地存储获取故事数据
   const storyData = uni.getStorageSync('shareStory')
   if (storyData) {
-    story.value = JSON.parse(storyData)
+    try {
+      story.value = JSON.parse(storyData)
+    } catch {}
     uni.removeStorageSync('shareStory')
   }
-  
+
   // 获取用户信息
   loadUserInfo()
+
+  // 获取页面参数中的ID
+  const pages = getCurrentPages()
+  const currentPage = pages[pages.length - 1] as any
+  if (currentPage?.options?.id) {
+    story.value.id = parseInt(currentPage.options.id)
+  }
 })
 
 // 加载用户信息
 const loadUserInfo = () => {
-  const saved = uni.getStorageSync('userInfo')
-  if (saved) {
-    userInfo.value = saved
-  }
+  try {
+    const saved = uni.getStorageSync('userInfo')
+    if (saved && typeof saved === 'object') {
+      userInfo.value = saved
+    }
+  } catch {}
 }
 
 // 返回
@@ -211,46 +251,82 @@ const goBack = () => {
 }
 
 // 选择背景色
-const selectColor = (color: string) => {
-  cardBackground.value = color
+const selectColor = (index: number) => {
+  selectedColorIndex.value = index
+  cardBackground.value = cardColors[index].value
 }
 
-// 保存图片
-const saveImage = async () => {
-  uni.showLoading({ title: '生成中...' })
-  
+// 生成海报
+const savePoster = async () => {
+  uni.showLoading({ title: '生成海报中...' })
   try {
-    // 如果有图片，保存图片
-    if (story.value.image) {
-      await uni.saveImageToPhotosAlbum({
-        filePath: story.value.image
-      })
-      uni.showToast({ title: '保存成功', icon: 'success' })
-    } else {
-      uni.showToast({ title: '暂无图片可保存', icon: 'none' })
-    }
-  } catch (e) {
-    uni.showToast({ title: '保存失败', icon: 'none' })
-  } finally {
+    const path = await generateStoryPoster('storyPosterCanvas', {
+      title: story.value.title || '旅行日记',
+      content: story.value.content || '',
+      imageUrl: story.value.image,
+      location: story.value.location,
+      date: story.value.day,
+      weekday: story.value.weekday,
+      moodIcon: story.value.moodIcon,
+      weatherIcon: story.value.weatherIcon,
+      userName: userInfo.value.nickname || '旅行者'
+    }, instance?.proxy)
+    posterImagePath.value = path
     uni.hideLoading()
+  } catch (e) {
+    uni.hideLoading()
+    console.error('生成海报失败:', e)
+    uni.showToast({ title: '海报生成失败', icon: 'none' })
   }
 }
 
-// 分享到朋友圈
-const shareToMoments = () => {
-  uni.showToast({ title: '请先保存图片后分享', icon: 'none' })
+// 保存海报到相册
+const savePosterToAlbum = async () => {
+  if (!posterImagePath.value) return
+  try {
+    await saveImageToAlbum(posterImagePath.value)
+    uni.showToast({ title: '海报已保存到相册', icon: 'success' })
+    trackShare('save_poster', `/pages/story/share?id=${story.value.id}`)
+  } catch (e) {
+    console.error('保存海报失败:', e)
+  }
 }
 
-// 更多分享
-const shareMore = () => {
-  uni.showToast({ title: '请先保存图片后分享', icon: 'none' })
+// 分享到朋友圈（引导保存海报）
+const shareToMoments = () => {
+  savePoster()
+}
+
+// 复制链接
+const copyStoryLink = () => {
+  const path = `/pages/story/detail?id=${story.value.id}`
+  copyShareLink(path).then(() => {
+    uni.showToast({ title: '链接已复制', icon: 'success' })
+  }).catch(() => {
+    uni.setClipboardData({
+      data: path,
+      success: () => uni.showToast({ title: '链接已复制', icon: 'success' })
+    })
+  })
+  trackShare('copy_link', path)
 }
 
 // 微信分享
 onShareAppMessage(() => {
+  trackShare('wechat_friend', `/pages/story/detail?id=${story.value.id}`)
   return {
     title: story.value.title || '我的旅行故事',
-    path: `/pages/story/detail?id=${story.value.id}`,
+    path: `/pages/story/detail?id=${story.value.id}&from=share`,
+    imageUrl: story.value.image || ''
+  }
+})
+
+// 朋友圈分享
+onShareTimeline(() => {
+  trackShare('moments', `/pages/story/detail?id=${story.value.id}`)
+  return {
+    title: story.value.title || '我的旅行故事',
+    path: `/pages/story/detail?id=${story.value.id}&from=share`,
     imageUrl: story.value.image || ''
   }
 })
@@ -260,6 +336,7 @@ onShareAppMessage(() => {
 .share-page {
   min-height: 100vh;
   background: #F5F5F7;
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 .nav-bar {
@@ -327,14 +404,10 @@ onShareAppMessage(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  
+
   image {
     width: 100%;
     height: 100%;
-  }
-  
-  .avatar-placeholder {
-    font-size: 32rpx;
   }
 }
 
@@ -347,7 +420,7 @@ onShareAppMessage(() => {
 .card-divider {
   height: 2rpx;
   margin: 24rpx 0;
-  
+
   &.dashed {
     border-top: 2rpx dashed rgba(0, 0, 0, 0.15);
   }
@@ -394,7 +467,7 @@ onShareAppMessage(() => {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border-radius: 12rpx;
   margin-bottom: 16rpx;
-  
+
   .placeholder-icon {
     font-size: 60rpx;
   }
@@ -404,13 +477,13 @@ onShareAppMessage(() => {
   display: flex;
   justify-content: space-between;
   width: 100%;
-  
+
   .story-date {
     font-size: 28rpx;
     font-weight: 600;
     color: #333;
   }
-  
+
   .story-weekday {
     font-size: 26rpx;
     color: #666;
@@ -422,7 +495,7 @@ onShareAppMessage(() => {
   padding: 10rpx 20rpx;
   background: rgba(0, 0, 0, 0.05);
   border-radius: 20rpx;
-  
+
   .location-text {
     font-size: 24rpx;
     color: #666;
@@ -432,7 +505,7 @@ onShareAppMessage(() => {
 // 描述
 .card-description {
   padding: 20rpx 0;
-  
+
   .desc-first {
     font-size: 48rpx;
     font-weight: bold;
@@ -441,11 +514,26 @@ onShareAppMessage(() => {
     line-height: 1;
     margin-right: 8rpx;
   }
-  
+
   .desc-text {
     font-size: 26rpx;
     color: #333;
     line-height: 1.8;
+  }
+}
+
+// 心情天气
+.card-mood {
+  display: flex;
+  gap: 20rpx;
+  padding: 8rpx 0;
+
+  .mood-item {
+    font-size: 26rpx;
+    color: #666;
+    background: rgba(0, 0, 0, 0.05);
+    padding: 6rpx 16rpx;
+    border-radius: 16rpx;
   }
 }
 
@@ -460,21 +548,21 @@ onShareAppMessage(() => {
   display: flex;
   align-items: center;
   gap: 8rpx;
-  
+
   .flag-icon {
     font-size: 32rpx;
   }
-  
+
   .app-name {
     font-size: 24rpx;
     font-weight: 600;
     color: #333;
   }
-  
+
   .divider-line {
     color: rgba(0, 0, 0, 0.3);
   }
-  
+
   .story-type {
     font-size: 24rpx;
     color: #666;
@@ -483,13 +571,13 @@ onShareAppMessage(() => {
 
 .footer-right {
   text-align: right;
-  
+
   .slogan-small {
     display: block;
     font-size: 22rpx;
     color: #666;
   }
-  
+
   .slogan-large {
     font-size: 24rpx;
     font-weight: 600;
@@ -504,19 +592,19 @@ onShareAppMessage(() => {
   background: #fff;
   border-radius: 24rpx;
   box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.05);
-  
+
   .picker-title {
     font-size: 26rpx;
     color: #999;
     margin-bottom: 20rpx;
     display: block;
   }
-  
+
   .color-list {
     white-space: nowrap;
     padding: 8rpx 0;
   }
-  
+
   .color-item {
     display: inline-flex;
     align-items: center;
@@ -529,12 +617,12 @@ onShareAppMessage(() => {
     box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
     position: relative;
     vertical-align: middle;
-    
+
     &.active {
       border-color: #333;
       box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.2);
     }
-    
+
     .color-check {
       font-size: 36rpx;
       color: #fff;
@@ -547,13 +635,16 @@ onShareAppMessage(() => {
 // 分享操作栏
 .share-actions {
   display: flex;
-  justify-content: center;
-  gap: 40rpx;
+  justify-content: space-around;
   padding: 40rpx 30rpx;
   padding-bottom: calc(40rpx + env(safe-area-inset-bottom));
   background: #fff;
   border-radius: 40rpx 40rpx 0 0;
   box-shadow: 0 -4rpx 20rpx rgba(0, 0, 0, 0.05);
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
 }
 
 .action-item {
@@ -561,14 +652,14 @@ onShareAppMessage(() => {
   flex-direction: column;
   align-items: center;
   gap: 12rpx;
-  
+
   .share-button {
     padding: 0;
     margin: 0;
     background: transparent;
     border: none;
     line-height: 1;
-    
+
     &::after {
       display: none;
     }
@@ -582,110 +673,95 @@ onShareAppMessage(() => {
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: #F5F5F7;
-  
+
   &.save {
     background: linear-gradient(135deg, #4A90D9, #67B8DE);
   }
-  
+
   &.wechat {
     background: #07C160;
   }
-  
+
   &.moments {
     background: linear-gradient(135deg, #FA9D3B, #FF6B00);
   }
-  
-  &.more {
-    background: linear-gradient(135deg, #A0A0A5, #8E8E93);
+
+  &.link {
+    background: #5856D6;
   }
 }
 
-// 保存图标
-.icon-save {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  
-  .save-arrow {
-    width: 0;
-    height: 0;
-    border-left: 12rpx solid transparent;
-    border-right: 12rpx solid transparent;
-    border-top: 16rpx solid #fff;
-    margin-bottom: 4rpx;
-  }
-  
-  .save-line {
-    width: 32rpx;
-    height: 4rpx;
-    background: #fff;
-    border-radius: 2rpx;
-  }
-}
-
-// 微信图标
-.icon-wechat {
-  width: 44rpx;
-  height: 36rpx;
-  position: relative;
-  
-  &::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    bottom: 0;
-    width: 28rpx;
-    height: 24rpx;
-    background: #fff;
-    border-radius: 50%;
-  }
-  
-  &::after {
-    content: '';
-    position: absolute;
-    right: 0;
-    top: 0;
-    width: 24rpx;
-    height: 20rpx;
-    background: #fff;
-    border-radius: 50%;
-  }
-}
-
-// 朋友圈图标
-.icon-moments {
-  width: 40rpx;
-  height: 40rpx;
-  border: 4rpx solid #fff;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  
-  .moments-inner {
-    width: 16rpx;
-    height: 16rpx;
-    background: #fff;
-    border-radius: 50%;
-  }
-}
-
-// 更多图标
-.icon-more {
-  display: flex;
-  gap: 8rpx;
-  
-  .more-dot {
-    width: 10rpx;
-    height: 10rpx;
-    background: #fff;
-    border-radius: 50%;
-  }
+.icon-text {
+  font-size: 36rpx;
+  color: #fff;
 }
 
 .action-label {
   font-size: 24rpx;
   color: #666;
+}
+
+// 海报预览
+.poster-preview {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2000;
+}
+
+.poster-mask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.poster-content {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 80%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32rpx;
+}
+
+.poster-image {
+  width: 100%;
+  border-radius: 16rpx;
+  box-shadow: 0 8rpx 40rpx rgba(0, 0, 0, 0.3);
+}
+
+.poster-actions {
+  display: flex;
+  gap: 24rpx;
+  width: 100%;
+}
+
+.poster-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  height: 88rpx;
+  border-radius: 44rpx;
+  background: linear-gradient(135deg, #4A90D9, #67B8DE);
+
+  &.secondary {
+    background: rgba(255, 255, 255, 0.2);
+  }
+}
+
+.poster-btn-text {
+  font-size: 28rpx;
+  color: #FFFFFF;
+  font-weight: 500;
 }
 </style>

@@ -61,6 +61,10 @@
             <view v-else class="cover-placeholder">
               <SFIcon name="image" :size="48" color="rgba(255,255,255,0.6)" />
             </view>
+            <!-- 收藏按钮（覆盖在封面右上） -->
+            <view class="cover-collect" @click.stop="toggleCollectInList(guide, $event)">
+              <SFIcon name="heart" :size="28" :color="guide.isCollected ? '#FF4D6D' : '#FFFFFF'" :filled="guide.isCollected" />
+            </view>
           </view>
           <view class="card-content">
             <text class="card-title">{{ guide.title }}</text>
@@ -94,7 +98,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
 import SFIcon from '@/components/SFIcon/SFIcon.vue'
-import { getGuideTags, getGuidesPage, getRelatedGuides } from '@/api'
+import { getGuideTags, getGuidesPage, getRelatedGuides, toggleGuideCollect } from '@/api'
 import type { GuideCategory } from '@/api/modules/guide'
 
 const loading = ref(false)
@@ -155,7 +159,7 @@ const loadSpotGuides = async (spotId: number, loadMore = false) => {
         hasMore.value = false
       }
     } else {
-      guideList.value = guides as any
+        guideList.value = (guides as any).map((r: any) => ({ ...r, isCollected: !!r.isCollected }))
       if (guides.length < pageSize.value) {
         hasMore.value = false
       }
@@ -217,7 +221,8 @@ const loadGuideList = async (loadMore = false) => {
     if (loadMore) {
       guideList.value.push(...page.records)
     } else {
-      guideList.value = page.records
+      // ensure each guide has isCollected flag
+      guideList.value = (page.records || []).map(r => ({ ...r, isCollected: !!r.isCollected }))
     }
 
     if (page.records.length < pageSize.value) {
@@ -277,6 +282,39 @@ const loadMore = () => {
 
 const onCoverError = (guide: any) => {
   guide.coverError = true
+}
+
+// 切换列表页收藏（乐观更新）
+const toggleCollectInList = async (guide: any, e?: Event) => {
+  if (e && (e as any).stopPropagation) (e as any).stopPropagation()
+  const token = uni.getStorageSync('token')
+  if (!token) {
+    uni.navigateTo({ url: '/pages/user/login' })
+    return
+  }
+
+  // 记录原始状态
+  const orig = !!guide.isCollected
+  // 乐观切换
+  guide.isCollected = !orig
+  guide.likes = guide.likes ? guide.likes + (guide.isCollected ? 1 : -1) : (guide.isCollected ? 1 : 0)
+
+  try {
+    const res = await toggleGuideCollect(guide.id, guide.isCollected)
+    // 如果后端不同步则回滚
+    if (!res || res.isCollected !== guide.isCollected) {
+      guide.isCollected = !!res?.isCollected
+      // 修正 likes
+      if (guide.isCollected === orig) {
+        guide.likes = guide.likes + (orig ? 1 : -1)
+      }
+    }
+  } catch (err) {
+    // 回滚
+    guide.isCollected = orig
+    guide.likes = guide.likes + (orig ? 1 : -1)
+    uni.showToast({ title: '收藏失败，请重试', icon: 'none' })
+  }
 }
 </script>
 
@@ -436,6 +474,19 @@ $shadow-light: 0 2rpx 20rpx rgba(0, 0, 0, 0.06);
 .cover-image {
   width: 100%;
   height: 100%;
+}
+
+.cover-collect {
+  position: absolute;
+  right: 18rpx;
+  top: 18rpx;
+  width: 64rpx;
+  height: 64rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.28);
+  border-radius: 50%;
 }
 
 .cover-placeholder {
