@@ -113,7 +113,7 @@
           <picker mode="date" :value="formData.startDate" @change="onStartDateChange">
             <view class="form-input-wrapper picker">
               <text class="picker-text" :class="{ placeholder: !formData.startDate }">
-                {{ formData.startDate || '请选择旅行开始时间' }}
+                {{ formData.startDate ? formData.startDate.replace(/-/g, '/') : '请选择旅行开始时间' }}
               </text>
               <text class="picker-icon">📅</text>
             </view>
@@ -125,7 +125,7 @@
           <picker mode="date" :value="formData.endDate" @change="onEndDateChange">
             <view class="form-input-wrapper picker">
               <text class="picker-text" :class="{ placeholder: !formData.endDate }">
-                {{ formData.endDate || '请选择旅行结束时间' }}
+                {{ formData.endDate ? formData.endDate.replace(/-/g, '/') : '请选择旅行结束时间' }}
               </text>
               <text class="picker-icon">📅</text>
             </view>
@@ -246,11 +246,11 @@ const goBack = () => {
 
 // 日期选择
 const onStartDateChange = (e: any) => {
-  formData.value.startDate = e.detail.value.replace(/-/g, '/')
+  formData.value.startDate = e.detail.value
 }
 
 const onEndDateChange = (e: any) => {
-  formData.value.endDate = e.detail.value.replace(/-/g, '/')
+  formData.value.endDate = e.detail.value
 }
 
 // 提交清单
@@ -267,8 +267,8 @@ const submitChecklist = async () => {
     uni.showToast({ title: '请选择结束时间', icon: 'none' })
     return
   }
-  const departDate = formData.value.startDate.replace(/\//g, '-')
-  const returnDate = formData.value.endDate.replace(/\//g, '-')
+  const departDate = formData.value.startDate
+  const returnDate = formData.value.endDate
   if (returnDate < departDate) {
     uni.showToast({ title: '结束日期不能早于开始日期', icon: 'none' })
     return
@@ -312,8 +312,8 @@ const editChecklist = (item: Checklist) => {
   formData.value = {
     name: item.title,
     destination: item.destination || '',
-    startDate: (item.departDate || '').replace(/-/g, '/'),
-    endDate: (item.returnDate || '').replace(/-/g, '/')
+    startDate: item.departDate || '',
+    endDate: item.returnDate || ''
   }
   showAddPopup.value = true
 }
@@ -727,9 +727,16 @@ $border-radius-md: 16rpx;
   font-size: 32rpx;
 }
 
+/* 隐藏 H5 原生 date picker 空值红色警告图标 */
+.form-input-wrapper.picker :deep(input) {
+  &::-webkit-calendar-picker-indicator {
+    display: none;
+  }
+}
+
 .form-submit {
-  margin-top: 60rpx;
-  padding: 32rpx;
+  margin-top: 24rpx;
+  padding: 28rpx 40rpx;
   background: $primary-color;
   border-radius: $border-radius-md;
   display: flex;

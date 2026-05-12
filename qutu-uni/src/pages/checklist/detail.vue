@@ -1460,6 +1460,122 @@ $border-radius-md: 16rpx;
   z-index: 998;
 }
 
+// 编辑/添加清单弹窗
+.add-popup {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 85vh;
+  background: $bg-color;
+  border-radius: 40rpx 40rpx 0 0;
+  z-index: 999;
+  transform: translateY(100%);
+  transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+  display: flex;
+  flex-direction: column;
+
+  &.popup-show {
+    transform: translateY(0);
+  }
+}
+
+.popup-back {
+  position: absolute;
+  top: 24rpx;
+  left: 24rpx;
+  width: 72rpx;
+  height: 72rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  z-index: 10;
+}
+
+.popup-back-icon {
+  font-size: 48rpx;
+  color: $text-primary;
+  font-weight: 300;
+}
+
+.popup-banner {
+  width: 100%;
+  height: 280rpx;
+  overflow: hidden;
+}
+
+.banner-image {
+  width: 100%;
+  height: 100%;
+}
+
+.popup-form {
+  padding: 32rpx 40rpx;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.form-group {
+  margin-bottom: 28rpx;
+}
+
+.form-label {
+  font-size: 30rpx;
+  font-weight: 500;
+  color: $text-primary;
+  margin-bottom: 12rpx;
+  display: block;
+}
+
+.form-input-wrapper {
+  display: flex;
+  align-items: center;
+  padding: 28rpx 32rpx;
+  background: $card-bg;
+  border-radius: $border-radius-md;
+
+  &.picker {
+    justify-content: space-between;
+  }
+}
+
+.form-input {
+  flex: 1;
+  font-size: 28rpx;
+  color: $text-primary;
+  background: transparent;
+}
+
+.picker-text {
+  font-size: 28rpx;
+  color: $text-primary;
+
+  &.placeholder {
+    color: #C7C7CC;
+  }
+}
+
+.picker-icon {
+  font-size: 28rpx;
+}
+
+.form-submit {
+  margin-top: 24rpx;
+  padding: 28rpx 40rpx;
+  background: $primary-color;
+  border-radius: $border-radius-md;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
 // 添加物品弹窗
 .item-popup {
   position: fixed;
@@ -1817,5 +1933,121 @@ $border-radius-md: 16rpx;
   font-size: 30rpx;
   color: #FFFFFF;
   font-weight: 600;
+}
+
+// ===================== 编辑清单弹窗 =====================
+.add-popup {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 90vh;
+  background: $bg-color;
+  border-radius: 40rpx 40rpx 0 0;
+  z-index: 999;
+  transform: translateY(100%);
+  transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+  overflow-y: auto;
+  pointer-events: none;
+
+  &.popup-show {
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .popup-back {
+    position: absolute;
+    top: 24rpx;
+    left: 24rpx;
+    width: 72rpx;
+    height: 72rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 50%;
+    z-index: 10;
+  }
+}
+
+.popup-banner {
+  width: 100%;
+  height: 360rpx;
+  overflow: hidden;
+}
+
+.banner-image {
+  width: 100%;
+  height: 100%;
+}
+
+.popup-form {
+  padding: 40rpx;
+}
+
+.form-group {
+  margin-bottom: 32rpx;
+}
+
+.form-label {
+  font-size: 30rpx;
+  font-weight: 500;
+  color: $text-primary;
+  margin-bottom: 16rpx;
+  display: block;
+}
+
+.form-input-wrapper {
+  display: flex;
+  align-items: center;
+  padding: 28rpx 32rpx;
+  background: $card-bg;
+  border-radius: $border-radius-md;
+
+  &.picker {
+    justify-content: space-between;
+  }
+}
+
+.form-input {
+  flex: 1;
+  font-size: 28rpx;
+  color: $text-primary;
+  background: transparent;
+}
+
+.picker-text {
+  font-size: 28rpx;
+  color: $text-primary;
+
+  &.placeholder {
+    color: $text-secondary;
+  }
+}
+
+.picker-icon {
+  font-size: 32rpx;
+}
+
+/* 隐藏 H5 原生 date picker 空值红色警告图标 */
+.form-input-wrapper.picker :deep(input) {
+  &::-webkit-calendar-picker-indicator {
+    display: none;
+  }
+}
+
+.form-submit {
+  margin-top: 60rpx;
+  padding: 32rpx;
+  background: $primary-color;
+  border-radius: $border-radius-md;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
+
+  &:active {
+    transform: scale(0.98);
+  }
 }
 </style>
