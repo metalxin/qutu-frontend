@@ -22,7 +22,7 @@
           :enable-traffic="showTraffic"
         />
 
-        <view class="back-btn" @click="goBack">
+        <view class="back-btn" :style="backBtnStyle" @click="goBack">
           <text class="back-btn-text">‹</text>
         </view>
 
@@ -232,6 +232,22 @@ const mapStyleType = ref('normal')
 const showTraffic = ref(false)
 const mapScale = ref(14)
 
+// 胶囊按钮位置（微信小程序）
+const menuButtonTop = ref(0)
+const menuButtonHeight = ref(32)
+const statusBarHeight = ref(20)
+
+// 返回按钮动态样式，与胶囊按钮垂直对齐
+const backBtnStyle = computed(() => {
+  // #ifdef MP-WEIXIN
+  if (menuButtonTop.value > 0) {
+    const top = menuButtonTop.value
+    return { top: top + 'px' }
+  }
+  // #endif
+  return { top: '48rpx' }
+})
+
 const mapStyleOptions = [
   { value: 'normal', label: '标准地图', desc: '默认地图样式', icon: '🗺️' },
   { value: 'satellite', label: '卫星地图', desc: '卫星影像视图', icon: '🛰️' }
@@ -434,6 +450,22 @@ const retryLoad = () => {
 }
 
 onMounted(() => {
+  // 获取系统信息
+  const systemInfo = uni.getSystemInfoSync()
+  statusBarHeight.value = systemInfo.statusBarHeight || 20
+  
+  // #ifdef MP-WEIXIN
+  try {
+    const menuButton = uni.getMenuButtonBoundingClientRect()
+    if (menuButton) {
+      menuButtonTop.value = menuButton.top
+      menuButtonHeight.value = menuButton.height
+    }
+  } catch (e) {
+    console.log('获取胶囊按钮位置失败', e)
+  }
+  // #endif
+  
   const pages = getCurrentPages()
   const currentPage = pages[pages.length - 1] as any
   const id = parseInt(currentPage?.options?.id || '0')
@@ -505,7 +537,6 @@ $accent: #FF6D00;
 
 .back-btn {
   position: absolute;
-  top: calc(48rpx + env(safe-area-inset-top));
   left: 24rpx;
   width: 72rpx;
   height: 72rpx;
