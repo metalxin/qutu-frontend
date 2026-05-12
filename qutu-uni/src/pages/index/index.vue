@@ -232,19 +232,7 @@
     <!-- 悬浮小途助手 -->
     <view class="ai-float-btn" @click="goToAIService">
       <view class="ai-float-icon">
-        <svg class="ai-float-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <linearGradient id="aiGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" style="stop-color:#667EEA;stop-opacity:1" />
-              <stop offset="50%" style="stop-color:#764BA2;stop-opacity:1" />
-              <stop offset="100%" style="stop-color:#F093FB;stop-opacity:1" />
-            </linearGradient>
-          </defs>
-          <circle cx="50" cy="50" r="45" fill="url(#aiGradient)"/>
-          <circle cx="35" cy="42" r="5" fill="white"/>
-          <circle cx="65" cy="42" r="5" fill="white"/>
-          <path d="M30 60 Q50 75 70 60" stroke="white" stroke-width="4" fill="none" stroke-linecap="round"/>
-        </svg>
+        <SFIcon name="sparkle" :size="44" color="#007AFF" />
       </view>
     </view>
 
@@ -676,6 +664,13 @@
               <SFIcon name="star" :size="36" color="#FFB800" />
             </view>
             <text class="menu-text">收藏景点</text>
+            <SFIcon name="chevron-right" :size="28" color="#C7C7CC" />
+          </view>
+          <view class="menu-item" @click="handleMenuClick('favoriteGuides')">
+            <view class="menu-icon" style="background: #E3F2FD;">
+              <SFIcon name="bookmark" :size="36" color="#007AFF" />
+            </view>
+            <text class="menu-text">收藏攻略</text>
             <SFIcon name="chevron-right" :size="28" color="#C7C7CC" />
           </view>
         </view>
@@ -1283,6 +1278,7 @@ const handleMenuClick = (menu: string) => {
     'routes': '/pages/route/list',
     'frequent': '/pages/user/frequent',
     'favorites': '/pages/user/favorites',
+    'favoriteGuides': '/pages/user/favorite-guides',
     'messages': '/pages/message/index'
   }
   const target = menuRoutes[menu]
@@ -2015,20 +2011,18 @@ $shadow-medium: 0 4rpx 30rpx rgba(0, 0, 0, 0.1);
   width: 88rpx;
   height: 88rpx;
   border-radius: 44rpx;
-  background: transparent;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.08), 0 0 1rpx rgba(0, 0, 0, 0.1);
   transition: transform 0.2s ease;
 
   &:active {
-    transform: scale(0.9);
+    transform: scale(0.92);
   }
-}
-
-.ai-float-svg {
-  width: 72rpx;
-  height: 72rpx;
 }
 
 // 底部TabBar
