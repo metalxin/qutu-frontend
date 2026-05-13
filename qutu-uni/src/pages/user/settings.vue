@@ -167,8 +167,28 @@ const navRightStyle = computed(() => {
 })
 
 const loadSettings = async () => {
-  const res = await getUserSettings()
-  settings.value = res
+  try {
+    const res: any = await getUserSettings()
+    if (res) {
+      settings.value = {
+        language: res.language || 'zh-CN',
+        notifications: {
+          tripReminder: !!res.tripReminder,
+          newGuides: !!res.newGuides,
+          systemMessages: !!res.systemMessages
+        },
+        privacy: {
+          showFootprints: !!res.showFootprints,
+          showTrips: !!res.showTrips
+        },
+        mapSettings: {
+          defaultZoom: res.defaultZoom || 14,
+          showTraffic: !!res.showTraffic,
+          mapStyle: res.mapStyle || 'normal'
+        }
+      }
+    }
+  } catch {}
 }
 
 const toggleNotification = (key: 'tripReminder' | 'newGuides' | 'systemMessages', value: boolean) => {

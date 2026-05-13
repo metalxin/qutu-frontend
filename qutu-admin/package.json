@@ -1,8 +1,8 @@
 {
-	"name": "pig-ui",
+	"name": "qutu-admin",
 	"version": "3.9.0",
-	"description": "PIGCLOUD微服务开发平台",
-	"author": "pig4cloud",
+	"description": "qutu-admin是一个基于Vue3、Element Plus、Vite等技术栈的后台管理系统模板，提供了丰富的组件和功能，帮助开发者快速搭建高效、美观的后台应用。",
+	"author": "goldxin",
 	"license": "Apache-2.0",
 	"type": "module",
 	"scripts": {

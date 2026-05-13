@@ -5,179 +5,183 @@
         <text class="back-icon">‹</text>
       </view>
       <text class="nav-title">消息中心</text>
-      <view class="nav-right" :style="navRightStyle" @click="markAllRead">
+      <view class="nav-right" :style="navRightStyle" @click="handleMarkAllRead">
         <text class="nav-action">全部已读</text>
       </view>
     </view>
 
     <view class="tabbar">
-      <view class="tab-item" :class="{ active: activeTab === 'system' }" @click="activeTab = 'system'">
+      <view class="tab-item" :class="{ active: activeTab === 'system' }" @click="switchTab('system')">
         <text class="tab-text">系统通知</text>
         <view class="tab-badge" v-if="unreadCount.system">{{ unreadCount.system }}</view>
       </view>
-      <view class="tab-item" :class="{ active: activeTab === 'interaction' }" @click="activeTab = 'interaction'">
+      <view class="tab-item" :class="{ active: activeTab === 'interaction' }" @click="switchTab('interaction')">
         <text class="tab-text">互动消息</text>
         <view class="tab-badge" v-if="unreadCount.interaction">{{ unreadCount.interaction }}</view>
       </view>
     </view>
 
-    <scroll-view class="message-list" scroll-y :show-scrollbar="false">
+    <scroll-view class="message-list" scroll-y :show-scrollbar="false" @scrolltolower="loadMore">
       <view class="message-item" v-for="item in filteredMessages" :key="item.id" @click="openMessage(item)">
         <view class="message-left">
-          <view class="message-icon" :style="{ background: item.color }">
-            <text class="icon-text">{{ item.icon }}</text>
+          <view class="message-icon" :style="{ background: item.color || '#E3F2FD' }">
+            <text class="icon-text">{{ item.icon || '🔔' }}</text>
           </view>
         </view>
         <view class="message-body">
           <view class="message-header">
             <text class="message-title">{{ item.title }}</text>
-            <text class="message-time">{{ item.time }}</text>
+            <text class="message-time">{{ formatTime(item.createTime) }}</text>
           </view>
           <text class="message-content">{{ item.content }}</text>
-          <view class="message-tags" v-if="item.tags?.length">
-            <text class="tag" v-for="tag in item.tags" :key="tag">{{ tag }}</text>
+          <view class="message-tags" v-if="parseTags(item.tags).length">
+            <text class="tag" v-for="tag in parseTags(item.tags)" :key="tag">{{ tag }}</text>
           </view>
         </view>
-        <view class="message-status" v-if="!item.read">
+        <view class="message-status" v-if="item.readFlag === 0">
           <view class="unread-dot"></view>
         </view>
       </view>
-      <view class="empty" v-if="filteredMessages.length === 0">
+      <view class="empty" v-if="!loading && filteredMessages.length === 0">
+        <text class="empty-icon">📭</text>
         <text class="empty-text">暂无消息</text>
+      </view>
+      <view class="loading-more" v-if="loading">
+        <text class="loading-text">加载中...</text>
       </view>
     </scroll-view>
 
     <view class="bottom-actions">
-      <view class="action-btn" @click="clearRead">清理已读</view>
-      <view class="action-btn primary" @click="refreshMessages">刷新</view>
+      <view class="action-btn" @click="handleClearRead">清理已读</view>
+      <view class="action-btn primary" @click="handleRefresh">刷新</view>
     </view>
   </view>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-
-type MessageType = 'system' | 'interaction'
-
-interface MessageItem {
-  id: number
-  type: MessageType
-  title: string
-  content: string
-  time: string
-  read: boolean
-  icon: string
-  color: string
-  tags?: string[]
-}
+import { getMessages, getUnreadCount, markRead, markAllRead, deleteReadMessages } from '@/api/modules/message'
+import type { MessageItem } from '@/api/modules/message'
 
 const statusBarHeight = ref(0)
 const menuButtonSpace = ref(0)
 const navBarHeight = ref(88)
-const activeTab = ref<MessageType>('system')
-const messages = ref<MessageItem[]>([
-  {
-    id: 1,
-    type: 'system',
-    title: '行程提醒',
-    content: '你收藏的“北京四天三夜”将于明天开启，记得准备行李清单。',
-    time: '08:30',
-    read: false,
-    icon: '🧳',
-    color: '#E3F2FD',
-    tags: ['行程', '提醒']
-  },
-  {
-    id: 2,
-    type: 'system',
-    title: '版本更新',
-    content: '新增消息中心与个人中心优化，快来体验新功能。',
-    time: '昨天',
-    read: true,
-    icon: '✨',
-    color: '#F3E5F5',
-    tags: ['更新']
-  },
-  {
-    id: 3,
-    type: 'system',
-    title: '备份完成',
-    content: '云端备份已完成，最新备份文件已同步到你的账户。',
-    time: '02-09',
-    read: false,
-    icon: '☁️',
-    color: '#E8F5E9',
-    tags: ['备份']
-  },
-  {
-    id: 4,
-    type: 'interaction',
-    title: '新的收藏',
-    content: '你收藏的“西湖”新增 3 条旅行故事。',
-    time: '09:12',
-    read: false,
-    icon: '⭐',
-    color: '#FFF8E1',
-    tags: ['收藏']
-  },
-  {
-    id: 5,
-    type: 'interaction',
-    title: '攻略推荐',
-    content: '为你推荐“杭州两天一夜Citywalk”，点击查看详情。',
-    time: '昨天',
-    read: true,
-    icon: '📌',
-    color: '#E8F5E9',
-    tags: ['推荐']
-  }
-])
+const activeTab = ref<'system' | 'interaction'>('system')
+const messages = ref<MessageItem[]>([])
+const loading = ref(false)
+const unreadCount = ref<{ system: number; interaction: number }>({ system: 0, interaction: 0 })
 
 const filteredMessages = computed(() => {
   return messages.value.filter(item => item.type === activeTab.value)
 })
 
-const unreadCount = computed(() => {
-  const system = messages.value.filter(item => item.type === 'system' && !item.read).length
-  const interaction = messages.value.filter(item => item.type === 'interaction' && !item.read).length
-  return { system, interaction }
-})
+const switchTab = (tab: 'system' | 'interaction') => {
+  activeTab.value = tab
+  loadMessages()
+}
+
+const formatTime = (timeStr: string) => {
+  if (!timeStr) return ''
+  const date = new Date(timeStr)
+  const now = new Date()
+  const diff = now.getTime() - date.getTime()
+  const minutes = Math.floor(diff / 60000)
+  if (minutes < 1) return '刚刚'
+  if (minutes < 60) return `${minutes}分钟前`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours}小时前`
+  const days = Math.floor(hours / 24)
+  if (days < 7) return `${days}天前`
+  const month = date.getMonth() + 1
+  const day = date.getDate()
+  return `${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`
+}
+
+const parseTags = (tags: string | undefined) => {
+  if (!tags) return []
+  return tags.split(',').filter(t => t.trim())
+}
+
+const loadMessages = async () => {
+  loading.value = true
+  try {
+    const res = await getMessages(activeTab.value)
+    messages.value = Array.isArray(res) ? res : []
+  } catch {
+    messages.value = []
+  } finally {
+    loading.value = false
+  }
+}
+
+const loadUnreadCount = async () => {
+  try {
+    const res = await getUnreadCount()
+    if (res) {
+      unreadCount.value = res as { system: number; interaction: number }
+    }
+  } catch {}
+}
+
+const handleMarkAllRead = async () => {
+  try {
+    await markAllRead(activeTab.value)
+    messages.value = messages.value.map(item => ({
+      ...item,
+      readFlag: item.type === activeTab.value ? 1 : item.readFlag
+    }))
+    unreadCount.value = { ...unreadCount.value, [activeTab.value]: 0 }
+    uni.showToast({ title: '已全部标记为已读', icon: 'none' })
+  } catch {
+    uni.showToast({ title: '操作失败', icon: 'none' })
+  }
+}
+
+const openMessage = async (item: MessageItem) => {
+  if (item.readFlag === 0) {
+    try {
+      await markRead(item.id)
+      item.readFlag = 1
+      unreadCount.value = {
+        ...unreadCount.value,
+        [item.type]: Math.max(0, (unreadCount.value[item.type] || 0) - 1)
+      }
+    } catch {}
+  }
+  if (item.bizType && item.bizId) {
+    const routes: Record<string, string> = {
+      'route': `/pages/route/detail?id=${item.bizId}`,
+      'guide': `/pages/guide/detail?id=${item.bizId}`,
+      'destination': `/pages/destination/detail?id=${item.bizId}`,
+      'checklist': `/pages/checklist/detail?id=${item.bizId}`
+    }
+    const target = routes[item.bizType]
+    if (target) {
+      uni.navigateTo({ url: target })
+    }
+  }
+}
+
+const handleClearRead = async () => {
+  try {
+    await deleteReadMessages(activeTab.value)
+    messages.value = messages.value.filter(item => item.type !== activeTab.value || item.readFlag === 0)
+    uni.showToast({ title: '已清理已读消息', icon: 'none' })
+  } catch {
+    uni.showToast({ title: '操作失败', icon: 'none' })
+  }
+}
+
+const handleRefresh = async () => {
+  await loadMessages()
+  await loadUnreadCount()
+  uni.showToast({ title: '已刷新', icon: 'none' })
+}
+
+const loadMore = () => {}
 
 const goBack = () => {
   uni.navigateBack()
-}
-
-const markAllRead = () => {
-  messages.value = messages.value.map(item => ({ ...item, read: true }))
-  uni.showToast({ title: '已全部标记为已读', icon: 'none' })
-}
-
-const openMessage = (item: MessageItem) => {
-  if (!item.read) {
-    item.read = true
-  }
-  uni.showToast({ title: '已查看消息', icon: 'none' })
-}
-
-const clearRead = () => {
-  messages.value = messages.value.filter(item => item.type !== activeTab.value || !item.read)
-  uni.showToast({ title: '已清理已读消息', icon: 'none' })
-}
-
-const refreshMessages = () => {
-  const newItem: MessageItem = {
-    id: Date.now(),
-    type: activeTab.value,
-    title: activeTab.value === 'system' ? '系统提示' : '互动消息',
-    content: activeTab.value === 'system' ? '你的账户安全状态良好，建议开启更多提醒。' : '你的旅行故事获得了新的点赞。',
-    time: '刚刚',
-    read: false,
-    icon: activeTab.value === 'system' ? '🔔' : '💬',
-    color: activeTab.value === 'system' ? '#E3F2FD' : '#FCE4EC',
-    tags: activeTab.value === 'system' ? ['系统'] : ['互动']
-  }
-  messages.value.unshift(newItem)
-  uni.showToast({ title: '已刷新消息', icon: 'none' })
 }
 
 const navBarStyle = computed(() => {
@@ -214,10 +218,10 @@ onMounted(() => {
       menuButtonSpace.value = windowWidth - menuButton.left + 10
       navBarHeight.value = (menuButton.top - statusBarHeight.value) * 2 + menuButton.height
     }
-  } catch (e) {
-    console.log('获取胶囊按钮位置失败', e)
-  }
+  } catch (e) {}
   // #endif
+  loadMessages()
+  loadUnreadCount()
 })
 </script>
 
@@ -403,10 +407,28 @@ onMounted(() => {
 .empty {
   padding: 120rpx 0;
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.empty-icon {
+  font-size: 64rpx;
 }
 
 .empty-text {
   font-size: 26rpx;
+  color: #86868B;
+}
+
+.loading-more {
+  padding: 24rpx 0;
+  text-align: center;
+}
+
+.loading-text {
+  font-size: 24rpx;
   color: #86868B;
 }
 

@@ -655,14 +655,20 @@ export function purchaseVip(packageId: number) {
  * 获取用户设置
  */
 export function getUserSettings() {
-  return get<UserSettings>('/admin/user/settings', undefined, mockUserSettings)
+  return request<UserSettings>({
+    url: '/admin/user/settings',
+    method: 'GET',
+    useMock: false
+  })
 }
 
-/**
- * 更新用户设置
- */
 export function updateUserSettings(settings: Partial<UserSettings>) {
-  return put<UserSettings>('/admin/user/settings', settings, { ...mockUserSettings, ...settings })
+  return request<UserSettings>({
+    url: '/admin/user/settings',
+    method: 'PUT',
+    data: settings,
+    useMock: false
+  })
 }
 
 /**
