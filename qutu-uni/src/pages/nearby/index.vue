@@ -41,7 +41,7 @@
 
     <!-- 地图区域 -->
     <view class="map-container" :style="{ top: (navBarHeight + 80) + 'px' }">
-      <map id="nearbyMap" class="nearby-map" :latitude="mapCenter.latitude" :longitude="mapCenter.longitude" :scale="mapScale" :markers="mapMarkers" :show-location="true" @markertap="onMarkerTap" />
+      <map id="nearbyMap" class="nearby-map" :latitude="mapCenter.latitude" :longitude="mapCenter.longitude" :scale="mapScale" :markers="mapMarkers" :show-location="true" :enable-satellite="mapStyleType === 'satellite'" :enable-traffic="showTraffic" @markertap="onMarkerTap" />
       <cover-view class="map-controls">
         <cover-view class="control-btn" @click="showMapStylePicker = true">
           <cover-image class="control-icon" :src="mapStyleIconSrc" />

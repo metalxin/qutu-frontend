@@ -10,7 +10,7 @@
     </view>
 
     <!-- 统计卡片 -->
-    <view class="stats-card">
+    <view class="stats-card" :style="{ paddingTop: navBarTotalHeight + 'px' }">
       <view class="stats-row">
         <text class="stats-label">已定制清单：</text>
         <text class="stats-value">{{ checklistData.length }}</text>
@@ -184,7 +184,7 @@
     <!-- 智能导入弹窗 -->
     <view class="popup-mask" v-if="showSmartImport" @click="closeSmartImport"></view>
     <view class="smart-import-popup" :class="{ 'popup-show': showSmartImport }">
-      <view class="si-header">
+      <view class="si-header" :style="navBarStyle">
         <view class="si-back" @click="closeSmartImport">
           <text class="popup-back-icon">‹</text>
         </view>
@@ -270,7 +270,7 @@
     <!-- 使用口令弹窗 -->
     <view class="popup-mask" v-if="showUseCode" @click="closeUseCode"></view>
     <view class="use-code-popup" :class="{ 'popup-show': showUseCode }">
-      <view class="uc-header">
+      <view class="uc-header" :style="navBarStyle">
         <view class="uc-back" @click="closeUseCode">
           <text class="popup-back-icon">‹</text>
         </view>
@@ -341,18 +341,35 @@ const menuButtonHeight = ref(32)
 const menuButtonLeft = ref(0)
 const windowWidth = ref(375)
 
+const navBarHeight = ref(44)
+
+const navBarTotalHeight = computed(() => {
+  // #ifdef MP-WEIXIN
+  if (menuButtonTop.value > 0) {
+    const contentBottom = menuButtonTop.value + menuButtonHeight.value
+    return contentBottom + (menuButtonTop.value - statusBarHeight.value)
+  }
+  // #endif
+  return navBarHeight.value + statusBarHeight.value
+})
+
 const navBarStyle = computed(() => {
   // #ifdef MP-WEIXIN
   if (menuButtonTop.value > 0) {
+    // 导航栏内容区域与胶囊按钮垂直居中对齐
+    const contentTop = menuButtonTop.value
+    const contentBottom = menuButtonTop.value + menuButtonHeight.value
+    const totalHeight = contentBottom + (menuButtonTop.value - statusBarHeight.value)
     return {
-      paddingTop: (menuButtonTop.value - 12) + 'px',
-      height: (menuButtonTop.value + menuButtonHeight.value - 4) + 'px',
+      paddingTop: contentTop + 'px',
+      height: totalHeight + 'px',
       paddingRight: (windowWidth.value - menuButtonLeft.value + 10) + 'px'
     }
   }
   // #endif
   return {
-    paddingTop: statusBarHeight.value + 'px'
+    paddingTop: statusBarHeight.value + 'px',
+    height: navBarHeight.value + 'px'
   }
 })
 import SFIcon from '@/components/SFIcon/SFIcon.vue'
@@ -732,6 +749,8 @@ onMounted(() => {
       menuButtonTop.value = menuButton.top
       menuButtonHeight.value = menuButton.height
       menuButtonLeft.value = menuButton.left
+      // 计算导航栏高度，使内容与胶囊按钮垂直居中对齐
+      navBarHeight.value = (menuButton.top - statusBarHeight.value) * 2 + menuButton.height + statusBarHeight.value
     }
   } catch (e) {
     console.log('获取胶囊按钮位置失败', e)
@@ -765,6 +784,11 @@ $border-radius-md: 16rpx;
 
 // 导航栏
 .navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -1263,8 +1287,6 @@ $border-radius-md: 16rpx;
   justify-content: space-between;
   padding: 0 32rpx;
   background: $card-bg;
-  height: 100rpx;
-  padding-top: env(safe-area-inset-top);
 }
 
 .si-back {
@@ -1542,8 +1564,6 @@ $border-radius-md: 16rpx;
   justify-content: space-between;
   padding: 0 32rpx;
   background: $card-bg;
-  height: 100rpx;
-  padding-top: env(safe-area-inset-top);
 }
 
 .uc-back {

@@ -143,6 +143,10 @@
 
     <!-- 底部按钮 -->
     <view class="bottom-bar">
+      <view class="footprint-btn" :class="{ lit: isFootprintLit }" @click="toggleFootprint">
+        <text class="footprint-icon">{{ isFootprintLit ? '✓' : '📍' }}</text>
+        <text class="footprint-text">{{ isFootprintLit ? '已点亮' : '点亮足迹' }}</text>
+      </view>
       <view class="start-btn" @click="startJourney">
         <text class="start-text">开始旅程</text>
       </view>
@@ -342,7 +346,7 @@
 import { ref, onMounted, computed, getCurrentInstance, nextTick } from 'vue'
 import { onPageScroll, onShow, onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
 import SFIcon from '@/components/SFIcon/SFIcon.vue'
-import { getSpotDetail, getSpotComments, getUserFavoriteSpots, postComment, replyComment, likeComment as likeCommentApi, favoriteSpot, unfavoriteSpot, createChecklist } from '@/api'
+import { getSpotDetail, getSpotComments, getUserFavoriteSpots, postComment, replyComment, likeComment as likeCommentApi, favoriteSpot, unfavoriteSpot, createChecklist, createFootprintRecord, getFootprintRecords } from '@/api'
 import { getRelatedGuides } from '@/api/modules/guide'
 import { generateAIRoute, getPreferenceOptions, getTransportModes } from '@/api/modules/planning'
 import type { SpotDetail, Comment, Reply } from '@/api/modules/destination'
@@ -360,6 +364,7 @@ const menuButtonSpace = ref(0)
 
 // 收藏状态
 const isFavorite = ref(false)
+const isFootprintLit = ref(false)
 const spotId = ref('')
 const isFirstShow = ref(true)
 const isToolbarScrolled = ref(false)
@@ -437,7 +442,13 @@ const spotInfo = ref<SpotDetail>({
   price: '',
   priceNote: '',
   gallery: [],
-  tips: []
+  tips: [],
+  provinceName: '',
+  provinceCode: '',
+  countryName: '',
+  countryCode: '',
+  lat: 0,
+  lng: 0
 })
 
 // 获取系统信息
@@ -497,6 +508,7 @@ const loadSpotInfo = async (id: string) => {
       const favoriteRecords = favoritePage?.records || []
       isFavorite.value = favoriteRecords.some(item => Number(item.id) === Number(id))
     }
+    await checkFootprintStatus(Number(id))
     comments.value = commentsRes
     relatedGuides.value = guidesRes
   } catch (error) {
@@ -538,6 +550,50 @@ const toggleFavorite = async () => {
     console.error('收藏操作失败:', error)
     const errorMsg = error?.message || error?.msg || '操作失败'
     uni.showToast({ title: errorMsg, icon: 'none' })
+  }
+}
+
+const checkFootprintStatus = async (spotId: number) => {
+  if (!isLoggedIn.value) return
+  try {
+    const res = await getFootprintRecords({ current: 1, size: 200 })
+    if (res) {
+      isFootprintLit.value = (res.records || []).some(r => r.spotId === spotId)
+    }
+  } catch (error) {
+    console.error('检查足迹状态失败:', error)
+  }
+}
+
+const toggleFootprint = async () => {
+  if (!isLoggedIn.value) {
+    uni.navigateTo({ url: '/pages/user/login' })
+    return
+  }
+  if (isFootprintLit.value) {
+    uni.showToast({ title: '已经点亮过该足迹', icon: 'none' })
+    return
+  }
+  try {
+    const spot = spotInfo.value
+    await createFootprintRecord({
+      spotId: spot.id,
+      spotName: spot.name,
+      cityName: spot.locationTitle,
+      provinceName: spot.provinceName,
+      provinceCode: spot.provinceCode,
+      countryName: spot.countryName || '中国',
+      countryCode: spot.countryCode || 'CN',
+      lat: spot.lat,
+      lng: spot.lng,
+      type: spot.countryCode && spot.countryCode !== 'CN' ? 2 : 1,
+      imageUrl: spot.cover
+    })
+    isFootprintLit.value = true
+    uni.showToast({ title: '点亮足迹成功！', icon: 'success' })
+  } catch (error) {
+    console.error('点亮足迹失败:', error)
+    uni.showToast({ title: '点亮失败，请重试', icon: 'none' })
   }
 }
 
@@ -1309,6 +1365,8 @@ $text-secondary: #86868B;
   left: 0;
   right: 0;
   bottom: 0;
+  display: flex;
+  gap: 16rpx;
   padding: 24rpx 32rpx;
   padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
   background: rgba(255, 255, 255, 0.95);
@@ -1316,8 +1374,45 @@ $text-secondary: #86868B;
   z-index: 900;
 }
 
+.footprint-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4rpx;
+  min-width: 140rpx;
+  padding: 12rpx 24rpx;
+  background: #F5F5F7;
+  border-radius: 50rpx;
+  border: 2rpx solid #E5E5EA;
+  transition: all 0.2s ease;
+
+  &.lit {
+    background: #E8F5E9;
+    border-color: #4CAF50;
+  }
+
+  &:active {
+    transform: scale(0.96);
+  }
+}
+
+.footprint-icon {
+  font-size: 28rpx;
+}
+
+.footprint-text {
+  font-size: 20rpx;
+  font-weight: 500;
+  color: #86868B;
+
+  .lit & {
+    color: #2E7D32;
+  }
+}
+
 .start-btn {
-  width: 100%;
+  flex: 1;
   height: 100rpx;
   display: flex;
   align-items: center;

@@ -2,158 +2,142 @@
  * 足迹模块 API
  */
 
-import { get, post } from '../request'
-import { 
-  mockFootprintRecords, 
-  mockFootprintStats, 
-  mockActivityMaps,
-  mockProvinces,
-  mockCountries 
-} from '../mock/footprint'
+import { request } from '../request'
 
-// 类型定义
 export interface FootprintRecord {
   id: number
-  name: string
-  type: string
-  date: string
-  image: string
-  spots: string[]
+  spotId?: number
+  spotName: string
+  cityName?: string
+  provinceName?: string
+  provinceCode?: string
+  countryName?: string
+  countryCode?: string
+  lat?: number
+  lng?: number
+  type?: number
+  remark?: string
+  imageUrl?: string
+  createdAt?: string
+}
+
+export interface FootprintRecordPage {
+  records: FootprintRecord[]
+  total: number
+  size: number
+  current: number
+  pages: number
 }
 
 export interface FootprintStats {
-  totalProvinces: number
-  totalCities: number
-  totalSpots: number
-  totalCountries: number
-  ranking: number
+  totalFootprints: number
+  domesticFootprints: number
+  overseasFootprints: number
+  provinceCount: number
+  countryCount: number
+  collectCount: number
+  provinces: string[]
+  countries: string[]
 }
 
-export interface ActivityMap {
-  id: string
-  type: string
-  name: string
-  title: string
-  subtitle: string
-  count: string
-  bgType: string
-  items?: Array<{ emoji: string; text: string }>
-}
-
-export interface Province {
+export interface FootprintProvince {
   id: number
-  name: string
-  visited: boolean
-  citiesTotal: number
-  citiesVisited: number
+  provinceCode: string
+  provinceName: string
+  checkinCount: number
+  firstCheckinAt?: string
+  lastCheckinAt?: string
 }
 
-export interface Country {
+export interface FootprintCountry {
   id: number
-  name: string
-  code: string
-  visited: boolean
-  continent: string
+  countryCode: string
+  countryName: string
+  checkinCount: number
+  firstCheckinAt?: string
+  lastCheckinAt?: string
 }
 
-// API方法
-
-/**
- * 获取足迹记录列表
- */
-export function getFootprintRecords(params?: { page?: number; pageSize?: number }) {
-  const mockResult = {
-    list: mockFootprintRecords,
-    total: mockFootprintRecords.length
-  }
-  return get<{ list: FootprintRecord[]; total: number }>('/api/footprints', params, mockResult)
+export interface FootprintCreateDTO {
+  spotId?: number
+  spotName: string
+  cityName?: string
+  provinceName?: string
+  provinceCode?: string
+  countryName?: string
+  countryCode?: string
+  lat?: number
+  lng?: number
+  type?: number
+  remark?: string
+  imageUrl?: string
 }
 
-/**
- * 获取足迹活动列表
- */
-export function getFootprintActivities() {
-  return get<ActivityMap[]>('/api/footprints/activities', undefined, mockActivityMaps)
-}
-
-/**
- * 获取足迹统计
- */
 export function getFootprintStats() {
-  return get<FootprintStats>('/api/footprints/stats', undefined, mockFootprintStats)
+  return request<FootprintStats>({
+    url: '/admin/footprint/stats',
+    method: 'GET',
+    useMock: false
+  })
 }
 
-/**
- * 获取活动地图列表
- */
-export function getActivityMaps() {
-  return get<ActivityMap[]>('/api/footprints/activities', undefined, mockActivityMaps)
+export function getFootprintRecords(params?: { current?: number; size?: number }) {
+  return request<FootprintRecordPage>({
+    url: '/admin/footprint/records',
+    method: 'GET',
+    data: {
+      current: params?.current ?? 1,
+      size: params?.size ?? 20
+    },
+    useMock: false
+  })
 }
 
-/**
- * 获取省份列表（中国漫游者）
- */
-export function getProvinces() {
-  return get<Province[]>('/api/footprints/provinces', undefined, mockProvinces)
+export function createFootprintRecord(data: FootprintCreateDTO) {
+  return request<number>({
+    url: '/admin/footprint/records',
+    method: 'POST',
+    data,
+    useMock: false
+  })
 }
 
-/**
- * 获取国家列表（世界探险家）
- */
-export function getCountries() {
-  return get<Country[]>('/api/footprints/countries', undefined, mockCountries)
+export function deleteFootprintRecord(id: number) {
+  return request<boolean>({
+    url: `/admin/footprint/records/${id}`,
+    method: 'DELETE',
+    useMock: false
+  })
 }
 
-/**
- * 点亮省份
- */
-export function lightUpProvince(provinceId: number) {
-  return post<{ success: boolean }>(`/api/footprints/provinces/${provinceId}/light`, undefined, { success: true })
+export function getUserProvinces() {
+  return request<FootprintProvince[]>({
+    url: '/admin/footprint/provinces',
+    method: 'GET',
+    useMock: false
+  })
 }
 
-/**
- * 点亮城市
- */
-export function lightUpCity(cityId: number) {
-  return post<{ success: boolean }>(`/api/footprints/cities/${cityId}/light`, undefined, { success: true })
+export function lightUpProvince(provinceCode: string, provinceName?: string) {
+  return request<boolean>({
+    url: `/admin/footprint/provinces/${provinceCode}/light${provinceName ? '?provinceName=' + encodeURIComponent(provinceName) : ''}`,
+    method: 'POST',
+    useMock: false
+  })
 }
 
-/**
- * 点亮国家
- */
-export function lightUpCountry(countryId: number) {
-  return post<{ success: boolean }>(`/api/footprints/countries/${countryId}/light`, undefined, { success: true })
+export function getUserCountries() {
+  return request<FootprintCountry[]>({
+    url: '/admin/footprint/countries',
+    method: 'GET',
+    useMock: false
+  })
 }
 
-/**
- * 添加足迹记录
- */
-export function addFootprintRecord(data: { name: string; type: string; spots: string[]; image?: string }) {
-  const newRecord: FootprintRecord = {
-    id: Date.now(),
-    name: data.name,
-    type: data.type,
-    date: new Date().toISOString().split('T')[0],
-    image: data.image || '',
-    spots: data.spots
-  }
-  return post<FootprintRecord>('/api/footprints', data, newRecord)
-}
-
-/**
- * 删除足迹记录
- */
-export function deleteFootprintRecord(recordId: number) {
-  return post<{ success: boolean }>(`/api/footprints/${recordId}/delete`, undefined, { success: true })
-}
-
-/**
- * 生成足迹分享图
- */
-export function generateShareImage(type: 'china' | 'world') {
-  const mockShareImage = {
-    imageUrl: 'https://images.unsplash.com/photo-1508804185872-d7badad00f7d?w=800&q=80',
-    stats: type === 'china' ? mockProvinces.filter(p => p.visited).length : mockCountries.filter(c => c.visited).length
-  }
-  return post('/api/footprints/share-image', { type }, mockShareImage)
+export function lightUpCountry(countryCode: string, countryName?: string) {
+  return request<boolean>({
+    url: `/admin/footprint/countries/${countryCode}/light${countryName ? '?countryName=' + encodeURIComponent(countryName) : ''}`,
+    method: 'POST',
+    useMock: false
+  })
 }

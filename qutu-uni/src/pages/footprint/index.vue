@@ -1,20 +1,15 @@
 <template>
   <view class="page">
-    <!-- 顶部导航栏 -->
     <view class="navbar" :style="navBarStyle">
       <view class="nav-back" @click="goBack">
         <SFIcon name="back" :size="40" color="#1D1D1F" />
       </view>
-      <view class="nav-right" :style="navRightStyle" @click="handleShare">
-        <SFIcon name="share" :size="36" color="#1D1D1F" />
-      </view>
+      <view class="nav-placeholder"></view>
     </view>
 
     <scroll-view class="content" scroll-y :show-scrollbar="false">
-      <!-- 收藏机主视觉 -->
       <view class="hero-section">
         <view class="machine-wrapper">
-          <!-- 复古电视机样式 -->
           <view class="retro-machine">
             <view class="machine-top">
               <view class="antenna-left"></view>
@@ -33,10 +28,21 @@
                     <text class="title-text">人生地点</text>
                   </view>
                   <text class="title-main">收藏机.</text>
-                  <view class="screen-bottom">
-                    <text class="bottom-text">LOADING...</text>
-                    <text class="bottom-text">LOADING...</text>
-                    <text class="bottom-text">THE_DISCOVERY.EXE</text>
+                  <view class="screen-stats">
+                    <view class="stat-item">
+                      <text class="stat-value">{{ stats.totalFootprints || 0 }}</text>
+                      <text class="stat-label">足迹</text>
+                    </view>
+                    <view class="stat-divider"></view>
+                    <view class="stat-item">
+                      <text class="stat-value">{{ stats.provinceCount || 0 }}</text>
+                      <text class="stat-label">省份</text>
+                    </view>
+                    <view class="stat-divider"></view>
+                    <view class="stat-item">
+                      <text class="stat-value">{{ stats.countryCount || 0 }}</text>
+                      <text class="stat-label">国家</text>
+                    </view>
                   </view>
                   <view class="action-link" @click="showActivityInfo">
                     <text class="action-text">活动说明 »</text>
@@ -55,27 +61,76 @@
         </view>
       </view>
 
-      <!-- 我的点亮记录入口 -->
       <view class="records-entry" @click="goToRecords">
-        <text class="records-text">我的点亮记录 · {{ recordCount }}</text>
+        <text class="records-text">我的点亮记录 · {{ stats.totalFootprints || 0 }}</text>
         <SFIcon name="chevron-right" :size="28" color="#FFFFFF" />
       </view>
 
-      <!-- 活动卡片列表 -->
+      <view class="stats-section">
+        <view class="stats-card">
+          <view class="stats-row">
+            <view class="stats-item" @click="goToMap('china')">
+              <text class="stats-number">{{ stats.provinceCount || 0 }}</text>
+              <text class="stats-desc">已点亮省份</text>
+              <view class="stats-action">
+                <text class="stats-action-text">去点亮 ›</text>
+              </view>
+            </view>
+            <view class="stats-divider"></view>
+            <view class="stats-item" @click="goToMap('world')">
+              <text class="stats-number">{{ stats.countryCount || 0 }}</text>
+              <text class="stats-desc">已点亮国家</text>
+              <view class="stats-action">
+                <text class="stats-action-text">去点亮 ›</text>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <view class="recent-section">
+        <view class="section-header">
+          <text class="section-title">最近足迹</text>
+          <view class="section-more" @click="goToRecords">
+            <text class="more-text">查看全部 ›</text>
+          </view>
+        </view>
+        <view class="recent-list" v-if="recentRecords.length > 0">
+          <view class="recent-item" v-for="record in recentRecords" :key="record.id" @click="viewSpotDetail(record)">
+            <view class="recent-image-wrap">
+              <image v-if="record.imageUrl" class="recent-image" :src="resolveImageUrl(record.imageUrl)" mode="aspectFill" />
+              <view v-else class="recent-image-placeholder">
+                <text class="placeholder-emoji">📍</text>
+              </view>
+            </view>
+            <view class="recent-info">
+              <text class="recent-name">{{ record.spotName }}</text>
+              <text class="recent-location" v-if="record.cityName || record.provinceName">
+                {{ record.provinceName ? record.provinceName + ' · ' : '' }}{{ record.cityName || '' }}
+              </text>
+              <text class="recent-date" v-if="record.createdAt">{{ formatDate(record.createdAt) }}</text>
+            </view>
+            <view class="recent-tag" :class="record.type === 2 ? 'overseas' : 'domestic'">
+              <text class="tag-text">{{ record.type === 2 ? '国外' : '国内' }}</text>
+            </view>
+          </view>
+        </view>
+        <view class="recent-empty" v-else>
+          <text class="empty-emoji">🗺️</text>
+          <text class="empty-text">还没有足迹记录</text>
+          <text class="empty-desc">去探索景点，点亮你的足迹吧！</text>
+        </view>
+      </view>
+
       <view class="activity-list">
-        <!-- 春节玩乐地图 -->
         <view class="activity-card spring-card" @click="goToMap('spring')">
           <view class="card-header red-header">
             <view class="header-content">
               <text class="card-title">春节玩乐地图</text>
               <text class="card-subtitle">年味在路上，点亮你的新春足迹！</text>
-              <text class="card-count">3.05万人已点亮</text>
             </view>
             <view class="header-decoration">
-              <view class="deco-icons">
-                <text class="deco-emoji">🎒</text>
-                <text class="deco-emoji">💕</text>
-              </view>
+              <text class="deco-emoji">🎒</text>
             </view>
           </view>
           <view class="card-body cream-body">
@@ -88,10 +143,6 @@
                 <text class="item-emoji">😋</text>
                 <text class="item-text">新春贪吃地图</text>
               </view>
-              <view class="map-item">
-                <text class="item-emoji">🧧</text>
-                <text class="item-text">新春玩乐地图</text>
-              </view>
             </view>
             <view class="card-action red-action">
               <text class="action-btn-text">去点亮</text>
@@ -99,21 +150,13 @@
           </view>
         </view>
 
-        <!-- 中国漫游者指南 -->
         <view class="activity-card china-card" @click="goToMap('china')">
           <view class="card-simple purple-card">
             <view class="simple-content">
               <text class="simple-title">中国漫游者指南</text>
               <text class="simple-subtitle">点亮你去过的省/市/自治区/特别行政区</text>
               <view class="simple-divider"></view>
-              <text class="simple-count">28万人已点亮</text>
-            </view>
-            <view class="simple-icon">
-              <view class="china-icon">
-                <view class="icon-line"></view>
-                <view class="icon-line"></view>
-                <view class="icon-line"></view>
-              </view>
+              <text class="simple-count">已点亮 {{ stats.provinceCount || 0 }} 个省份</text>
             </view>
             <view class="card-action dark-action">
               <text class="action-btn-text">去点亮</text>
@@ -121,55 +164,21 @@
           </view>
         </view>
 
-        <!-- 世界探险家手册 -->
         <view class="activity-card world-card" @click="goToMap('world')">
           <view class="card-simple blue-card">
             <view class="simple-content">
               <text class="simple-title">世界探险家手册</text>
               <text class="simple-subtitle">点亮你在世界上去过的国家/地区</text>
               <view class="simple-divider"></view>
-              <text class="simple-count">13.02万人已点亮</text>
-            </view>
-            <view class="simple-icon">
-              <view class="globe-icon">
-                <SFIcon name="route" :size="80" color="rgba(0,150,200,0.3)" />
-              </view>
+              <text class="simple-count">已点亮 {{ stats.countryCount || 0 }} 个国家</text>
             </view>
             <view class="card-action dark-action">
               <text class="action-btn-text">去点亮</text>
             </view>
           </view>
         </view>
-
-        <!-- 晒一晒活动 -->
-        <view class="activity-card share-card">
-          <view class="share-content">
-            <text class="share-title">晒一晒过年吃喝玩乐好去处</text>
-            <view class="share-info">
-              <text class="share-label">创建春节玩乐地图</text>
-              <view class="share-item">
-                <view class="dot blue"></view>
-                <text class="share-text">发布至社交平台：</text>
-              </view>
-              <text class="share-platforms">小红书/抖音/微信视频号</text>
-              <view class="share-item">
-                <view class="dot orange"></view>
-                <text class="share-text">带话题 #人生地点收藏机 #趣途云迹</text>
-              </view>
-              <view class="share-item">
-                <view class="dot yellow"></view>
-                <text class="share-text highlight">2月14日官方抽18位分享用户送</text>
-              </view>
-              <text class="share-prize">【趣途云迹蛇年贺卡+富士一次性胶片机】</text>
-            </view>
-          </view>
-          <view class="share-decoration">
-            <view class="camera-icon">📷</view>
-          </view>
-        </view>
       </view>
 
-      <!-- 底部间距 -->
       <view class="bottom-space"></view>
     </scroll-view>
   </view>
@@ -177,28 +186,27 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import SFIcon from '@/components/SFIcon/SFIcon.vue'
-import { getFootprintRecords, getFootprintActivities } from '@/api'
+import { getFootprintStats, getFootprintRecords } from '@/api'
+import type { FootprintStats, FootprintRecord } from '@/api'
+import { resolveFileUrl } from '@/api/modules/user'
 
-interface Activity {
-  id: string
-  type: string
-  title: string
-  subtitle: string
-  count: string
-  bgType: string
-}
-
-// 状态栏高度
 const statusBarHeight = ref(44)
-const menuButtonSpace = ref(0)
 const navBarHeight = ref(88)
 
-// 点亮记录数
-const recordCount = ref(0)
+const stats = ref<FootprintStats>({
+  totalFootprints: 0,
+  domesticFootprints: 0,
+  overseasFootprints: 0,
+  provinceCount: 0,
+  countryCount: 0,
+  collectCount: 0,
+  provinces: [],
+  countries: []
+})
 
-// 活动列表
-const activities = ref<Activity[]>([])
+const recentRecords = ref<FootprintRecord[]>([])
 const loading = ref(false)
 
 const navBarStyle = computed(() => {
@@ -208,24 +216,24 @@ const navBarStyle = computed(() => {
   }
 })
 
-const navRightStyle = computed(() => {
-  if (menuButtonSpace.value > 0) {
-    return { paddingRight: menuButtonSpace.value + 'px' }
-  }
-  return {}
-})
+const resolveImageUrl = (url: string) => {
+  return resolveFileUrl(url || '')
+}
 
-// 获取系统信息
+const formatDate = (dateStr: string) => {
+  if (!dateStr) return ''
+  const d = new Date(dateStr)
+  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`
+}
+
 const getSystemInfo = () => {
   try {
     const info = uni.getSystemInfoSync()
     statusBarHeight.value = info.statusBarHeight || 44
-    const windowWidth = info.windowWidth || 375
     // #ifdef MP-WEIXIN
     try {
       const menuButton = uni.getMenuButtonBoundingClientRect()
       if (menuButton) {
-        menuButtonSpace.value = windowWidth - menuButton.left + 10
         navBarHeight.value = (menuButton.top - statusBarHeight.value) * 2 + menuButton.height + statusBarHeight.value
       }
     } catch (e) {
@@ -236,47 +244,36 @@ const getSystemInfo = () => {
     console.error('获取系统信息失败', e)
   }
 }
-// 加载足迹记录数
-const loadRecordCount = async () => {
+
+const loadStats = async () => {
   try {
-    const res = await getFootprintRecords()
-    if (res && res.total !== undefined) {
-      recordCount.value = res.total
+    const res = await getFootprintStats()
+    if (res) {
+      stats.value = res
     }
   } catch (error) {
-    console.error('加载足迹记录失败:', error)
+    console.error('加载足迹统计失败:', error)
   }
 }
 
-// 加载活动列表
-const loadActivities = async () => {
+const loadRecentRecords = async () => {
   loading.value = true
   try {
-    const res = await getFootprintActivities()
-    if (res && res.length > 0) {
-      activities.value = res
+    const res = await getFootprintRecords({ current: 1, size: 5 })
+    if (res) {
+      recentRecords.value = res.records || []
     }
   } catch (error) {
-    console.error('加载活动列表失败:', error)
+    console.error('加载最近足迹失败:', error)
   } finally {
     loading.value = false
   }
 }
 
-// 返回
 const goBack = () => {
   uni.navigateBack()
 }
 
-// 分享
-const handleShare = () => {
-  uni.showToast({
-    title: '分享功能开发中',
-    icon: 'none'
-  })
-}
-
-// 活动说明
 const showActivityInfo = () => {
   uni.showModal({
     title: '活动说明',
@@ -285,25 +282,27 @@ const showActivityInfo = () => {
   })
 }
 
-// 跳转到点亮记录
 const goToRecords = () => {
-  uni.navigateTo({
-    url: '/pages/footprint/records'
-  })
+  uni.navigateTo({ url: '/pages/footprint/records' })
 }
 
-// 跳转到地图详情
 const goToMap = (type: string) => {
-  uni.navigateTo({
-    url: `/pages/footprint/map?type=${type}`
-  })
+  uni.navigateTo({ url: `/pages/footprint/map?type=${type}` })
 }
 
-// 页面加载
+const viewSpotDetail = (record: FootprintRecord) => {
+  if (record.spotId) {
+    uni.navigateTo({ url: `/pages/destination/detail?id=${record.spotId}` })
+  }
+}
+
 onMounted(() => {
   getSystemInfo()
-  loadRecordCount()
-  loadActivities()
+})
+
+onShow(() => {
+  loadStats()
+  loadRecentRecords()
 })
 </script>
 
@@ -324,10 +323,10 @@ onMounted(() => {
   justify-content: space-between;
   padding: 0 32rpx;
   background: transparent;
-  box-sizing: border-box; /* Ensure padding is included in height */
+  box-sizing: border-box;
 }
 
-.nav-back, .nav-right {
+.nav-back, .nav-placeholder {
   width: 60rpx;
   display: flex;
   align-items: center;
@@ -339,7 +338,6 @@ onMounted(() => {
   padding-top: 120rpx;
 }
 
-// 收藏机主视觉
 .hero-section {
   padding: 40rpx 32rpx;
   display: flex;
@@ -443,15 +441,35 @@ onMounted(() => {
   margin: 10rpx 0 20rpx;
 }
 
-.screen-bottom {
-  margin-top: 40rpx;
+.screen-stats {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+  margin-top: 16rpx;
 }
 
-.bottom-text {
-  display: block;
-  font-size: 18rpx;
-  opacity: 0.5;
-  margin-bottom: 4rpx;
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stat-value {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #00FF88;
+}
+
+.stat-label {
+  font-size: 20rpx;
+  color: rgba(0, 255, 136, 0.6);
+  margin-top: 4rpx;
+}
+
+.stat-divider {
+  width: 2rpx;
+  height: 40rpx;
+  background: rgba(0, 255, 136, 0.3);
 }
 
 .action-link {
@@ -477,12 +495,12 @@ onMounted(() => {
   width: 16rpx;
   height: 16rpx;
   border-radius: 50%;
-  
+
   &.green {
     background: #00FF88;
     box-shadow: 0 0 10rpx #00FF88;
   }
-  
+
   &.orange {
     background: #FF9500;
     box-shadow: 0 0 10rpx #FF9500;
@@ -503,7 +521,6 @@ onMounted(() => {
   border: 4rpx solid #888;
 }
 
-// 点亮记录入口
 .records-entry {
   margin: 0 auto 40rpx;
   width: fit-content;
@@ -521,7 +538,208 @@ onMounted(() => {
   font-weight: 500;
 }
 
-// 活动卡片列表
+.stats-section {
+  padding: 0 32rpx;
+  margin-bottom: 32rpx;
+}
+
+.stats-card {
+  background: #FFFFFF;
+  border-radius: 24rpx;
+  padding: 32rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.06);
+}
+
+.stats-row {
+  display: flex;
+  align-items: center;
+}
+
+.stats-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.stats-number {
+  font-size: 48rpx;
+  font-weight: 700;
+  color: #1D1D1F;
+}
+
+.stats-desc {
+  font-size: 24rpx;
+  color: #86868B;
+}
+
+.stats-action {
+  margin-top: 8rpx;
+}
+
+.stats-action-text {
+  font-size: 24rpx;
+  color: #007AFF;
+  font-weight: 500;
+}
+
+.stats-divider {
+  width: 2rpx;
+  height: 80rpx;
+  background: #F0F0F0;
+}
+
+.recent-section {
+  padding: 0 32rpx;
+  margin-bottom: 32rpx;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.section-title {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #1D1D1F;
+}
+
+.section-more {
+  padding: 8rpx 0;
+}
+
+.more-text {
+  font-size: 24rpx;
+  color: #007AFF;
+}
+
+.recent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.recent-item {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  padding: 20rpx;
+  background: #FFFFFF;
+  border-radius: 20rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.04);
+}
+
+.recent-image-wrap {
+  width: 100rpx;
+  height: 100rpx;
+  border-radius: 16rpx;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.recent-image {
+  width: 100%;
+  height: 100%;
+}
+
+.recent-image-placeholder {
+  width: 100%;
+  height: 100%;
+  background: #F0F0F0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.placeholder-emoji {
+  font-size: 40rpx;
+}
+
+.recent-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.recent-name {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #1D1D1F;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recent-location {
+  font-size: 22rpx;
+  color: #86868B;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recent-date {
+  font-size: 20rpx;
+  color: #C7C7CC;
+}
+
+.recent-tag {
+  padding: 4rpx 16rpx;
+  border-radius: 8rpx;
+  flex-shrink: 0;
+
+  &.domestic {
+    background: #E3F2FD;
+  }
+
+  &.overseas {
+    background: #FFF3E0;
+  }
+}
+
+.tag-text {
+  font-size: 20rpx;
+  font-weight: 500;
+
+  .domestic & {
+    color: #1976D2;
+  }
+
+  .overseas & {
+    color: #E65100;
+  }
+}
+
+.recent-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 60rpx 0;
+  gap: 12rpx;
+}
+
+.empty-emoji {
+  font-size: 64rpx;
+  margin-bottom: 8rpx;
+}
+
+.empty-text {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #1D1D1F;
+}
+
+.empty-desc {
+  font-size: 24rpx;
+  color: #86868B;
+}
+
 .activity-list {
   padding: 0 32rpx;
 }
@@ -533,12 +751,11 @@ onMounted(() => {
   box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
 }
 
-// 春节玩乐地图卡片
 .card-header {
   padding: 32rpx;
   display: flex;
   justify-content: space-between;
-  
+
   &.red-header {
     background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
   }
@@ -560,22 +777,11 @@ onMounted(() => {
   display: block;
   font-size: 24rpx;
   color: rgba(255, 255, 255, 0.9);
-  margin-bottom: 8rpx;
-}
-
-.card-count {
-  font-size: 22rpx;
-  color: rgba(255, 255, 255, 0.8);
 }
 
 .header-decoration {
   display: flex;
   align-items: center;
-}
-
-.deco-icons {
-  display: flex;
-  gap: -10rpx;
 }
 
 .deco-emoji {
@@ -588,7 +794,7 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   min-height: 176rpx;
-  
+
   &.cream-body {
     background: #FFF8E7;
   }
@@ -603,7 +809,7 @@ onMounted(() => {
   align-items: center;
   gap: 12rpx;
   margin-bottom: 16rpx;
-  
+
   &:last-child {
     margin-bottom: 0;
   }
@@ -619,22 +825,17 @@ onMounted(() => {
   font-weight: 500;
 }
 
-.card-simple .card-action {
-  margin-right: 32rpx;
-  flex-shrink: 0;
-  align-self: center;
-}
-
 .card-action {
   padding: 16rpx 32rpx;
   border-radius: 30rpx;
   min-width: 140rpx;
   text-align: center;
-  
+  flex-shrink: 0;
+
   &.red-action {
     background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
   }
-  
+
   &.dark-action {
     background: #1D1D1F;
   }
@@ -646,17 +847,16 @@ onMounted(() => {
   font-weight: 500;
 }
 
-// 简单卡片样式
 .card-simple {
-  padding: 32rpx 32rpx 32rpx 0;
+  padding: 32rpx;
   display: flex;
   align-items: center;
   min-height: 220rpx;
-  
+
   &.purple-card {
     background: linear-gradient(135deg, #E8E0F0 0%, #F0E8F8 100%);
   }
-  
+
   &.blue-card {
     background: linear-gradient(135deg, #D0F0F8 0%, #E0F8FF 100%);
   }
@@ -665,9 +865,6 @@ onMounted(() => {
 .simple-content {
   flex: 1;
   min-width: 0;
-  display: flex;
-  flex-direction: column;
-  padding-left: 32rpx;
 }
 
 .simple-title {
@@ -676,147 +873,23 @@ onMounted(() => {
   font-weight: 700;
   color: #1D1D1F;
   margin-bottom: 8rpx;
-  line-height: 1.3;
 }
 
 .simple-subtitle {
   display: block;
   font-size: 24rpx;
   color: #666;
-  line-height: 1.4;
 }
 
 .simple-divider {
   height: 2rpx;
   background: rgba(0, 0, 0, 0.1);
   margin: 24rpx 0;
-  border-style: dashed;
-}
-
-.simple-bottom {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16rpx;
 }
 
 .simple-count {
   font-size: 24rpx;
   color: #666;
-  flex: 1;
-  min-width: 0;
-}
-
-.simple-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 120rpx;
-  flex-shrink: 0;
-}
-
-.china-icon {
-  display: flex;
-  flex-direction: column;
-  gap: 8rpx;
-  opacity: 0.3;
-}
-
-.icon-line {
-  height: 8rpx;
-  background: #8B7BA8;
-  border-radius: 4rpx;
-  
-  &:nth-child(1) { width: 80rpx; }
-  &:nth-child(2) { width: 60rpx; margin-left: 10rpx; }
-  &:nth-child(3) { width: 70rpx; margin-left: 5rpx; }
-}
-
-.globe-icon {
-  opacity: 0.5;
-}
-
-// 晒一晒卡片
-.share-card {
-  background: #FFFFFF;
-  padding: 32rpx;
-  display: flex;
-  justify-content: space-between;
-}
-
-.share-content {
-  flex: 1;
-}
-
-.share-title {
-  display: block;
-  font-size: 32rpx;
-  font-weight: 700;
-  color: #1D1D1F;
-  margin-bottom: 24rpx;
-}
-
-.share-info {
-  font-size: 24rpx;
-  color: #666;
-}
-
-.share-label {
-  display: block;
-  font-weight: 600;
-  color: #1D1D1F;
-  margin-bottom: 12rpx;
-}
-
-.share-item {
-  display: flex;
-  align-items: center;
-  gap: 8rpx;
-  margin-bottom: 8rpx;
-}
-
-.dot {
-  width: 12rpx;
-  height: 12rpx;
-  border-radius: 50%;
-  
-  &.blue { background: #007AFF; }
-  &.orange { background: #FF9500; }
-  &.yellow { background: #FFCC00; }
-}
-
-.share-text {
-  font-size: 22rpx;
-  color: #666;
-  
-  &.highlight {
-    color: #FF6B6B;
-    font-weight: 500;
-  }
-}
-
-.share-platforms {
-  display: block;
-  font-size: 22rpx;
-  color: #999;
-  margin-left: 20rpx;
-  margin-bottom: 8rpx;
-}
-
-.share-prize {
-  display: block;
-  font-size: 22rpx;
-  color: #666;
-  margin-left: 20rpx;
-}
-
-.share-decoration {
-  display: flex;
-  align-items: center;
-}
-
-.camera-icon {
-  font-size: 80rpx;
 }
 
 .bottom-space {

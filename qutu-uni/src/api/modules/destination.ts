@@ -48,6 +48,12 @@ export interface SpotDetail {
   favoriteCount?: number
   viewCount?: number
   tags?: string[]
+  provinceName?: string
+  provinceCode?: string
+  countryName?: string
+  countryCode?: string
+  lat?: number
+  lng?: number
 }
 
 export interface SpotListItem {

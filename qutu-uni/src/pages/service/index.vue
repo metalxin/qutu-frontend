@@ -164,7 +164,8 @@
 <script setup lang="ts">
 import { ref, computed, nextTick, onMounted, onUnmounted } from 'vue'
 import SFIcon from '@/components/SFIcon/SFIcon.vue'
-import { chatWithAI } from '@/api'
+import { chatWithAI, getOrCreateConversation, getConversationMessages } from '@/api'
+import type { AiMessage } from '@/api'
 
 const statusBarHeight = ref(44)
 const menuButtonSpace = ref(0)
@@ -175,6 +176,7 @@ const showQuickQuestions = ref(true)
 const isThinking = ref(false)
 const isInputFocus = ref(false)
 const userAvatar = ref('')
+const currentConversationId = ref<number | null>(null)
 
 const isStreaming = ref(false)
 const streamingText = ref('')
@@ -201,6 +203,14 @@ function getTimeStr(): string {
   const now = new Date()
   const h = String(now.getHours()).padStart(2, '0')
   const m = String(now.getMinutes()).padStart(2, '0')
+  return `${h}:${m}`
+}
+
+function formatTimeStr(dateStr: string): string {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  const h = String(date.getHours()).padStart(2, '0')
+  const m = String(date.getMinutes()).padStart(2, '0')
   return `${h}:${m}`
 }
 
@@ -252,6 +262,35 @@ const stopStreaming = () => {
   streamingText.value = ''
 }
 
+const getUserId = (): number | null => {
+  const id = uni.getStorageSync('userId')
+  return id ? Number(id) : null
+}
+
+const loadHistory = async () => {
+  const userId = getUserId()
+  if (!userId) return
+
+  try {
+    const conversation = await getOrCreateConversation(userId)
+    if (conversation && conversation.id) {
+      currentConversationId.value = conversation.id
+      const messages = await getConversationMessages(conversation.id)
+      if (messages && messages.length > 0) {
+        chatMessages.value = messages.map((m: AiMessage) => ({
+          content: m.content,
+          role: m.role === 'user' ? 'user' as const : 'bot' as const,
+          time: formatTimeStr(m.createdAt)
+        }))
+        showQuickQuestions.value = false
+        scrollToBottom()
+      }
+    }
+  } catch (e) {
+    console.warn('[小途助手] 加载历史对话失败:', e)
+  }
+}
+
 const sendMessage = async () => {
   const text = inputText.value.trim()
   if (!text || isThinking.value || isStreaming.value) return
@@ -262,9 +301,16 @@ const sendMessage = async () => {
   isThinking.value = true
   scrollToBottom()
 
+  const userId = getUserId()
+
   try {
-    const reply = await chatWithAI(text)
+    const res = await chatWithAI(text, userId || undefined, currentConversationId.value || undefined)
     isThinking.value = false
+    // 更新当前对话ID
+    if (res && res.conversationId) {
+      currentConversationId.value = res.conversationId
+    }
+    const reply = res?.reply || res as any
     if (reply) {
       startStreaming(reply)
     } else {
@@ -301,6 +347,9 @@ onMounted(() => {
       userAvatar.value = cached.avatar
     }
   } catch (e) {}
+
+  // 加载历史对话
+  loadHistory()
 })
 
 onUnmounted(() => {

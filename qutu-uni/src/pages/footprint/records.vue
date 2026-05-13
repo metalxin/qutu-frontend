@@ -1,96 +1,210 @@
 <template>
   <view class="page">
-    <!-- 顶部导航栏 -->
-    <view class="navbar">
+    <view class="navbar" :style="navBarStyle">
       <view class="nav-back" @click="goBack">
         <SFIcon name="back" :size="40" color="#1D1D1F" />
       </view>
       <view class="nav-title">
         <text class="title-text">我的点亮记录</text>
       </view>
-      <view class="nav-placeholder"></view>
+      <view class="nav-right" @click="goToCreate">
+        <SFIcon name="plus" :size="36" color="#1D1D1F" />
+      </view>
     </view>
 
-    <scroll-view class="content" scroll-y :show-scrollbar="false">
-      <!-- 有记录时显示列表 -->
+    <scroll-view
+      class="content"
+      scroll-y
+      :show-scrollbar="false"
+      @scrolltolower="loadMore"
+    >
       <view class="records-list" v-if="records.length > 0">
-        <view 
-          class="record-card" 
-          v-for="record in records" 
+        <view
+          class="record-card"
+          v-for="record in records"
           :key="record.id"
-          @click="viewRecord(record)"
+          @longpress="confirmDelete(record)"
         >
-          <view class="record-image">
-            <image :src="record.image" mode="aspectFill" />
+          <view class="record-image-wrap">
+            <image
+              v-if="record.imageUrl"
+              class="record-image"
+              :src="resolveImageUrl(record.imageUrl)"
+              mode="aspectFill"
+            />
+            <view v-else class="record-image-placeholder">
+              <text class="placeholder-emoji">📍</text>
+            </view>
+            <view class="record-type-badge" :class="record.type === 2 ? 'overseas' : 'domestic'">
+              <text class="badge-text">{{ record.type === 2 ? '国外' : '国内' }}</text>
+            </view>
           </view>
           <view class="record-info">
-            <text class="record-title">{{ record.title }}</text>
-            <text class="record-date">{{ record.date }}</text>
-            <text class="record-count">{{ record.count }}个地点</text>
+            <text class="record-name">{{ record.spotName }}</text>
+            <text class="record-location" v-if="record.cityName || record.provinceName">
+              {{ record.provinceName ? record.provinceName + ' · ' : '' }}{{ record.cityName || '' }}
+            </text>
+            <text class="record-remark" v-if="record.remark">{{ record.remark }}</text>
+            <text class="record-date" v-if="record.createdAt">{{ formatDate(record.createdAt) }}</text>
           </view>
         </view>
       </view>
 
-      <!-- 空状态 -->
-      <view class="empty-state" v-else>
+      <view class="loading-more" v-if="loading">
+        <text class="loading-text">加载中...</text>
+      </view>
+      <view class="no-more" v-if="noMore && records.length > 0">
+        <text class="no-more-text">没有更多了</text>
+      </view>
+
+      <view class="empty-state" v-if="!loading && records.length === 0">
         <view class="empty-icon">
-          <view class="frame-icon">
-            <view class="frame-border">
-              <view class="frame-inner">
-                <view class="sun-icon"></view>
-                <view class="mountain-icon"></view>
-              </view>
-            </view>
-          </view>
+          <text class="empty-emoji">🗺️</text>
         </view>
         <text class="empty-text">还没有点亮记录哦</text>
-        <view class="empty-action" @click="goCreate">
-          <text class="action-text">立即创建</text>
+        <text class="empty-desc">去探索景点，点亮你的足迹吧！</text>
+        <view class="empty-action" @click="goToCreate">
+          <text class="action-text">去点亮</text>
         </view>
       </view>
+
+      <view class="bottom-space"></view>
     </scroll-view>
   </view>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, computed } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import SFIcon from '@/components/SFIcon/SFIcon.vue'
+import { getFootprintRecords, deleteFootprintRecord } from '@/api'
+import type { FootprintRecord } from '@/api'
+import { resolveFileUrl } from '@/api/modules/user'
 
-interface Record {
-  id: number
-  title: string
-  date: string
-  count: number
-  image: string
+const statusBarHeight = ref(44)
+const navBarHeight = ref(88)
+
+const records = ref<FootprintRecord[]>([])
+const loading = ref(false)
+const current = ref(1)
+const size = ref(20)
+const total = ref(0)
+const noMore = ref(false)
+
+const navBarStyle = computed(() => {
+  return {
+    paddingTop: statusBarHeight.value + 'px',
+    minHeight: navBarHeight.value + 'px'
+  }
+})
+
+const resolveImageUrl = (url: string) => {
+  return resolveFileUrl(url || '')
 }
 
-// 记录列表
-const records = ref<Record[]>([])
+const formatDate = (dateStr: string) => {
+  if (!dateStr) return ''
+  const d = new Date(dateStr)
+  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`
+}
 
-// 返回
+const getSystemInfo = () => {
+  try {
+    const info = uni.getSystemInfoSync()
+    statusBarHeight.value = info.statusBarHeight || 44
+    // #ifdef MP-WEIXIN
+    try {
+      const menuButton = uni.getMenuButtonBoundingClientRect()
+      if (menuButton) {
+        navBarHeight.value = (menuButton.top - statusBarHeight.value) * 2 + menuButton.height + statusBarHeight.value
+      }
+    } catch (e) {
+      console.log('获取胶囊按钮位置失败', e)
+    }
+    // #endif
+  } catch (e) {
+    console.error('获取系统信息失败', e)
+  }
+}
+
+const loadRecords = async (reset = false) => {
+  if (loading.value) return
+  if (!reset && noMore.value) return
+
+  if (reset) {
+    current.value = 1
+    records.value = []
+    noMore.value = false
+  }
+
+  loading.value = true
+  try {
+    const res = await getFootprintRecords({ current: current.value, size: size.value })
+    if (res) {
+      if (reset) {
+        records.value = res.records || []
+      } else {
+        records.value = [...records.value, ...(res.records || [])]
+      }
+      total.value = res.total || 0
+      if (records.value.length >= total.value) {
+        noMore.value = true
+      }
+      current.value++
+    }
+  } catch (error) {
+    console.error('加载足迹记录失败:', error)
+  } finally {
+    loading.value = false
+  }
+}
+
+const loadMore = () => {
+  if (!noMore.value && !loading.value) {
+    loadRecords()
+  }
+}
+
+const confirmDelete = (record: FootprintRecord) => {
+  uni.showModal({
+    title: '确认删除',
+    content: `确定要删除足迹「${record.spotName}」吗？`,
+    success: async (res) => {
+      if (res.confirm) {
+        try {
+          await deleteFootprintRecord(record.id)
+          uni.showToast({ title: '删除成功', icon: 'success' })
+          loadRecords(true)
+        } catch (error) {
+          console.error('删除足迹失败:', error)
+          uni.showToast({ title: '删除失败', icon: 'none' })
+        }
+      }
+    }
+  })
+}
+
 const goBack = () => {
   uni.navigateBack()
 }
 
-// 查看记录
-const viewRecord = (record: Record) => {
-  uni.navigateTo({
-    url: `/pages/footprint/detail?id=${record.id}`
-  })
+const goToCreate = () => {
+  uni.navigateTo({ url: '/pages/footprint/map?type=china' })
 }
 
-// 去创建
-const goCreate = () => {
-  uni.navigateTo({
-    url: '/pages/footprint/map?type=spring'
-  })
-}
+onMounted(() => {
+  getSystemInfo()
+})
+
+onShow(() => {
+  loadRecords(true)
+})
 </script>
 
 <style lang="scss" scoped>
 .page {
   min-height: 100vh;
-  background: #FFFFFF;
+  background: #F5F5F7;
 }
 
 .navbar {
@@ -102,13 +216,13 @@ const goCreate = () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 60rpx 32rpx 20rpx;
+  padding: 0 32rpx;
   background: #FFFFFF;
+  box-sizing: border-box;
 }
 
-.nav-back, .nav-placeholder {
+.nav-back, .nav-right {
   width: 60rpx;
-  height: 60rpx;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -130,179 +244,159 @@ const goCreate = () => {
   padding-top: 140rpx;
 }
 
-// 记录列表
 .records-list {
-  padding: 32rpx;
+  padding: 24rpx 32rpx;
 }
 
 .record-card {
   display: flex;
   gap: 24rpx;
   padding: 24rpx;
-  background: #F5F5F7;
+  background: #FFFFFF;
   border-radius: 24rpx;
   margin-bottom: 20rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
 }
 
-.record-image {
+.record-image-wrap {
   width: 160rpx;
   height: 160rpx;
   border-radius: 16rpx;
   overflow: hidden;
-  
-  image {
-    width: 100%;
-    height: 100%;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.record-image {
+  width: 100%;
+  height: 100%;
+}
+
+.record-image-placeholder {
+  width: 100%;
+  height: 100%;
+  background: #F0F0F0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.placeholder-emoji {
+  font-size: 48rpx;
+}
+
+.record-type-badge {
+  position: absolute;
+  top: 8rpx;
+  left: 8rpx;
+  padding: 4rpx 12rpx;
+  border-radius: 8rpx;
+
+  &.domestic {
+    background: rgba(25, 118, 210, 0.85);
   }
+
+  &.overseas {
+    background: rgba(230, 81, 0, 0.85);
+  }
+}
+
+.badge-text {
+  font-size: 18rpx;
+  color: #FFFFFF;
+  font-weight: 500;
 }
 
 .record-info {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   justify-content: center;
+  gap: 8rpx;
 }
 
-.record-title {
-  font-size: 32rpx;
+.record-name {
+  font-size: 30rpx;
   font-weight: 600;
   color: #1D1D1F;
-  margin-bottom: 8rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.record-location {
+  font-size: 24rpx;
+  color: #86868B;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.record-remark {
+  font-size: 22rpx;
+  color: #666;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .record-date {
-  font-size: 24rpx;
-  color: #666;
-  margin-bottom: 8rpx;
+  font-size: 22rpx;
+  color: #C7C7CC;
 }
 
-.record-count {
-  font-size: 24rpx;
-  color: #007AFF;
+.loading-more, .no-more {
+  display: flex;
+  justify-content: center;
+  padding: 24rpx 0;
 }
 
-// 空状态
+.loading-text, .no-more-text {
+  font-size: 24rpx;
+  color: #999;
+}
+
 .empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   padding-top: 200rpx;
+  gap: 16rpx;
 }
 
-.empty-icon {
-  margin-bottom: 40rpx;
-}
-
-.frame-icon {
-  width: 200rpx;
-  height: 200rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.frame-border {
-  width: 160rpx;
-  height: 160rpx;
-  border: 4rpx solid #1D1D1F;
-  border-radius: 8rpx;
-  padding: 16rpx;
-  position: relative;
-  
-  &::before,
-  &::after {
-    content: '';
-    position: absolute;
-    width: 20rpx;
-    height: 20rpx;
-    border: 4rpx solid #1D1D1F;
-  }
-  
-  &::before {
-    top: -12rpx;
-    left: -12rpx;
-    border-right: none;
-    border-bottom: none;
-  }
-  
-  &::after {
-    bottom: -12rpx;
-    right: -12rpx;
-    border-left: none;
-    border-top: none;
-  }
-}
-
-.frame-inner {
-  width: 100%;
-  height: 100%;
-  border: 2rpx solid #1D1D1F;
-  position: relative;
-  overflow: hidden;
-}
-
-.sun-icon {
-  position: absolute;
-  top: 20rpx;
-  right: 30rpx;
-  width: 24rpx;
-  height: 24rpx;
-  border: 2rpx solid #1D1D1F;
-  border-radius: 50%;
-}
-
-.mountain-icon {
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 0;
-  height: 0;
-  border-left: 40rpx solid transparent;
-  border-right: 40rpx solid transparent;
-  border-bottom: 50rpx solid transparent;
-  border-bottom-color: transparent;
-  
-  &::before {
-    content: '';
-    position: absolute;
-    left: -30rpx;
-    top: 10rpx;
-    width: 0;
-    height: 0;
-    border-left: 30rpx solid transparent;
-    border-right: 30rpx solid transparent;
-    border-bottom: 40rpx solid #1D1D1F;
-  }
-  
-  &::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 20rpx;
-    width: 60rpx;
-    height: 2rpx;
-    background: #1D1D1F;
-    transform: rotate(-30deg);
-  }
+.empty-emoji {
+  font-size: 80rpx;
+  margin-bottom: 16rpx;
 }
 
 .empty-text {
   font-size: 30rpx;
+  font-weight: 600;
   color: #1D1D1F;
-  margin-bottom: 32rpx;
+}
+
+.empty-desc {
+  font-size: 24rpx;
+  color: #86868B;
+  margin-bottom: 16rpx;
 }
 
 .empty-action {
   padding: 20rpx 48rpx;
   background: #1D1D1F;
   border-radius: 40rpx;
+  margin-top: 16rpx;
 }
 
 .action-text {
   font-size: 28rpx;
   color: #FFFFFF;
   font-weight: 500;
+}
+
+.bottom-space {
+  height: 60rpx;
 }
 </style>

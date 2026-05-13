@@ -89,11 +89,21 @@ export type {
 export {
   getFootprintRecords,
   getFootprintStats,
-  getFootprintActivities,
-  getProvinces,
-  getCountries,
+  createFootprintRecord,
+  deleteFootprintRecord,
+  getUserProvinces,
   lightUpProvince,
-  lightUpCity
+  getUserCountries,
+  lightUpCountry
+} from './modules/footprint'
+
+export type {
+  FootprintRecord,
+  FootprintRecordPage,
+  FootprintStats,
+  FootprintProvince,
+  FootprintCountry,
+  FootprintCreateDTO
 } from './modules/footprint'
 
 export {
@@ -187,11 +197,17 @@ export * as routeApi from './modules/route'
 
 export {
   chatWithAI,
-  chatWithHistory
+  chatWithHistory,
+  getOrCreateConversation,
+  getUserConversations,
+  getConversationMessages
 } from './modules/service'
 
 export type {
-  ChatMessage
+  ChatMessage,
+  AiConversation,
+  AiMessage,
+  ChatResponse
 } from './modules/service'
 
 export {

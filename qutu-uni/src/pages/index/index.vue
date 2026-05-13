@@ -70,7 +70,22 @@
             <text class="banner-tag-text">人生地点</text>
           </view>
           <text class="banner-title">收藏机</text>
-          <text class="banner-desc">记录和收藏你走过的每一处风景</text>
+          <view class="banner-stats">
+            <view class="banner-stat">
+              <text class="banner-stat-value">{{ footprintStats.totalFootprints || 0 }}</text>
+              <text class="banner-stat-label">足迹</text>
+            </view>
+            <view class="banner-stat-divider"></view>
+            <view class="banner-stat">
+              <text class="banner-stat-value">{{ footprintStats.provinceCount || 0 }}</text>
+              <text class="banner-stat-label">省份</text>
+            </view>
+            <view class="banner-stat-divider"></view>
+            <view class="banner-stat">
+              <text class="banner-stat-value">{{ footprintStats.countryCount || 0 }}</text>
+              <text class="banner-stat-label">国家</text>
+            </view>
+          </view>
         </view>
         <view class="banner-right">
           <view class="banner-action-btn">
@@ -612,10 +627,11 @@ import { onShow } from '@dcloudio/uni-app'
 import SFIcon from '@/components/SFIcon/SFIcon.vue'
 import AppTabBar from '@/components/AppTabBar/AppTabBar.vue'
 import UserSlidePanel from '@/components/UserSlidePanel/UserSlidePanel.vue'
-import { getDestinations, getRegionGroups, getHotCities, getDestinationSpots, getInspirations, searchDestinations, searchInspirations } from '@/api'
+import { getDestinations, getRegionGroups, getHotCities, getDestinationSpots, getInspirations, searchDestinations, searchInspirations, getFootprintStats } from '@/api'
 import { DEFAULT_AVATAR, getUserInfo } from '@/api/modules/user'
 import type { Destination, SpotListItem } from '@/api/modules/destination'
 import type { UserInfo } from '@/api/modules/user'
+import type { FootprintStats } from '@/api'
 
 // 加载状态
 const loading = ref(false)
@@ -786,6 +802,7 @@ onMounted(async () => {
 
 onShow(() => {
   loadUserInfo()
+  loadFootprintStats()
 })
 
 // 口令输入处理
@@ -1109,6 +1126,26 @@ const breadcrumb = ref(['亚洲', '中国大陆'])
 const currentRegionName = ref('中国大陆')
 const selectedProvince = ref('')
 const selectedRegion = ref('')
+
+const footprintStats = ref<FootprintStats>({
+  totalFootprints: 0,
+  domesticFootprints: 0,
+  overseasFootprints: 0,
+  provinceCount: 0,
+  countryCount: 0,
+  collectCount: 0,
+  provinces: [],
+  countries: []
+})
+
+const loadFootprintStats = async () => {
+  try {
+    const res = await getFootprintStats()
+    if (res) footprintStats.value = res
+  } catch (error) {
+    console.error('加载足迹统计失败:', error)
+  }
+}
 
 // 地区分组数据
 const regionGroups = ref<Array<{ name: string; provinces: string[] }>>([])
@@ -1489,6 +1526,11 @@ $shadow-medium: 0 4rpx 30rpx rgba(0, 0, 0, 0.1);
   gap: 6rpx;
 }
 
+.banner-tag-text {
+  font-size: 22rpx;
+  color: rgba(255, 255, 255, 0.9);
+}
+
 .banner-title {
   font-size: 38rpx;
   font-weight: 700;
@@ -1496,9 +1538,34 @@ $shadow-medium: 0 4rpx 30rpx rgba(0, 0, 0, 0.1);
   letter-spacing: 4rpx;
 }
 
-.banner-desc {
-  font-size: 24rpx;
-  color: rgba(255, 255, 255, 0.85);
+.banner-stats {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-top: 8rpx;
+}
+
+.banner-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.banner-stat-value {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+
+.banner-stat-label {
+  font-size: 20rpx;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.banner-stat-divider {
+  width: 2rpx;
+  height: 36rpx;
+  background: rgba(255, 255, 255, 0.4);
 }
 
 .banner-right {

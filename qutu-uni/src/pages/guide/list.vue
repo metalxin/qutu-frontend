@@ -96,7 +96,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, nextTick } from 'vue'
 import SFIcon from '@/components/SFIcon/SFIcon.vue'
 import { getGuideTags, getGuidesPage, getRelatedGuides, toggleGuideCollect } from '@/api'
 import type { GuideCategory } from '@/api/modules/guide'
@@ -130,15 +130,26 @@ const initSystemInfo = () => {
     const sysInfo = uni.getSystemInfoSync()
     statusBarHeight.value = sysInfo.statusBarHeight || 44
     navBarHeight.value = (sysInfo.statusBarHeight || 44) + 44
-    if (currentSpotId.value) {
-      scrollPaddingTop.value = navBarHeight.value
-    } else {
-      scrollPaddingTop.value = navBarHeight.value + 180
-    }
+    scrollPaddingTop.value = navBarHeight.value
   } catch {
     statusBarHeight.value = 44
     navBarHeight.value = 88
-    scrollPaddingTop.value = currentSpotId.value ? 88 : 268
+    scrollPaddingTop.value = 88
+  }
+}
+
+const updateScrollPadding = () => {
+  if (currentSpotId.value) {
+    scrollPaddingTop.value = navBarHeight.value
+  } else {
+    const query = uni.createSelectorQuery()
+    query.select('#guideHeader').boundingClientRect((rect: any) => {
+      if (rect && rect.height > 0) {
+        scrollPaddingTop.value = rect.top + rect.height
+      } else {
+        scrollPaddingTop.value = navBarHeight.value + 88
+      }
+    }).exec()
   }
 }
 
@@ -257,6 +268,9 @@ onMounted(async () => {
   } else {
     await loadCategories()
     await loadGuideList()
+    nextTick(() => {
+      updateScrollPadding()
+    })
   }
 })
 

@@ -1,274 +1,325 @@
 <template>
   <view class="page">
-    <!-- 顶部导航栏 -->
-    <view class="navbar">
+    <view class="navbar" :style="navBarStyle">
       <view class="nav-back" @click="goBack">
         <SFIcon name="back" :size="40" color="#FFFFFF" />
       </view>
+      <view class="nav-title">
+        <text class="title-text">{{ mapInfo.title }}</text>
+      </view>
+      <view class="nav-right" :style="navRightStyle">
+        <text class="lit-count">{{ litCount }}/{{ totalCount }}</text>
+      </view>
     </view>
 
-    <!-- 主视觉区域 -->
     <view class="hero-section" :class="mapType">
       <view class="hero-content">
         <view class="hero-title-wrapper">
           <text class="hero-title">{{ mapInfo.title }}</text>
-          <view class="firework-icon" v-if="mapType === 'spring'">🎆</view>
         </view>
         <view class="hero-subtitle">
-          <text class="subtitle-icon">💬</text>
           <text class="subtitle-text">「{{ mapInfo.slogan }}」</text>
         </view>
-      </view>
-      <view class="hero-decoration">
-        <text class="deco-icon">👆</text>
+        <view class="hero-progress">
+          <view class="progress-bar">
+            <view class="progress-fill" :style="{ width: progressPercent + '%' }"></view>
+          </view>
+          <text class="progress-text">{{ litCount }}/{{ totalCount }} 已点亮</text>
+        </view>
       </view>
     </view>
 
     <scroll-view class="content" scroll-y :show-scrollbar="false">
-      <!-- 精选示例 -->
-      <view class="examples-section">
-        <view class="section-title">
-          <text class="title-arrow">›</text>
-          <text class="title-text">精选示例</text>
+      <view class="region-section">
+        <view class="section-header">
+          <text class="section-title">{{ mapType === 'world' ? '按地区选择' : '按区域选择' }}</text>
         </view>
 
-        <scroll-view class="examples-scroll" scroll-x :show-scrollbar="false">
-          <view class="examples-list">
-            <view 
-              class="example-card" 
-              v-for="example in examples" 
-              :key="example.id"
-              @click="viewExample(example)"
+        <view class="region-group" v-for="group in regionGroups" :key="group.name">
+          <view class="group-header">
+            <text class="group-name">{{ group.name }}</text>
+            <text class="group-count">{{ group.litCount }}/{{ group.items.length }}</text>
+          </view>
+          <view class="group-items">
+            <view
+              class="region-item"
+              v-for="item in group.items"
+              :key="item.code"
+              :class="{ lit: item.lit }"
+              @click="toggleRegion(item)"
             >
-              <view class="example-map" :style="{ background: example.bgColor }">
-                <view class="map-china">
-                  <!-- 简化的中国地图轮廓 -->
-                  <view class="china-shape"></view>
-                  <view class="map-markers">
-                    <view 
-                      class="marker" 
-                      v-for="(marker, idx) in example.markers" 
-                      :key="idx"
-                      :style="{ left: marker.x + '%', top: marker.y + '%' }"
-                    >
-                      <text class="marker-emoji">{{ marker.emoji }}</text>
-                    </view>
-                  </view>
-                </view>
-                <view class="map-count">
-                  <text class="count-number">{{ example.count }}</text>
-                  <text class="count-label">地点</text>
-                </view>
-                <view class="map-mascot">
-                  <text class="mascot-emoji">🐲</text>
-                </view>
+              <view class="item-indicator" :class="{ active: item.lit }">
+                <text class="indicator-icon">{{ item.lit ? '✓' : '+' }}</text>
               </view>
-              <view class="example-info">
-                <text class="example-title">{{ example.title }}</text>
-                <text class="example-desc">{{ example.desc }}</text>
-              </view>
+              <text class="item-name">{{ item.name }}</text>
             </view>
           </view>
-        </scroll-view>
+        </view>
       </view>
 
-      <!-- 底部间距 -->
       <view class="bottom-space"></view>
     </scroll-view>
-
-    <!-- 底部创建按钮 -->
-    <view class="bottom-action">
-      <view class="create-btn" @click="showThemePopup = true">
-        <SFIcon name="plus" :size="32" color="#FFFFFF" />
-        <text class="btn-text">创建我的点亮地图</text>
-      </view>
-    </view>
-
-    <!-- 自定义主题弹窗 -->
-    <view class="popup-overlay" v-if="showThemePopup" @click="showThemePopup = false">
-      <view class="theme-popup" @click.stop>
-        <view class="popup-header">
-          <text class="popup-title">自定义主题</text>
-          <view class="popup-close" @click="showThemePopup = false">
-            <SFIcon name="close" :size="36" color="#1D1D1F" />
-          </view>
-        </view>
-
-        <view class="popup-input">
-          <input 
-            class="theme-input" 
-            v-model="customTheme" 
-            placeholder="输入自定义主题（9字内）"
-            maxlength="9"
-          />
-          <view class="input-btn" :class="{ active: customTheme }" @click="confirmCustomTheme">
-            <text class="btn-text">确定</text>
-          </view>
-        </view>
-
-        <view class="theme-recommend">
-          <text class="recommend-title">热门推荐</text>
-          <view class="theme-list">
-            <view 
-              class="theme-item" 
-              v-for="theme in recommendThemes" 
-              :key="theme.id"
-              @click="selectTheme(theme)"
-            >
-              <text class="theme-emoji">{{ theme.emoji }}</text>
-              <view class="theme-info">
-                <text class="theme-name">{{ theme.name }}</text>
-                <text class="theme-desc">{{ theme.desc }}</text>
-              </view>
-            </view>
-          </view>
-        </view>
-      </view>
-    </view>
   </view>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import SFIcon from '@/components/SFIcon/SFIcon.vue'
+import { getUserProvinces, lightUpProvince, getUserCountries, lightUpCountry, createFootprintRecord } from '@/api'
+import type { FootprintProvince, FootprintCountry } from '@/api'
 
-interface Example {
-  id: number
-  title: string
-  desc: string
-  count: number
-  bgColor: string
-  markers: { x: number; y: number; emoji: string }[]
-}
-
-interface Theme {
-  id: number
+interface RegionItem {
+  code: string
   name: string
-  desc: string
-  emoji: string
+  lit: boolean
+  checkinCount?: number
 }
 
-// 地图类型
-const mapType = ref('spring')
+interface RegionGroup {
+  name: string
+  items: RegionItem[]
+  litCount: number
+}
 
-// 地图信息
+const statusBarHeight = ref(44)
+const menuButtonSpace = ref(0)
+const navBarHeight = ref(88)
+const mapType = ref('china')
+const litProvinces = ref<FootprintProvince[]>([])
+const litCountries = ref<FootprintCountry[]>([])
+const loading = ref(false)
+
+const CHINA_PROVINCES = [
+  { group: '华北', items: [
+    { code: '110000', name: '北京' }, { code: '120000', name: '天津' },
+    { code: '130000', name: '河北' }, { code: '140000', name: '山西' },
+    { code: '150000', name: '内蒙古' }
+  ]},
+  { group: '东北', items: [
+    { code: '210000', name: '辽宁' }, { code: '220000', name: '吉林' },
+    { code: '230000', name: '黑龙江' }
+  ]},
+  { group: '华东', items: [
+    { code: '310000', name: '上海' }, { code: '320000', name: '江苏' },
+    { code: '330000', name: '浙江' }, { code: '340000', name: '安徽' },
+    { code: '350000', name: '福建' }, { code: '360000', name: '江西' },
+    { code: '370000', name: '山东' }
+  ]},
+  { group: '华中', items: [
+    { code: '410000', name: '河南' }, { code: '420000', name: '湖北' },
+    { code: '430000', name: '湖南' }
+  ]},
+  { group: '华南', items: [
+    { code: '440000', name: '广东' }, { code: '450000', name: '广西' },
+    { code: '460000', name: '海南' }
+  ]},
+  { group: '西南', items: [
+    { code: '500000', name: '重庆' }, { code: '510000', name: '四川' },
+    { code: '520000', name: '贵州' }, { code: '530000', name: '云南' },
+    { code: '540000', name: '西藏' }
+  ]},
+  { group: '西北', items: [
+    { code: '610000', name: '陕西' }, { code: '620000', name: '甘肃' },
+    { code: '630000', name: '青海' }, { code: '640000', name: '宁夏' },
+    { code: '650000', name: '新疆' }
+  ]},
+  { group: '特别行政区', items: [
+    { code: '710000', name: '台湾' }, { code: '810000', name: '香港' },
+    { code: '820000', name: '澳门' }
+  ]}
+]
+
+const WORLD_COUNTRIES = [
+  { group: '亚洲', items: [
+    { code: 'JP', name: '日本' }, { code: 'KR', name: '韩国' },
+    { code: 'TH', name: '泰国' }, { code: 'VN', name: '越南' },
+    { code: 'SG', name: '新加坡' }, { code: 'MY', name: '马来西亚' },
+    { code: 'ID', name: '印度尼西亚' }, { code: 'PH', name: '菲律宾' },
+    { code: 'IN', name: '印度' }, { code: 'AE', name: '阿联酋' },
+    { code: 'TR', name: '土耳其' }, { code: 'IL', name: '以色列' }
+  ]},
+  { group: '欧洲', items: [
+    { code: 'FR', name: '法国' }, { code: 'DE', name: '德国' },
+    { code: 'IT', name: '意大利' }, { code: 'ES', name: '西班牙' },
+    { code: 'GB', name: '英国' }, { code: 'CH', name: '瑞士' },
+    { code: 'AT', name: '奥地利' }, { code: 'NL', name: '荷兰' },
+    { code: 'BE', name: '比利时' }, { code: 'PT', name: '葡萄牙' },
+    { code: 'GR', name: '希腊' }, { code: 'CZ', name: '捷克' },
+    { code: 'HU', name: '匈牙利' }, { code: 'PL', name: '波兰' },
+    { code: 'SE', name: '瑞典' }, { code: 'NO', name: '挪威' },
+    { code: 'FI', name: '芬兰' }, { code: 'DK', name: '丹麦' },
+    { code: 'IE', name: '爱尔兰' }, { code: 'RU', name: '俄罗斯' }
+  ]},
+  { group: '北美洲', items: [
+    { code: 'US', name: '美国' }, { code: 'CA', name: '加拿大' },
+    { code: 'MX', name: '墨西哥' }, { code: 'CU', name: '古巴' },
+    { code: 'JM', name: '牙买加' }, { code: 'PA', name: '巴拿马' }
+  ]},
+  { group: '南美洲', items: [
+    { code: 'BR', name: '巴西' }, { code: 'AR', name: '阿根廷' },
+    { code: 'CL', name: '智利' }, { code: 'PE', name: '秘鲁' },
+    { code: 'CO', name: '哥伦比亚' }
+  ]},
+  { group: '大洋洲', items: [
+    { code: 'AU', name: '澳大利亚' }, { code: 'NZ', name: '新西兰' },
+    { code: 'FJ', name: '斐济' }
+  ]},
+  { group: '非洲', items: [
+    { code: 'EG', name: '埃及' }, { code: 'ZA', name: '南非' },
+    { code: 'KE', name: '肯尼亚' }, { code: 'MA', name: '摩洛哥' },
+    { code: 'TZ', name: '坦桑尼亚' }
+  ]}
+]
+
 const mapInfo = computed(() => {
   const infoMap: Record<string, { title: string; slogan: string }> = {
-    spring: {
-      title: '春节玩乐地图',
-      slogan: '年味在路上 点亮你的 新春足迹！'
-    },
-    china: {
-      title: '中国漫游者指南',
-      slogan: '点亮你去过的省市自治区'
-    },
-    world: {
-      title: '世界探险家手册',
-      slogan: '点亮你在世界上去过的国家地区'
-    }
+    spring: { title: '春节玩乐地图', slogan: '年味在路上 点亮你的新春足迹！' },
+    china: { title: '中国漫游者指南', slogan: '点亮你去过的省/市/自治区/特别行政区' },
+    world: { title: '世界探险家手册', slogan: '点亮你在世界上去过的国家/地区' }
   }
-  return infoMap[mapType.value] || infoMap.spring
+  return infoMap[mapType.value] || infoMap.china
 })
 
-// 精选示例
-const examples = ref<Example[]>([
-  {
-    id: 1,
-    title: '新春看神仙地图',
-    desc: '这个春节，你去过哪些庙会和游神祈福活动？把他们标记下来吧！🐲',
-    count: 33,
-    bgColor: 'linear-gradient(180deg, #FFE4E4 0%, #FFCECE 100%)',
-    markers: [
-      { x: 70, y: 35, emoji: '🎭' },
-      { x: 75, y: 40, emoji: '🏮' },
-      { x: 80, y: 45, emoji: '🐲' },
-      { x: 72, y: 50, emoji: '🎊' }
-    ]
-  },
-  {
-    id: 2,
-    title: '新春贪吃地图',
-    desc: '过年啦，你都吃了哪些美食？标记下来吧！😋',
-    count: 52,
-    bgColor: 'linear-gradient(180deg, #FFE4E4 0%, #FFCECE 100%)',
-    markers: [
-      { x: 65, y: 45, emoji: '🍜' },
-      { x: 70, y: 50, emoji: '🥟' },
-      { x: 75, y: 55, emoji: '🍲' }
-    ]
-  },
-  {
-    id: 3,
-    title: '新春玩乐地图',
-    desc: '春节假期都去哪里玩了？记录下来！🧧',
-    count: 28,
-    bgColor: 'linear-gradient(180deg, #FFE4E4 0%, #FFCECE 100%)',
-    markers: [
-      { x: 60, y: 40, emoji: '🎡' },
-      { x: 68, y: 48, emoji: '🏔️' }
-    ]
+const navBarStyle = computed(() => ({
+  paddingTop: statusBarHeight.value + 'px',
+  minHeight: navBarHeight.value + 'px'
+}))
+
+const navRightStyle = computed(() => {
+  if (menuButtonSpace.value > 0) {
+    return { paddingRight: menuButtonSpace.value + 'px' }
   }
-])
+  return {}
+})
 
-// 主题弹窗
-const showThemePopup = ref(false)
-const customTheme = ref('')
+const regionGroups = computed((): RegionGroup[] => {
+  const source = mapType.value === 'world' ? WORLD_COUNTRIES : CHINA_PROVINCES
+  const litList: any[] = mapType.value === 'world' ? litCountries.value : litProvinces.value
+  const codeField = mapType.value === 'world' ? 'countryCode' : 'provinceCode'
 
-// 热门推荐主题
-const recommendThemes = ref<Theme[]>([
-  { id: 1, name: '新春看神仙地图', desc: '记录春节各地的喜庆民俗活动', emoji: '🐲' },
-  { id: 2, name: '新春贪吃地图', desc: '记录过年旅行时吃到的美食', emoji: '😋' },
-  { id: 3, name: '新春玩乐地图', desc: '记录过年吃喝玩乐的足迹', emoji: '🧧' },
-  { id: 4, name: '新春求福气地图', desc: '求财求缘求健康，去哪个寺庙最灵验？', emoji: '🎋' },
-  { id: 5, name: '新春庙会地图', desc: '现在的庙会，审美越来越在线了', emoji: '🎭' },
-  { id: 6, name: '新春旅行地图', desc: '每个假期都要出去走走', emoji: '🚗' },
-  { id: 7, name: '新春三件套地图', desc: '美甲美睫美发店，通通都要做一遍！', emoji: '💅' }
-])
+  return source.map(group => {
+    const items: RegionItem[] = group.items.map(item => {
+      const litItem = litList.find((l: any) => l[codeField] === item.code)
+      return {
+        code: item.code,
+        name: item.name,
+        lit: !!litItem,
+        checkinCount: litItem?.checkinCount
+      }
+    })
+    return {
+      name: group.group,
+      items,
+      litCount: items.filter(i => i.lit).length
+    }
+  })
+})
 
-// 返回
+const litCount = computed(() => {
+  return regionGroups.value.reduce((sum, g) => sum + g.litCount, 0)
+})
+
+const totalCount = computed(() => {
+  return regionGroups.value.reduce((sum, g) => sum + g.items.length, 0)
+})
+
+const progressPercent = computed(() => {
+  if (totalCount.value === 0) return 0
+  return Math.round((litCount.value / totalCount.value) * 100)
+})
+
+const getSystemInfo = () => {
+  try {
+    const info = uni.getSystemInfoSync()
+    statusBarHeight.value = info.statusBarHeight || 44
+    const windowWidth = info.windowWidth || 375
+    // #ifdef MP-WEIXIN
+    try {
+      const menuButton = uni.getMenuButtonBoundingClientRect()
+      if (menuButton) {
+        menuButtonSpace.value = windowWidth - menuButton.left + 10
+        navBarHeight.value = (menuButton.top - statusBarHeight.value) * 2 + menuButton.height + statusBarHeight.value
+      }
+    } catch (e) {
+      console.log('获取胶囊按钮位置失败', e)
+    }
+    // #endif
+  } catch (e) {
+    console.error('获取系统信息失败', e)
+  }
+}
+
+const loadLitData = async () => {
+  loading.value = true
+  try {
+    if (mapType.value === 'world') {
+      const res = await getUserCountries()
+      if (res) litCountries.value = res
+    } else {
+      const res = await getUserProvinces()
+      if (res) litProvinces.value = res
+    }
+  } catch (error) {
+    console.error('加载点亮数据失败:', error)
+  } finally {
+    loading.value = false
+  }
+}
+
+const toggleRegion = async (item: RegionItem) => {
+  if (loading.value) return
+
+  if (item.lit) {
+    uni.showToast({ title: '已点亮过该地区', icon: 'none' })
+    return
+  }
+
+  loading.value = true
+  try {
+    if (mapType.value === 'world') {
+      await lightUpCountry(item.code, item.name)
+    } else {
+      await lightUpProvince(item.code, item.name)
+    }
+
+    await createFootprintRecord({
+      spotName: item.name,
+      provinceName: mapType.value !== 'world' ? item.name : undefined,
+      provinceCode: mapType.value !== 'world' ? item.code : undefined,
+      countryName: mapType.value === 'world' ? item.name : '中国',
+      countryCode: mapType.value === 'world' ? item.code : 'CN',
+      type: mapType.value === 'world' ? 2 : 1
+    })
+
+    uni.showToast({ title: '点亮成功！', icon: 'success' })
+    await loadLitData()
+  } catch (error) {
+    console.error('点亮失败:', error)
+    uni.showToast({ title: '点亮失败，请重试', icon: 'none' })
+  } finally {
+    loading.value = false
+  }
+}
+
 const goBack = () => {
   uni.navigateBack()
 }
 
-// 查看示例
-const viewExample = (example: Example) => {
-  uni.showToast({
-    title: '查看示例：' + example.title,
-    icon: 'none'
-  })
-}
-
-// 选择主题
-const selectTheme = (theme: Theme) => {
-  showThemePopup.value = false
-  uni.navigateTo({
-    url: `/pages/footprint/create?theme=${encodeURIComponent(theme.name)}`
-  })
-}
-
-// 确认自定义主题
-const confirmCustomTheme = () => {
-  if (!customTheme.value) return
-  showThemePopup.value = false
-  uni.navigateTo({
-    url: `/pages/footprint/create?theme=${encodeURIComponent(customTheme.value)}`
-  })
-}
-
-// 页面加载获取参数
 onMounted(() => {
+  getSystemInfo()
   const pages = getCurrentPages()
   const currentPage = pages[pages.length - 1] as any
   if (currentPage?.options?.type) {
     mapType.value = currentPage.options.type
   }
+  loadLitData()
 })
 </script>
 
 <style lang="scss" scoped>
 .page {
   min-height: 100vh;
-  background: #FFF8E7;
+  background: #F5F5F7;
 }
 
 .navbar {
@@ -279,31 +330,48 @@ onMounted(() => {
   z-index: 100;
   display: flex;
   align-items: center;
-  padding: 60rpx 32rpx 20rpx;
+  justify-content: space-between;
+  padding: 0 32rpx;
+  background: transparent;
+  box-sizing: border-box;
 }
 
-.nav-back {
-  width: 60rpx;
-  height: 60rpx;
+.nav-back, .nav-right {
+  width: 80rpx;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-// 主视觉区域
+.nav-title {
+  flex: 1;
+  text-align: center;
+}
+
+.title-text {
+  font-size: 34rpx;
+  font-weight: 600;
+  color: #FFFFFF;
+}
+
+.lit-count {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+}
+
 .hero-section {
-  padding: 160rpx 32rpx 60rpx;
+  padding: 140rpx 32rpx 48rpx;
   position: relative;
-  overflow: hidden;
-  
+
   &.spring {
     background: linear-gradient(180deg, #FF6B6B 0%, #FF8E53 100%);
   }
-  
+
   &.china {
     background: linear-gradient(180deg, #8B7BA8 0%, #A890C8 100%);
   }
-  
+
   &.world {
     background: linear-gradient(180deg, #4ECDC4 0%, #44A08D 100%);
   }
@@ -315,361 +383,149 @@ onMounted(() => {
 }
 
 .hero-title-wrapper {
-  display: flex;
-  align-items: flex-start;
-  gap: 16rpx;
+  margin-bottom: 16rpx;
 }
 
 .hero-title {
-  font-size: 72rpx;
+  font-size: 56rpx;
   font-weight: 800;
   color: #FFEB3B;
-  text-shadow: 4rpx 4rpx 0 rgba(0, 0, 0, 0.1);
-  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
-}
-
-.firework-icon {
-  font-size: 48rpx;
-  animation: sparkle 1s ease-in-out infinite;
-}
-
-@keyframes sparkle {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.7; transform: scale(1.1); }
+  text-shadow: 2rpx 2rpx 0 rgba(0, 0, 0, 0.1);
 }
 
 .hero-subtitle {
-  display: flex;
-  align-items: center;
-  gap: 8rpx;
-  margin-top: 20rpx;
-}
-
-.subtitle-icon {
-  font-size: 28rpx;
+  margin-bottom: 24rpx;
 }
 
 .subtitle-text {
-  font-size: 28rpx;
+  font-size: 26rpx;
   color: #FFFFFF;
 }
 
-.hero-decoration {
-  position: absolute;
-  right: 40rpx;
-  top: 120rpx;
-}
-
-.deco-icon {
-  font-size: 60rpx;
-  animation: float 2s ease-in-out infinite;
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10rpx); }
-}
-
-.content {
-  height: calc(100vh - 400rpx);
-}
-
-// 精选示例
-.examples-section {
-  padding: 40rpx 0 40rpx 32rpx;
-}
-
-.section-title {
+.hero-progress {
   display: flex;
   align-items: center;
-  gap: 8rpx;
-  margin-bottom: 24rpx;
+  gap: 16rpx;
 }
 
-.title-arrow {
-  font-size: 32rpx;
-  color: #FF6B6B;
-  font-weight: 700;
-}
-
-.title-text {
-  font-size: 32rpx;
-  font-weight: 700;
-  color: #1D1D1F;
-}
-
-.examples-scroll {
-  white-space: nowrap;
-}
-
-.examples-list {
-  display: inline-flex;
-  gap: 20rpx;
-  padding-right: 32rpx;
-}
-
-.example-card {
-  width: 400rpx;
-  display: inline-block;
-  vertical-align: top;
-  white-space: normal;
-}
-
-.example-map {
-  height: 360rpx;
-  border-radius: 24rpx;
-  border: 4rpx solid #E8D89A;
-  position: relative;
+.progress-bar {
+  flex: 1;
+  height: 12rpx;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 6rpx;
   overflow: hidden;
 }
 
-.map-china {
-  width: 100%;
+.progress-fill {
   height: 100%;
-  position: relative;
+  background: #FFEB3B;
+  border-radius: 6rpx;
+  transition: width 0.3s ease;
 }
 
-.china-shape {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 80%;
-  height: 70%;
-  background: rgba(255, 100, 100, 0.3);
-  border-radius: 40% 60% 50% 50% / 50% 50% 60% 40%;
-}
-
-.map-markers {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-}
-
-.marker {
-  position: absolute;
-  transform: translate(-50%, -50%);
-}
-
-.marker-emoji {
-  font-size: 32rpx;
-}
-
-.map-count {
-  position: absolute;
-  left: 20rpx;
-  bottom: 20rpx;
-  display: flex;
-  align-items: baseline;
-  gap: 4rpx;
-}
-
-.count-number {
-  font-size: 48rpx;
-  font-weight: 800;
-  color: #1D1D1F;
-}
-
-.count-label {
+.progress-text {
   font-size: 24rpx;
-  color: #666;
-}
-
-.map-mascot {
-  position: absolute;
-  right: 20rpx;
-  bottom: 20rpx;
-}
-
-.mascot-emoji {
-  font-size: 48rpx;
-}
-
-.example-info {
-  padding: 16rpx 0;
-}
-
-.example-title {
-  display: block;
-  font-size: 28rpx;
-  font-weight: 600;
-  color: #1D1D1F;
-  margin-bottom: 8rpx;
-}
-
-.example-desc {
-  display: block;
-  font-size: 24rpx;
-  color: #666;
-  line-height: 1.4;
-}
-
-.bottom-space {
-  height: 160rpx;
-}
-
-// 底部创建按钮
-.bottom-action {
-  position: fixed;
-  bottom: 60rpx;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 100;
-}
-
-.create-btn {
-  display: flex;
-  align-items: center;
-  gap: 12rpx;
-  padding: 24rpx 48rpx;
-  background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
-  border-radius: 50rpx;
-  box-shadow: 0 8rpx 30rpx rgba(255, 107, 107, 0.4);
-  border: 4rpx solid #FFFFFF;
-}
-
-.btn-text {
-  font-size: 30rpx;
   color: #FFFFFF;
-  font-weight: 600;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
-// 主题弹窗
-.popup-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 200;
-  display: flex;
-  align-items: flex-end;
+.content {
+  height: calc(100vh - 320rpx);
 }
 
-.theme-popup {
-  width: 100%;
-  max-height: 80vh;
-  background: #FFFFFF;
-  border-radius: 40rpx 40rpx 0 0;
-  padding: 40rpx 32rpx;
-  padding-bottom: calc(40rpx + env(safe-area-inset-bottom));
-  animation: slideUp 0.3s ease-out;
+.region-section {
+  padding: 24rpx 32rpx;
 }
 
-@keyframes slideUp {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
+.section-header {
+  margin-bottom: 24rpx;
 }
 
-.popup-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 32rpx;
-}
-
-.popup-title {
-  font-size: 36rpx;
+.section-title {
+  font-size: 32rpx;
   font-weight: 700;
   color: #1D1D1F;
 }
 
-.popup-close {
-  width: 60rpx;
-  height: 60rpx;
+.region-group {
+  margin-bottom: 32rpx;
+}
+
+.group-header {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  justify-content: center;
+  margin-bottom: 16rpx;
+  padding: 0 4rpx;
 }
 
-.popup-input {
-  display: flex;
-  gap: 16rpx;
-  margin-bottom: 40rpx;
-}
-
-.theme-input {
-  flex: 1;
-  height: 88rpx;
-  background: #F5F5F7;
-  border-radius: 16rpx;
-  padding: 0 24rpx;
+.group-name {
   font-size: 28rpx;
-}
-
-.input-btn {
-  padding: 0 40rpx;
-  height: 88rpx;
-  background: #E5E5E5;
-  border-radius: 16rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  
-  &.active {
-    background: #1D1D1F;
-    
-    .btn-text {
-      color: #FFFFFF;
-    }
-  }
-  
-  .btn-text {
-    font-size: 28rpx;
-    color: #999;
-    font-weight: 500;
-  }
-}
-
-.theme-recommend {
-  max-height: 50vh;
-  overflow-y: auto;
-}
-
-.recommend-title {
-  display: block;
-  font-size: 28rpx;
-  font-weight: 600;
-  color: #666;
-  margin-bottom: 24rpx;
-}
-
-.theme-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8rpx;
-}
-
-.theme-item {
-  display: flex;
-  align-items: center;
-  gap: 20rpx;
-  padding: 24rpx 0;
-  border-bottom: 1rpx solid #F0F0F0;
-}
-
-.theme-emoji {
-  font-size: 48rpx;
-}
-
-.theme-info {
-  flex: 1;
-}
-
-.theme-name {
-  display: block;
-  font-size: 30rpx;
   font-weight: 600;
   color: #1D1D1F;
-  margin-bottom: 4rpx;
 }
 
-.theme-desc {
-  display: block;
+.group-count {
   font-size: 24rpx;
-  color: #666;
+  color: #86868B;
+}
+
+.group-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+
+.region-item {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  padding: 12rpx 20rpx;
+  background: #FFFFFF;
+  border-radius: 12rpx;
+  border: 2rpx solid #E5E5EA;
+
+  &.lit {
+    background: #E8F5E9;
+    border-color: #4CAF50;
+  }
+}
+
+.item-indicator {
+  width: 32rpx;
+  height: 32rpx;
+  border-radius: 50%;
+  background: #F0F0F0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &.active {
+    background: #4CAF50;
+  }
+}
+
+.indicator-icon {
+  font-size: 20rpx;
+  color: #999;
+
+  .active & {
+    color: #FFFFFF;
+  }
+}
+
+.item-name {
+  font-size: 26rpx;
+  color: #1D1D1F;
+  font-weight: 500;
+
+  .lit & {
+    color: #2E7D32;
+  }
+}
+
+.bottom-space {
+  height: 60rpx;
 }
 </style>
