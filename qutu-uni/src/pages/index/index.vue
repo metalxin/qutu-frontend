@@ -101,11 +101,11 @@
     </view>
 
     <!-- 目的地卡片 -->
-    <scroll-view class="destination-scroll" scroll-y :show-scrollbar="false">
+    <view class="destination-scroll">
       <view class="destination-grid">
-        <view 
-          class="destination-card" 
-          v-for="dest in destinations" 
+        <view
+          class="destination-card"
+          v-for="dest in destinations.slice(0, 4)"
           :key="dest.id"
           @tap="handleDestinationClick(dest)"
         >
@@ -135,8 +135,7 @@
       <view class="search-empty" v-if="destinations.length === 0">
         <text class="empty-text">暂无目的地数据</text>
       </view>
-      
-    </scroll-view>
+    </view>
 
     <!-- 灵感推荐 -->
     <view class="inspiration-section">
@@ -1609,7 +1608,6 @@ $shadow-medium: 0 4rpx 30rpx rgba(0, 0, 0, 0.1);
 
 // 目的地卡片
 .destination-scroll {
-  max-height: 520rpx;
 }
 
 .destination-grid {
