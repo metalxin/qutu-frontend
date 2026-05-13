@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onLaunch, onShow, onHide } from "@dcloudio/uni-app";
+import { notificationWs } from "./api/modules/notification-ws";
 
 const LOGIN_PAGE = '/pages/user/login'
 const PROTECTED_ROUTES = new Set([
@@ -109,10 +110,20 @@ const checkCurrentRouteAuth = () => {
 onLaunch(() => {
   console.log("App Launch");
   setTimeout(checkCurrentRouteAuth, 0)
+  // 登录状态下自动连接通知 WebSocket
+  if (hasLoginToken()) {
+    const userId = uni.getStorageSync('userId')
+    if (userId) notificationWs.connect(Number(userId))
+  }
 });
 onShow(() => {
   console.log("App Show");
   setTimeout(checkCurrentRouteAuth, 0)
+  // 恢复前台时重连 WebSocket
+  if (hasLoginToken() && !notificationWs.isConnected()) {
+    const userId = uni.getStorageSync('userId')
+    if (userId) notificationWs.connect(Number(userId))
+  }
 });
 onHide(() => {
   console.log("App Hide");

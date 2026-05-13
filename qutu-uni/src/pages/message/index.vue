@@ -13,36 +13,32 @@
     <view class="tabbar">
       <view class="tab-item" :class="{ active: activeTab === 'system' }" @click="switchTab('system')">
         <text class="tab-text">系统通知</text>
-        <view class="tab-badge" v-if="unreadCount.system">{{ unreadCount.system }}</view>
+        <view class="tab-badge" v-if="unreadCount > 0">{{ unreadCount }}</view>
       </view>
       <view class="tab-item" :class="{ active: activeTab === 'interaction' }" @click="switchTab('interaction')">
         <text class="tab-text">互动消息</text>
-        <view class="tab-badge" v-if="unreadCount.interaction">{{ unreadCount.interaction }}</view>
       </view>
     </view>
 
     <scroll-view class="message-list" scroll-y :show-scrollbar="false" @scrolltolower="loadMore">
-      <view class="message-item" v-for="item in filteredMessages" :key="item.id" @click="openMessage(item)">
+      <view class="message-item" v-for="item in filteredNotifications" :key="item.id" @click="openMessage(item)">
         <view class="message-left">
-          <view class="message-icon" :style="{ background: item.color || '#E3F2FD' }">
-            <text class="icon-text">{{ item.icon || '🔔' }}</text>
+          <view class="message-icon" :style="{ background: '#E3F2FD' }">
+            <text class="icon-text">🔔</text>
           </view>
         </view>
         <view class="message-body">
           <view class="message-header">
             <text class="message-title">{{ item.title }}</text>
-            <text class="message-time">{{ formatTime(item.createTime) }}</text>
+            <text class="message-time">{{ formatTime(item.publishAt || item.createdAt) }}</text>
           </view>
           <text class="message-content">{{ item.content }}</text>
-          <view class="message-tags" v-if="parseTags(item.tags).length">
-            <text class="tag" v-for="tag in parseTags(item.tags)" :key="tag">{{ tag }}</text>
-          </view>
         </view>
-        <view class="message-status" v-if="item.readFlag === 0">
+        <view class="message-status" v-if="item.isRead === 0">
           <view class="unread-dot"></view>
         </view>
       </view>
-      <view class="empty" v-if="!loading && filteredMessages.length === 0">
+      <view class="empty" v-if="!loading && filteredNotifications.length === 0">
         <text class="empty-icon">📭</text>
         <text class="empty-text">暂无消息</text>
       </view>
@@ -59,25 +55,31 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { getMessages, getUnreadCount, markRead, markAllRead, deleteReadMessages } from '@/api/modules/message'
-import type { MessageItem } from '@/api/modules/message'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { getNotificationList, getUnreadCount as getNotificationUnreadCount, markNotificationRead, markAllNotificationRead } from '@/api/modules/notification'
+import type { NotificationItem } from '@/api/modules/notification'
+import { notificationWs } from '@/api/modules/notification-ws'
 
 const statusBarHeight = ref(0)
 const menuButtonSpace = ref(0)
 const navBarHeight = ref(88)
 const activeTab = ref<'system' | 'interaction'>('system')
-const messages = ref<MessageItem[]>([])
+const notifications = ref<NotificationItem[]>([])
 const loading = ref(false)
-const unreadCount = ref<{ system: number; interaction: number }>({ system: 0, interaction: 0 })
+const unreadCount = ref(0)
 
-const filteredMessages = computed(() => {
-  return messages.value.filter(item => item.type === activeTab.value)
+const filteredNotifications = computed(() => {
+  return notifications.value
 })
+
+const getUserId = (): number | null => {
+  const id = uni.getStorageSync('userId')
+  return id ? Number(id) : null
+}
 
 const switchTab = (tab: 'system' | 'interaction') => {
   activeTab.value = tab
-  loadMessages()
+  loadNotifications()
 }
 
 const formatTime = (timeStr: string) => {
@@ -102,13 +104,18 @@ const parseTags = (tags: string | undefined) => {
   return tags.split(',').filter(t => t.trim())
 }
 
-const loadMessages = async () => {
+const loadNotifications = async () => {
   loading.value = true
   try {
-    const res = await getMessages(activeTab.value)
-    messages.value = Array.isArray(res) ? res : []
+    const userId = getUserId()
+    const res = await getNotificationList({ current: 1, size: 50, userId: userId || undefined })
+    if (res && res.records) {
+      notifications.value = res.records
+    } else {
+      notifications.value = []
+    }
   } catch {
-    messages.value = []
+    notifications.value = []
   } finally {
     loading.value = false
   }
@@ -116,64 +123,55 @@ const loadMessages = async () => {
 
 const loadUnreadCount = async () => {
   try {
-    const res = await getUnreadCount()
-    if (res) {
-      unreadCount.value = res as { system: number; interaction: number }
+    const userId = getUserId()
+    if (!userId) return
+    const res = await getNotificationUnreadCount(userId)
+    if (typeof res === 'number') {
+      unreadCount.value = res
     }
   } catch {}
 }
 
 const handleMarkAllRead = async () => {
   try {
-    await markAllRead(activeTab.value)
-    messages.value = messages.value.map(item => ({
-      ...item,
-      readFlag: item.type === activeTab.value ? 1 : item.readFlag
-    }))
-    unreadCount.value = { ...unreadCount.value, [activeTab.value]: 0 }
+    const userId = getUserId()
+    if (!userId) {
+      uni.showToast({ title: '请先登录', icon: 'none' })
+      return
+    }
+    await markAllNotificationRead(userId)
+    notifications.value = notifications.value.map(item => ({ ...item, isRead: 1 }))
+    unreadCount.value = 0
     uni.showToast({ title: '已全部标记为已读', icon: 'none' })
   } catch {
     uni.showToast({ title: '操作失败', icon: 'none' })
   }
 }
 
-const openMessage = async (item: MessageItem) => {
-  if (item.readFlag === 0) {
+const openMessage = async (item: NotificationItem) => {
+  if (item.isRead === 0) {
     try {
-      await markRead(item.id)
-      item.readFlag = 1
-      unreadCount.value = {
-        ...unreadCount.value,
-        [item.type]: Math.max(0, (unreadCount.value[item.type] || 0) - 1)
+      const userId = getUserId()
+      if (userId) {
+        await markNotificationRead(item.id, userId)
+        item.isRead = 1
+        unreadCount.value = Math.max(0, unreadCount.value - 1)
       }
     } catch {}
   }
-  if (item.bizType && item.bizId) {
-    const routes: Record<string, string> = {
-      'route': `/pages/route/detail?id=${item.bizId}`,
-      'guide': `/pages/guide/detail?id=${item.bizId}`,
-      'destination': `/pages/destination/detail?id=${item.bizId}`,
-      'checklist': `/pages/checklist/detail?id=${item.bizId}`
-    }
-    const target = routes[item.bizType]
-    if (target) {
-      uni.navigateTo({ url: target })
-    }
+  if (item.linkUrl) {
+    uni.navigateTo({ url: item.linkUrl })
   }
 }
 
 const handleClearRead = async () => {
-  try {
-    await deleteReadMessages(activeTab.value)
-    messages.value = messages.value.filter(item => item.type !== activeTab.value || item.readFlag === 0)
-    uni.showToast({ title: '已清理已读消息', icon: 'none' })
-  } catch {
-    uni.showToast({ title: '操作失败', icon: 'none' })
-  }
+  // 从本地列表中移除已读通知
+  notifications.value = notifications.value.filter(item => item.isRead === 0)
+  uni.showToast({ title: '已清理已读消息', icon: 'none' })
 }
 
 const handleRefresh = async () => {
-  await loadMessages()
+  await loadNotifications()
   await loadUnreadCount()
   uni.showToast({ title: '已刷新', icon: 'none' })
 }
@@ -207,6 +205,9 @@ const navRightStyle = computed(() => {
   return {}
 })
 
+// WebSocket 通知监听取消函数
+let removeWsListener: (() => void) | null = null
+
 onMounted(() => {
   const systemInfo = uni.getSystemInfoSync()
   statusBarHeight.value = systemInfo.statusBarHeight || 44
@@ -220,8 +221,30 @@ onMounted(() => {
     }
   } catch (e) {}
   // #endif
-  loadMessages()
+  loadNotifications()
   loadUnreadCount()
+
+  // 监听 WebSocket 推送的实时通知
+  removeWsListener = notificationWs.onNotification((data) => {
+    console.log('[消息中心] 收到实时通知:', data)
+    // 刷新通知列表和未读数
+    loadNotifications()
+    loadUnreadCount()
+    // 显示通知提示
+    uni.showToast({
+      title: data.title || '收到新通知',
+      icon: 'none',
+      duration: 2000
+    })
+  })
+})
+
+onUnmounted(() => {
+  // 取消 WebSocket 监听
+  if (removeWsListener) {
+    removeWsListener()
+    removeWsListener = null
+  }
 })
 </script>
 

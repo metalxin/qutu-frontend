@@ -162,6 +162,7 @@ import {
   fetchCaptchaImageBase64,
 } from '@/api/modules/user'
 import SFIcon from '@/components/SFIcon/SFIcon.vue'
+import { notificationWs } from '@/api/modules/notification-ws'
 
 const statusBarHeight = ref(0)
 const loginType = ref<'account' | 'emailCode'>('account')
@@ -277,6 +278,8 @@ const onLogin = async () => {
     try {
       const info = await getUserInfo()
       uni.setStorageSync('userInfo', info)
+      uni.setStorageSync('userId', info.id)
+      if (info.id) notificationWs.connect(info.id)
     } catch (e) {}
     uni.showToast({ title: '登录成功', icon: 'success' })
     setTimeout(() => {
@@ -309,6 +312,8 @@ const onWxLogin = async () => {
     try {
       const info = await getUserInfo()
       uni.setStorageSync('userInfo', info)
+      uni.setStorageSync('userId', info.id)
+      if (info.id) notificationWs.connect(info.id)
     } catch (e) {}
     uni.showToast({ title: '登录成功', icon: 'success' })
     setTimeout(() => {

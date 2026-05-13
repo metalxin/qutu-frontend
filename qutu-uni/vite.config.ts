@@ -9,7 +9,7 @@ export default defineConfig({
       "/admin": {
         target: "http://localhost:9999",
         changeOrigin: true,
-        ws: false
+        ws: true
       }
     }
   }

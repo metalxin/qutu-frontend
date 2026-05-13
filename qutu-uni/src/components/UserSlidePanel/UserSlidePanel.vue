@@ -102,6 +102,7 @@
 import { ref, computed, watch } from 'vue'
 import SFIcon from '@/components/SFIcon/SFIcon.vue'
 import { getUserInfo, bindWechat as bindWechatApi, logout as logoutApi } from '@/api/modules/user'
+import { notificationWs } from '@/api/modules/notification-ws'
 import type { UserInfo } from '@/api/modules/user'
 
 const props = defineProps<{
@@ -259,7 +260,10 @@ const doLogout = async () => {
     uni.removeStorageSync('token')
     uni.removeStorageSync('refresh_token')
     uni.removeStorageSync('userInfo')
+    uni.removeStorageSync('userId')
   } catch {}
+  // 退出登录时断开 WebSocket
+  notificationWs.disconnect()
   token.value = ''
   userInfo.value = {
     id: 0, username: '', nickname: '', name: '', avatar: '',
