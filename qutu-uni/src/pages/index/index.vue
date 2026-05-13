@@ -13,7 +13,6 @@
           <view class="avatar-wrapper">
             <image v-if="displayAvatar" :src="displayAvatar" class="header-avatar" mode="aspectFill" />
             <SFIcon v-else name="user" :size="36" color="#1D1D1F" />
-            <view class="red-dot" v-if="hasMessage"></view>
           </view>
         </view>
         <!-- #endif -->
@@ -32,7 +31,6 @@
         <view class="avatar-btn" @click="showUserSidebar = true">
           <image v-if="displayAvatar" :src="displayAvatar" class="header-avatar" mode="aspectFill" />
           <SFIcon v-else name="user" :size="36" color="#1D1D1F" />
-          <view class="red-dot" v-if="hasMessage"></view>
         </view>
       </view>
       <!-- #endif -->
@@ -221,21 +219,7 @@
     </view>
 
     <!-- 底部TabBar -->
-    <view class="tabbar">
-      <view class="tabbar-item active">
-        <SFIcon name="home" :size="44" />
-        <text class="tabbar-text">主页</text>
-      </view>
-      <view class="tabbar-center">
-        <view class="add-btn" @click="showAddMenu = true">
-          <SFIcon name="plus" :size="48" color="#FFFFFF" />
-        </view>
-      </view>
-      <view class="tabbar-item" @click="goToNearby">
-        <SFIcon name="location" :size="44" />
-        <text class="tabbar-text">附近</text>
-      </view>
-    </view>
+    <AppTabBar current="home" @add="showAddMenu = true" />
 
     <!-- 悬浮小途助手 -->
     <view class="ai-float-btn" @click="goToAIService">
@@ -618,108 +602,8 @@
       </scroll-view>
     </view>
 
-    <!-- 用户侧边栏遮罩 -->
-    <view class="sidebar-mask" :class="{ show: showUserSidebar }" @click="showUserSidebar = false"></view>
-    
     <!-- 用户侧边栏 -->
-    <view class="user-sidebar" :class="{ show: showUserSidebar }">
-      <!-- 顶部用户信息 - 与胶囊同行 -->
-      <view class="sidebar-top" :style="sidebarTopStyle">
-        <view class="sidebar-header">
-          <view class="sidebar-avatar">
-            <view class="avatar-circle">
-            <image class="avatar-image" :src="displayAvatar" mode="aspectFill" />
-            </view>
-          </view>
-        <view class="sidebar-user-info" @click="goToProfile">
-          <text class="sidebar-username">{{ isLoggedIn ? (userInfo.nickname || '旅行者') : '未登录' }}</text>
-          <view class="sidebar-bindwx" v-if="!isLoggedIn" @click.stop="goToLogin">
-              <text class="bindwx-text">账号登录</text>
-            </view>
-          <view class="sidebar-bindwx" v-else-if="!userInfo.wechatBound" @click.stop="bindWechat">
-              <text class="bindwx-text">微信登录</text>
-            </view>
-          <view class="sidebar-bound" v-else>
-            <text class="bound-text">已绑定微信</text>
-          </view>
-          </view>
-          <view class="sidebar-actions">
-            <view class="action-btn" @click="goToSettings">
-              <SFIcon name="settings" :size="36" color="#86868B" />
-            </view>
-
-          </view>
-        </view>
-      </view>
-
-      <!-- 会员卡片 -->
-      <view class="sidebar-vip-card" @click="goToVipCenter">
-        <view class="vip-left">
-          <view class="vip-icon">👑</view>
-          <view class="vip-info">
-            <text class="vip-title">会员中心</text>
-            <text class="vip-desc">开通会员，尊享会员权益</text>
-          </view>
-        </view>
-        <view class="vip-action">
-          <text class="vip-action-text">去看看</text>
-          <SFIcon name="chevron-right" :size="28" color="#5D4E37" />
-        </view>
-      </view>
-
-      <!-- 菜单列表 -->
-      <scroll-view class="sidebar-menu" scroll-y :show-scrollbar="false">
-        <view class="menu-group">
-          <view class="menu-item" @click="handleMenuClick('routes')">
-            <view class="menu-icon" style="background: #E8F5E9;">
-              <SFIcon name="route" :size="36" color="#34C759" />
-            </view>
-            <text class="menu-text">我的路线</text>
-            <SFIcon name="chevron-right" :size="28" color="#C7C7CC" />
-          </view>
-          <view class="menu-item" @click="handleMenuClick('frequent')">
-            <view class="menu-icon" style="background: #FFF3E0;">
-              <SFIcon name="location" :size="36" color="#FF9500" />
-            </view>
-            <text class="menu-text">常在地点</text>
-            <SFIcon name="chevron-right" :size="28" color="#C7C7CC" />
-          </view>
-          <view class="menu-item" @click="handleMenuClick('favorites')">
-            <view class="menu-icon" style="background: #FFF8E1;">
-              <SFIcon name="star" :size="36" color="#FFB800" />
-            </view>
-            <text class="menu-text">收藏景点</text>
-            <SFIcon name="chevron-right" :size="28" color="#C7C7CC" />
-          </view>
-          <view class="menu-item" @click="handleMenuClick('favoriteGuides')">
-            <view class="menu-icon" style="background: #E3F2FD;">
-              <SFIcon name="bookmark" :size="36" color="#007AFF" />
-            </view>
-            <text class="menu-text">收藏攻略</text>
-            <SFIcon name="chevron-right" :size="28" color="#C7C7CC" />
-          </view>
-        </view>
-        
-        <view class="menu-group">
-          <view class="menu-item" @click="handleMenuClick('messages')">
-            <view class="menu-icon" style="background: #FCE4EC;">
-              <SFIcon name="bell" :size="36" color="#FF2D55" />
-            </view>
-            <text class="menu-text">消息中心</text>
-            <SFIcon name="chevron-right" :size="28" color="#C7C7CC" />
-          </view>
-        </view>
-        <view class="menu-group" v-if="isLoggedIn">
-          <view class="menu-item" @click="doLogout">
-            <view class="menu-icon" style="background: #FDECEA;">
-              <SFIcon name="power" :size="36" color="#FF3B30" />
-            </view>
-            <text class="menu-text" style="color:#FF3B30;">退出登录</text>
-            <SFIcon name="chevron-right" :size="28" color="#F5B1AD" />
-          </view>
-        </view>
-      </scroll-view>
-    </view>
+    <UserSlidePanel v-model:visible="showUserSidebar" />
   </view>
 </template>
 
@@ -727,8 +611,10 @@
 import { ref, computed, onMounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import SFIcon from '@/components/SFIcon/SFIcon.vue'
+import AppTabBar from '@/components/AppTabBar/AppTabBar.vue'
+import UserSlidePanel from '@/components/UserSlidePanel/UserSlidePanel.vue'
 import { getDestinations, getRegionGroups, getHotCities, getDestinationSpots, getInspirations, searchDestinations, searchInspirations } from '@/api'
-import { getUserInfo, bindWechat as bindWechatApi, logout as logoutApi, DEFAULT_AVATAR } from '@/api/modules/user'
+import { DEFAULT_AVATAR, getUserInfo } from '@/api/modules/user'
 import type { Destination, SpotListItem } from '@/api/modules/destination'
 import type { UserInfo } from '@/api/modules/user'
 
@@ -827,25 +713,6 @@ const headerHeight = computed(() => {
   return h > 88 ? h : 88
 })
 
-// 侧边栏顶部样式 - 与胶囊同行
-const sidebarTopStyle = computed(() => {
-  // #ifdef MP-WEIXIN
-  // 计算胶囊按钮右侧到屏幕边缘的距离
-  const capsuleRight = windowWidth.value - menuButtonLeft.value - 87 // 87是胶囊按钮的宽度
-  return {
-    paddingTop: menuButtonTop.value + 'px',
-    minHeight: (menuButtonHeight.value + 16) + 'px',
-    paddingRight: (capsuleRight + 97) + 'px' // 留出胶囊按钮宽度+间距
-  }
-  // #endif
-  // #ifndef MP-WEIXIN
-  return {
-    paddingTop: (statusBarHeight.value + 10) + 'px',
-    minHeight: '56px'
-  }
-  // #endif
-})
-
 // 显示通知
 const showNotification = () => {
   uni.navigateTo({
@@ -859,7 +726,6 @@ const codeDigits = ref(['', '', '', ''])
 const codeInputRefs = ref<any[]>([])
 const currentDay = ref('31')
 const currentMonth = ref('1')
-const hasMessage = ref(true) // 模拟有消息
 
 const displayAvatar = computed(() => {
   // 未登录：不要读取历史缓存头像，避免一直显示之前的真人头像
@@ -1167,19 +1033,6 @@ const goToFootprint = () => {
   })
 }
 
-// 跳转到附近页面
-const goToNearby = () => {
-  uni.navigateTo({
-    url: '/pages/nearby/index'
-  })
-}
-
-const goToNearbyWithLocation = () => {
-  uni.navigateTo({
-    url: '/pages/nearby/index?locate=1'
-  })
-}
-
 const loadDestinationSpots = async (dest: Destination) => {
   spotListLoading.value = true
   try {
@@ -1319,77 +1172,6 @@ const navigateToLevel = (level: number) => {
 // 用户侧边栏
 const showUserSidebar = ref(false)
 
-// 绑定微信
-const bindWechat = async () => {
-  if (userInfo.value.wechatBound) {
-    uni.showToast({ title: '已绑定微信', icon: 'none' })
-    return
-  }
-  // #ifdef MP-WEIXIN
-  try {
-    const { wechatMpLogin } = await import('@/api/modules/user')
-    await wechatMpLogin()
-    userInfo.value.wechatBound = true
-    uni.showToast({ title: '绑定成功', icon: 'success' })
-  } catch (e) {
-    uni.showToast({ title: '绑定失败', icon: 'none' })
-  }
-  // #endif
-  // #ifndef MP-WEIXIN
-  uni.navigateTo({ url: '/pages/user/login' })
-  // #endif
-}
-
-// 跳转设置
-const goToSettings = () => {
-  showUserSidebar.value = false
-  uni.navigateTo({
-    url: '/pages/user/settings'
-  })
-}
-
-// 跳转会员中心
-const goToVipCenter = () => {
-  showUserSidebar.value = false
-  uni.navigateTo({
-    url: '/pages/user/vip'
-  })
-}
-
-// 处理菜单点击
-const handleMenuClick = (menu: string) => {
-  showUserSidebar.value = false
-  const menuRoutes: Record<string, string> = {
-    'routes': '/pages/route/list',
-    'frequent': '/pages/user/frequent',
-    'favorites': '/pages/user/favorites',
-    'favoriteGuides': '/pages/user/favorite-guides',
-    'messages': '/pages/message/index'
-  }
-  const target = menuRoutes[menu]
-  if (target) {
-    uni.navigateTo({ url: target })
-    return
-  }
-  uni.showToast({ title: '功能开发中', icon: 'none' })
-}
-
-const goToProfile = () => {
-  showUserSidebar.value = false
-  if (!isLoggedIn.value) {
-    uni.navigateTo({ url: '/pages/user/login' })
-    return
-  }
-  uni.navigateTo({
-    url: '/pages/user/profile'
-  })
-}
-
-const goToLogin = () => {
-  showUserSidebar.value = false
-  uni.navigateTo({ url: '/pages/user/login' })
-}
-
 const userInfo = ref<UserInfo>({
   id: 0,
   username: '',
@@ -1437,41 +1219,6 @@ const loadUserInfo = async () => {
     userInfo.value = res
     uni.setStorageSync('userInfo', res)
   } catch (e) {}
-}
-
-const doLogout = async () => {
-  try {
-    await logoutApi()
-  } catch (e) {}
-  try {
-    uni.removeStorageSync('token')
-    uni.removeStorageSync('refresh_token')
-    uni.removeStorageSync('userInfo')
-  } catch (e) {}
-  token.value = ''
-  userInfo.value = {
-    id: 0,
-    username: '',
-    nickname: '',
-    name: '',
-    avatar: '',
-    phone: '',
-    email: '',
-    wechatBound: false,
-    vipLevel: 0,
-    vipExpireDate: '',
-    createTime: '',
-    permissions: [],
-    roles: [],
-    stats: {
-      trips: 0,
-      spots: 0,
-      guides: 0,
-      footprints: 0
-    }
-  }
-  showUserSidebar.value = false
-  uni.showToast({ title: '已退出登录', icon: 'success' })
 }
 
 onShow(() => {
@@ -1537,17 +1284,6 @@ $shadow-medium: 0 4rpx 30rpx rgba(0, 0, 0, 0.1);
 .header-avatar {
   width: 100%;
   height: 100%;
-}
-
-.red-dot {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 16rpx;
-  height: 16rpx;
-  background: #FF2D55;
-  border-radius: 50%;
-  border: 2rpx solid #FFFFFF;
 }
 
 .header-left {
@@ -2142,70 +1878,6 @@ $shadow-medium: 0 4rpx 30rpx rgba(0, 0, 0, 0.1);
   &:active {
     transform: scale(0.92);
   }
-}
-
-// 底部TabBar
-.tabbar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  height: 110rpx;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  padding-bottom: env(safe-area-inset-bottom);
-  border-top: 1rpx solid rgba(0, 0, 0, 0.05);
-}
-
-.tabbar-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4rpx;
-  padding: 12rpx 48rpx;
-
-  &.active {
-    .tabbar-icon,
-    .tabbar-text {
-      color: $primary-color;
-    }
-  }
-}
-
-.tabbar-icon {
-  font-size: 40rpx;
-  color: $text-secondary;
-}
-
-.tabbar-text {
-  font-size: 22rpx;
-  color: $text-secondary;
-  font-weight: 500;
-}
-
-.tabbar-center {
-  margin-top: -44rpx;
-}
-
-.add-btn {
-  width: 96rpx;
-  height: 96rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
-  border-radius: 50%;
-  box-shadow: 0 8rpx 32rpx rgba(255, 107, 107, 0.4);
-}
-
-.add-icon {
-  font-size: 56rpx;
-  color: #FFFFFF;
-  font-weight: 300;
 }
 
 // 弹窗遮罩层
@@ -3498,252 +3170,5 @@ $shadow-medium: 0 4rpx 30rpx rgba(0, 0, 0, 0.1);
 .record-btn-hint {
   font-size: 24rpx;
   color: #8E8E93;
-}
-
-// 用户侧边栏遮罩
-.sidebar-mask {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0);
-  z-index: 1000;
-  pointer-events: none;
-  transition: background 0.35s ease;
-
-  &.show {
-    background: rgba(0, 0, 0, 0.3);
-    pointer-events: auto;
-  }
-}
-
-// 用户侧边栏
-.user-sidebar {
-  position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 72%;
-  background: $bg-color;
-  z-index: 1001;
-  transform: translateX(100%);
-  transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-
-  &.show {
-    transform: translateX(0);
-  }
-}
-
-// 侧边栏顶部区域
-.sidebar-top {
-  background: $card-bg;
-  display: flex;
-  align-items: flex-end;
-  box-sizing: border-box;
-  flex-shrink: 0;
-}
-
-// 侧边栏头部
-.sidebar-header {
-  display: flex;
-  align-items: center;
-  padding: 16rpx 24rpx;
-  padding-bottom: 20rpx;
-  width: 100%;
-  box-sizing: border-box;
-  /* #ifdef MP-WEIXIN */
-  padding-right: 16rpx; /* 微信小程序右侧padding由sidebarTopStyle控制 */
-  /* #endif */
-}
-
-.sidebar-avatar {
-  margin-right: 16rpx;
-}
-
-.avatar-circle {
-  width: 72rpx;
-  height: 72rpx;
-  border-radius: 50%;
-  background: $bg-color;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 2rpx solid #E5E5EA;
-}
-
-.avatar-image {
-  width: 100%;
-  height: 100%;
-}
-
-.sidebar-user-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 8rpx;
-  min-width: 0;
-}
-
-.sidebar-username {
-  font-size: 26rpx;
-  color: $text-primary;
-  font-weight: 600;
-}
-
-.sidebar-bindwx {
-  display: inline-flex;
-  align-items: center;
-  padding: 4rpx 14rpx;
-  background: #07C160;
-  border-radius: 16rpx;
-  align-self: flex-start;
-}
-
-.sidebar-bound {
-  display: inline-flex;
-  align-items: center;
-  padding: 4rpx 14rpx;
-  background: #E8F5E9;
-  border-radius: 16rpx;
-  align-self: flex-start;
-}
-
-.bindwx-text {
-  font-size: 18rpx;
-  color: #FFFFFF;
-  font-weight: 500;
-}
-
-.bound-text {
-  font-size: 18rpx;
-  color: #34C759;
-  font-weight: 500;
-}
-
-.sidebar-actions {
-  display: flex;
-  align-items: center;
-  gap: 4rpx;
-}
-
-.action-btn {
-  width: 56rpx;
-  height: 56rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  
-  &.close-btn {
-    background: $bg-color;
-  }
-}
-
-// 会员卡片
-.sidebar-vip-card {
-  margin: 24rpx;
-  padding: 28rpx;
-  background: linear-gradient(135deg, #FFE5B4 0%, #FFD89B 100%);
-  border-radius: 20rpx;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  box-shadow: 0 4rpx 16rpx rgba(255, 216, 155, 0.4);
-}
-
-.vip-left {
-  display: flex;
-  align-items: center;
-  gap: 16rpx;
-}
-
-.vip-icon {
-  font-size: 40rpx;
-}
-
-.vip-info {
-  display: flex;
-  flex-direction: column;
-  gap: 4rpx;
-}
-
-.vip-title {
-  font-size: 28rpx;
-  color: #5D4E37;
-  font-weight: 600;
-}
-
-.vip-desc {
-  font-size: 20rpx;
-  color: #8B7355;
-}
-
-.vip-action {
-  display: flex;
-  align-items: center;
-  gap: 4rpx;
-  padding: 12rpx 20rpx;
-  background: rgba(255, 255, 255, 0.85);
-  border-radius: 24rpx;
-}
-
-.vip-action-text {
-  font-size: 22rpx;
-  color: #5D4E37;
-  font-weight: 500;
-}
-
-// 菜单列表
-.sidebar-menu {
-  flex: 1;
-  overflow-y: auto;
-  padding-bottom: env(safe-area-inset-bottom);
-}
-
-.menu-group {
-  margin: 16rpx 24rpx;
-  margin-right: 32rpx;
-  background: $card-bg;
-  border-radius: 20rpx;
-  overflow: hidden;
-}
-
-.menu-item {
-  display: flex;
-  align-items: center;
-  gap: 20rpx;
-  padding: 24rpx 20rpx;
-  padding-right: 32rpx;
-  background: $card-bg;
-  border-bottom: 1rpx solid #F0F0F0;
-  transition: background 0.2s;
-
-  &:last-child {
-    border-bottom: none;
-  }
-
-  &:active {
-    background: $bg-color;
-  }
-}
-
-.menu-icon {
-  width: 56rpx;
-  height: 56rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 16rpx;
-}
-
-.menu-text {
-  flex: 1;
-  font-size: 26rpx;
-  color: $text-primary;
-  font-weight: 400;
 }
 </style>

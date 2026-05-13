@@ -9,7 +9,7 @@
       </view>
       <!-- #ifdef MP-WEIXIN -->
       <view class="top-mp-right" :style="{ height: menuButtonHeight + 'px', top: menuButtonTop + 'px', right: (windowWidth - menuButtonLeft + 8) + 'px' }">
-        <view class="avatar-btn" @click="goToHome">
+        <view class="avatar-btn" @click="showUserSidebar = true">
           <image v-if="displayAvatar" :src="displayAvatar" class="header-avatar" mode="aspectFill" />
           <SFIcon v-else name="user" :size="36" color="#1D1D1F" />
         </view>
@@ -17,7 +17,7 @@
       <!-- #endif -->
       <view class="top-right" :style="{ marginRight: menuButtonSpace + 'px' }">
         <!-- #ifndef MP-WEIXIN -->
-        <view class="icon-btn" @click="goToHome">
+        <view class="icon-btn" @click="showUserSidebar = true">
           <view class="avatar-wrapper">
             <image v-if="displayAvatar" :src="displayAvatar" class="header-avatar" mode="aspectFill" />
             <SFIcon v-else name="user" :size="36" color="#1D1D1F" />
@@ -116,11 +116,7 @@
     </view>
 
     <!-- 底部TabBar -->
-    <view class="tabbar">
-      <view class="tabbar-item" @click="goToHome"><SFIcon name="home" :size="44" /><text class="tabbar-text">主页</text></view>
-      <view class="tabbar-center"><view class="add-btn" @click="showAddMenuPopup = true"><SFIcon name="plus" :size="48" color="#FFFFFF" /></view></view>
-      <view class="tabbar-item active"><SFIcon name="location" :size="44" /><text class="tabbar-text">附近</text></view>
-    </view>
+    <AppTabBar current="nearby" @add="showAddMenuPopup = true" />
 
     <!-- 添加菜单弹窗 -->
     <view class="add-menu-mask" :class="{ show: showAddMenuPopup }" @click="showAddMenuPopup = false"></view>
@@ -191,6 +187,8 @@
         </view>
       </view>
     </view>
+    <!-- 用户侧边栏 -->
+    <UserSlidePanel v-model:visible="showUserSidebar" />
   </view>
 </template>
 
@@ -198,6 +196,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import SFIcon from '@/components/SFIcon/SFIcon.vue'
+import AppTabBar from '@/components/AppTabBar/AppTabBar.vue'
+import UserSlidePanel from '@/components/UserSlidePanel/UserSlidePanel.vue'
 import { getNearbyCategories, getNearbyPois, getPoiDetail, favoritePoi, unfavoritePoi, checkinPoi } from '@/api'
 import type { NearbyCategory, NearbyPoi, NearbyPoiDetail } from '@/api'
 
@@ -221,6 +221,7 @@ const showPoiPopup = ref(false)
 const isFavorited = ref(false)
 const favoriting = ref(false)
 const showCityPopup = ref(false)
+const showUserSidebar = ref(false)
 const citySearchText = ref('')
 const selectedCityTemp = ref('')
 const hotCities = ref(['北京','上海','广州','深圳','杭州','合肥','马鞍山','成都','重庆','西安','南京','武汉'])
@@ -466,7 +467,6 @@ const selectCityTemp = (city: string) => { selectedCityTemp.value = city }
 const selectCity = (city: string) => { currentCityName.value = city.includes('市') ? city : city + '市'; showCityPopup.value = false; const coords = cityCoords[currentCityName.value]; if (coords) mapCenter.value = { latitude: coords.lat, longitude: coords.lng }; loadPois() }
 const confirmCitySelection = () => { if (selectedCityTemp.value) selectCity(selectedCityTemp.value); showCityPopup.value = false }
 
-const goToHome = () => uni.navigateBack({ delta: 1, fail: () => uni.redirectTo({ url: '/pages/index/index' }) })
 const handleAddLocation = () => { showAddMenuPopup.value = false; uni.navigateTo({ url: '/pages/collect/edit' }) }
 const handleRecordTrip = () => { showAddMenuPopup.value = false; uni.navigateTo({ url: '/pages/record/index' }) }
 const handleTakePhoto = () => { showAddMenuPopup.value = false; uni.chooseImage({ count: 1, sourceType: ['camera'], success: () => uni.navigateTo({ url: '/pages/collect/camera' }) }) }
@@ -516,11 +516,6 @@ onShow(() => {
 .filter-item { display: flex; flex-direction: row; align-items: center; gap: 8rpx; padding: 12rpx 24rpx; border-radius: 32rpx; background: #F5F5F7; flex-shrink: 0; &.active { background: rgba(0,122,255,0.1); .filter-name { color: #007AFF; font-weight: 600; } } }
 .filter-emoji { font-size: 28rpx; }
 .filter-name { font-size: 26rpx; color: #666; white-space: nowrap; }
-.tabbar { position: fixed; bottom: 0; left: 0; right: 0; display: flex; justify-content: space-around; align-items: center; height: 160rpx; background: rgba(255,255,255,0.95); backdrop-filter: blur(20px); padding-bottom: env(safe-area-inset-bottom); border-top: 1rpx solid rgba(0,0,0,0.05); z-index: 100; }
-.tabbar-item { display: flex; flex-direction: column; align-items: center; gap: 8rpx; padding: 16rpx 48rpx; color: #86868B; &.active { color: #007AFF; .tabbar-text { color: #007AFF; } } }
-.tabbar-text { font-size: 22rpx; color: #86868B; font-weight: 500; }
-.tabbar-center { margin-top: -60rpx; }
-.add-btn { width: 112rpx; height: 112rpx; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%); border-radius: 50%; box-shadow: 0 8rpx 32rpx rgba(255,107,107,0.4); }
 .poi-popup-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 200; display: flex; align-items: flex-end; background: rgba(0,0,0,0.3); }
 .poi-popup { width: 100%; max-height: 80vh; background: #FFF; border-radius: 40rpx 40rpx 0 0; padding: 20rpx 32rpx; padding-bottom: 0; animation: slideUp 0.3s ease-out; display: flex; flex-direction: column; }
 .popup-scroll { flex: 1; max-height: calc(80vh - 160rpx); }
