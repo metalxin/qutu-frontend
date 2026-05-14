@@ -6,17 +6,7 @@
 				<div class="login-box-left">
 					<div class="login-left-decoration">
 						<div class="login-logo-icon">
-							<svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-								<rect width="120" height="120" rx="20" fill="url(#grad)"/>
-								<path d="M35 75 L60 40 L85 75 L75 75 L60 55 L45 75 Z" fill="white" opacity="0.9"/>
-								<path d="M40 85 Q60 70 80 85 Q70 95 60 88 Q50 95 40 85" fill="white" opacity="0.8"/>
-								<defs>
-									<linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
-										<stop offset="0%" style="stop-color:#36b36e;stop-opacity:1" />
-										<stop offset="100%" style="stop-color:#1a8f51;stop-opacity:1" />
-									</linearGradient>
-								</defs>
-							</svg>
+						<img src="/assets/login/logo.png" alt="logo" />
 						</div>
 					</div>
 					<div class="login-left-title">
