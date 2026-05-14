@@ -7,6 +7,7 @@
       <text class="nav-title">个人资料</text>
       <view class="nav-right" :style="navRightStyle"></view>
     </view>
+    <view class="nav-placeholder" :style="navBarStyle"></view>
 
     <!-- 头像区域 -->
     <view class="profile-header">
@@ -447,7 +448,19 @@ $card: #FFFFFF;
 $border: #E5E5EA;
 
 .profile-page { min-height: 100vh; background: $bg; padding-bottom: 120rpx; }
-.nav-bar { padding: 24rpx 24rpx 16rpx; display: flex; align-items: center; justify-content: space-between; background: $card; }
+.nav-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  padding: 24rpx 24rpx 16rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: $card;
+}
+.nav-placeholder { width: 100%; }
 .nav-left, .nav-right { width: 120rpx; display: flex; align-items: center; }
 .nav-right { justify-content: flex-end; }
 .back-icon { font-size: 40rpx; color: $text; }

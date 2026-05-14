@@ -44,10 +44,10 @@
       <map id="nearbyMap" class="nearby-map" :latitude="mapCenter.latitude" :longitude="mapCenter.longitude" :scale="mapScale" :markers="mapMarkers" :show-location="true" :enable-satellite="mapStyleType === 'satellite'" :enable-traffic="showTraffic" @markertap="onMarkerTap" />
       <cover-view class="map-controls">
         <cover-view class="control-btn" @click="showMapStylePicker = true">
-          <cover-image class="control-icon" :src="mapStyleIconSrc" />
+          <cover-view class="control-text">🗺</cover-view>
         </cover-view>
         <cover-view class="control-btn" @click="locateMe">
-          <cover-image class="control-icon" :src="locateIconSrc" />
+          <cover-view class="control-text">⊙</cover-view>
         </cover-view>
       </cover-view>
       <view class="loading-overlay" v-if="loading">
@@ -245,21 +245,6 @@ const menuButtonTop = ref(0); const menuButtonHeight = ref(32); const windowWidt
 
 const topBarStyle = computed(() => ({ paddingTop: statusBarHeight.value + 'px', height: navBarHeight.value + 'px' }))
 const displayAvatar = computed(() => { try { const t = uni.getStorageSync('token'); if (!t) return ''; const u = uni.getStorageSync('userInfo'); return u?.avatar || '' } catch { return '' } })
-
-const locateIconSrc = computed(() => {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#1D1D1F" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>`
-  return `data:image/svg+xml,${encodeURIComponent(svg)}`
-})
-
-const refreshIconSrc = computed(() => {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#1D1D1F" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>`
-  return `data:image/svg+xml,${encodeURIComponent(svg)}`
-})
-
-const mapStyleIconSrc = computed(() => {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#1D1D1F" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>`
-  return `data:image/svg+xml,${encodeURIComponent(svg)}`
-})
 
 const mapStyleOptions = [
   { value: 'normal', label: '标准地图', desc: '默认地图样式', icon: '🗺️' },
@@ -500,8 +485,8 @@ onShow(() => {
 .map-container { position: fixed; left: 0; right: 0; bottom: 160rpx; }
 .nearby-map { width: 100%; height: 100%; background: linear-gradient(135deg, #E8F5F3 0%, #D4EDE9 100%); }
 .map-controls { position: absolute; right: 24rpx; bottom: 200rpx; display: flex; flex-direction: column; gap: 20rpx; z-index: 10; }
-.control-btn { width: 88rpx; height: 88rpx; background: rgba(255, 255, 255, 0.92); backdrop-filter: blur(20px); border-radius: 44rpx; box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.12), 0 1rpx 4rpx rgba(0, 0, 0, 0.06); display: flex; align-items: center; justify-content: center; border: 1rpx solid rgba(0, 0, 0, 0.06); transition: all 0.2s ease; }
-.control-icon { width: 44rpx; height: 44rpx; }
+.control-btn { width: 88rpx; height: 88rpx; background: rgba(255, 255, 255, 0.92); border-radius: 44rpx; box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.12), 0 1rpx 4rpx rgba(0, 0, 0, 0.06); display: flex; align-items: center; justify-content: center; border: 1rpx solid rgba(0, 0, 0, 0.06); }
+.control-text { font-size: 40rpx; color: #1D1D1F; text-align: center; line-height: 88rpx; }
 .loading-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); display: flex; flex-direction: column; align-items: center; gap: 16rpx; background: rgba(255,255,255,0.9); padding: 32rpx 48rpx; border-radius: 24rpx; box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.1); }
 .loading-spinner { width: 48rpx; height: 48rpx; border: 4rpx solid #E5E5EA; border-top-color: #007AFF; border-radius: 50%; animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
