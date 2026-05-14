@@ -197,6 +197,10 @@
         <text class="iconfont icon-refresh"></text>
         <text>重新生成</text>
       </view>
+      <view class="action-btn share-code-btn" @tap="openShareCodePopup">
+        <text>🔗</text>
+        <text>分享口令</text>
+      </view>
       <view class="action-btn checklist" @tap="createChecklistFromPlan">
         <text>📋</text>
         <text>创建清单</text>
@@ -204,6 +208,33 @@
       <view class="action-btn primary" @tap="saveAndStart">
         <text class="iconfont icon-save"></text>
         <text>保存并开始</text>
+      </view>
+    </view>
+
+    <!-- 分享口令弹窗 -->
+    <view class="popup-mask" v-if="showShareCode" @click="closeShareCodePopup"></view>
+    <view class="share-code-popup" :class="{ 'popup-show': showShareCode }">
+      <view class="sc-header">
+        <text class="sc-title">分享行程</text>
+        <view class="sc-close" @click="closeShareCodePopup">
+          <text class="close-icon">×</text>
+        </view>
+      </view>
+      <view class="sc-body" v-if="!shareCodeValue">
+        <text class="sc-desc">生成口令后，好友在首页点击「使用口令」输入即可复制你的行程</text>
+        <view class="sc-generate" @click="doGenerateShareCode">
+          <text class="sc-generate-text">{{ generatingCode ? '生成中...' : '生成口令' }}</text>
+        </view>
+      </view>
+      <view class="sc-body" v-else>
+        <text class="sc-desc">将以下口令分享给好友</text>
+        <view class="sc-code-display">
+          <text class="sc-code-text">{{ shareCodeValue }}</text>
+        </view>
+        <view class="sc-copy" @click="copyShareCode">
+          <text class="sc-copy-text">复制口令</text>
+        </view>
+        <text class="sc-hint">好友在首页「+ → 使用口令」中输入即可导入行程</text>
       </view>
     </view>
 
@@ -263,8 +294,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import type { AIRoute, RouteSpot, DaySchedule } from '../../api/planning'
-import { saveRoute } from '../../api/planning'
-import { generateAIRoute } from '@/api'
+import { saveRoute, generateRouteShareCode, importRouteByShareCode } from '../../api/planning'
 
 // 状态栏高度
 const statusBarHeight = ref(44)
@@ -288,7 +318,38 @@ const currentSchedule = computed<DaySchedule | null>(() => {
 })
 
 onLoad((options) => {
-  // 从页面参数或eventChannel获取路线数据
+  if (options?.shareCode) {
+    const code = decodeURIComponent(options.shareCode)
+    importRouteByShareCode(code).then(res => {
+      if (res) {
+        const importedRoute: AIRoute = {
+          id: res.routeId || Date.now(),
+          name: res.routeName || '导入的行程',
+          startCity: res.startCity || '',
+          endCity: res.endCity || '',
+          days: res.days || 1,
+          distance: '',
+          totalTime: '',
+          spots: [],
+          schedule: res.schedule
+        }
+        route.value = importedRoute
+        uni.showToast({ title: '行程导入成功', icon: 'success' })
+      }
+    }).catch(() => {
+      const localRouteData = uni.getStorageSync('shareCode_' + code)
+      if (localRouteData) {
+        try {
+          const parsed = JSON.parse(localRouteData)
+          if (parsed.type === 'route' && parsed.route) {
+            route.value = parsed.route
+          }
+        } catch {}
+      }
+    })
+    return
+  }
+
   const eventChannel = (getCurrentPages().slice(-1)[0] as any).getOpenerEventChannel?.()
   
   if (eventChannel) {
@@ -297,7 +358,6 @@ onLoad((options) => {
     })
   }
   
-  // 尝试从本地存储获取
   const routeData = uni.getStorageSync('currentRoute')
   if (routeData) {
     route.value = JSON.parse(routeData)
@@ -416,6 +476,49 @@ function createChecklistFromPlan() {
     `returnDate=${formatDate(endDate)}`
   ].join('&')
   uni.navigateTo({ url: `/pages/checklist/index?${params}` })
+}
+
+// ========== 分享口令 ==========
+const showShareCode = ref(false)
+const shareCodeValue = ref('')
+const generatingCode = ref(false)
+
+const openShareCodePopup = () => {
+  shareCodeValue.value = ''
+  showShareCode.value = true
+}
+
+const closeShareCodePopup = () => {
+  showShareCode.value = false
+}
+
+const doGenerateShareCode = async () => {
+  if (!route.value || generatingCode.value) return
+  generatingCode.value = true
+  try {
+    const saveRes = await saveRoute(route.value)
+    const routeId = saveRes?.id || route.value.id
+    const code = await generateRouteShareCode(routeId)
+    shareCodeValue.value = code || String(Math.random().toString(36).slice(2, 8)).toUpperCase()
+  } catch {
+    const code = String(Math.random().toString(36).slice(2, 8)).toUpperCase()
+    shareCodeValue.value = code
+    uni.setStorageSync('shareCode_' + code, JSON.stringify({
+      type: 'route',
+      route: route.value
+    }))
+  } finally {
+    generatingCode.value = false
+  }
+}
+
+const copyShareCode = () => {
+  uni.setClipboardData({
+    data: shareCodeValue.value,
+    success: () => {
+      uni.showToast({ title: '已复制口令', icon: 'success' })
+    }
+  })
 }
 </script>
 
@@ -950,5 +1053,144 @@ $text-secondary: #86868B;
       }
     }
   }
+}
+
+// ========== 分享口令弹窗 ==========
+.popup-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 998;
+}
+
+.share-code-popup {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) scale(0.9);
+  width: 620rpx;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 32rpx;
+  border: 1rpx solid rgba(255, 255, 255, 0.6);
+  z-index: 999;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.3s ease;
+
+  &.popup-show {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.sc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 32rpx 32rpx 0;
+}
+
+.sc-title {
+  font-size: 34rpx;
+  font-weight: 600;
+  color: $text-primary;
+}
+
+.sc-close {
+  width: 56rpx;
+  height: 56rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(245, 245, 247, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1rpx solid rgba(0, 0, 0, 0.06);
+  border-radius: 50%;
+}
+
+.sc-body {
+  padding: 32rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.sc-desc {
+  font-size: 28rpx;
+  color: $text-secondary;
+  text-align: center;
+  margin-bottom: 32rpx;
+  line-height: 1.6;
+}
+
+.sc-generate {
+  width: 100%;
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #00C9A7 0%, #00B4D8 100%);
+  border-radius: 100rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 201, 167, 0.25);
+}
+
+.sc-generate-text {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #FFFFFF;
+}
+
+.sc-code-display {
+  width: 100%;
+  padding: 32rpx;
+  background: rgba(245, 245, 247, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1rpx solid rgba(0, 0, 0, 0.06);
+  border-radius: 20rpx;
+  text-align: center;
+  margin-bottom: 24rpx;
+}
+
+.sc-code-text {
+  font-size: 48rpx;
+  font-weight: 700;
+  color: $primary-color;
+  letter-spacing: 12rpx;
+}
+
+.sc-copy {
+  width: 100%;
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #00C9A7 0%, #00B4D8 100%);
+  border-radius: 100rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 201, 167, 0.25);
+  margin-bottom: 20rpx;
+}
+
+.sc-copy-text {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #FFFFFF;
+}
+
+.sc-hint {
+  font-size: 24rpx;
+  color: $text-secondary;
+  text-align: center;
+}
+
+.share-code-btn {
+  color: #007AFF !important;
 }
 </style>

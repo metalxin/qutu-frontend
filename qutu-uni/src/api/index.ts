@@ -130,7 +130,8 @@ export {
   EXPENSE_CATEGORY_REVERSE_MAP,
   smartImport,
   generateShareCode,
-  importByShareCode
+  importByShareCode,
+  importRouteByShareCode
 } from './modules/checklist'
 
 export {

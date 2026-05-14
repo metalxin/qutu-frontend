@@ -368,3 +368,20 @@ export function getRouteNavigation(routeId: number) {
   }
   return get(`/admin/planning/routes/${routeId}/navigation`, undefined, mockNavigation)
 }
+
+export interface RouteShareCodeImportResult {
+  routeId: number
+  routeName: string
+  startCity: string
+  endCity: string
+  days: number
+  schedule?: DaySchedule[]
+}
+
+export function generateRouteShareCode(routeId: number, maxUseCount?: number) {
+  return post<string>(`/admin/planning/share-code/${routeId}`, { maxUseCount })
+}
+
+export function importRouteByShareCode(shareCode: string) {
+  return post<RouteShareCodeImportResult>('/admin/planning/share-code/import', { shareCode })
+}

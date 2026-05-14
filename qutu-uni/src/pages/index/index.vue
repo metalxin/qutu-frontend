@@ -390,8 +390,14 @@
                 @input="onCodeInput(index)"
                 @keydown="onCodeKeydown($event, index)"
                 :ref="el => codeInputRefs[index] = el"
+                :disabled="codeLoading"
               />
             </view>
+          </view>
+
+          <!-- 加载提示 -->
+          <view class="code-loading" v-if="codeLoading">
+            <text class="code-loading-text">验证中...</text>
           </view>
 
           <!-- 虚线分割 -->
@@ -627,7 +633,8 @@ import { onShow } from '@dcloudio/uni-app'
 import SFIcon from '@/components/SFIcon/SFIcon.vue'
 import AppTabBar from '@/components/AppTabBar/AppTabBar.vue'
 import UserSlidePanel from '@/components/UserSlidePanel/UserSlidePanel.vue'
-import { getDestinations, getRegionGroups, getHotCities, getDestinationSpots, getInspirations, searchDestinations, searchInspirations, getFootprintStats } from '@/api'
+import { getDestinations, getRegionGroups, getHotCities, getDestinationSpots, getInspirations, searchDestinations, searchInspirations, getFootprintStats, importByShareCode, importRouteByShareCode } from '@/api'
+import type { ShareCodeImportResult } from '@/api/modules/checklist'
 import { DEFAULT_AVATAR, getUserInfo } from '@/api/modules/user'
 import type { Destination, SpotListItem } from '@/api/modules/destination'
 import type { UserInfo } from '@/api/modules/user'
@@ -737,8 +744,10 @@ const showNotification = () => {
 
 // 使用口令弹窗
 const showCodePopup = ref(false)
-const codeDigits = ref(['', '', '', ''])
+const codeDigits = ref(['', '', '', '', '', ''])
 const codeInputRefs = ref<any[]>([])
+const codeLoading = ref(false)
+const codeResult = ref<ShareCodeImportResult | null>(null)
 const currentDay = ref('31')
 const currentMonth = ref('1')
 
@@ -807,14 +816,12 @@ onShow(() => {
 
 // 口令输入处理
 const onCodeInput = (index: number) => {
-  if (codeDigits.value[index] && index < 3) {
-    // 自动跳转到下一个输入框
+  if (codeDigits.value[index] && index < 5) {
     const nextInput = codeInputRefs.value[index + 1]
     if (nextInput) {
       nextInput.focus()
     }
   }
-  // 检查是否输入完成
   if (codeDigits.value.every(d => d)) {
     submitCode()
   }
@@ -822,7 +829,6 @@ const onCodeInput = (index: number) => {
 
 const onCodeKeydown = (e: any, index: number) => {
   if (e.key === 'Backspace' && !codeDigits.value[index] && index > 0) {
-    // 删除时跳转到上一个输入框
     const prevInput = codeInputRefs.value[index - 1]
     if (prevInput) {
       prevInput.focus()
@@ -830,16 +836,60 @@ const onCodeKeydown = (e: any, index: number) => {
   }
 }
 
-const submitCode = () => {
+const submitCode = async () => {
   const code = codeDigits.value.join('')
-  uni.showLoading({ title: '验证中...' })
-  setTimeout(() => {
-    uni.hideLoading()
-    uni.showToast({
-      title: '口令验证功能开发中',
-      icon: 'none'
-    })
-  }, 1000)
+  if (codeLoading.value) return
+  codeLoading.value = true
+
+  const localRouteData = uni.getStorageSync('shareCode_' + code)
+  if (localRouteData) {
+    try {
+      const parsed = JSON.parse(localRouteData)
+      if (parsed.type === 'route' && parsed.route) {
+        uni.setStorageSync('currentRoute', JSON.stringify(parsed.route))
+        uni.showToast({ title: '行程口令验证成功', icon: 'success' })
+        setTimeout(() => {
+          showCodePopup.value = false
+          codeDigits.value = ['', '', '', '', '', '']
+          uni.navigateTo({ url: '/packageTrip/pages/planning/detail' })
+        }, 800)
+        return
+      }
+    } catch {}
+  }
+
+  try {
+    const routeRes = await importRouteByShareCode(code)
+    if (routeRes) {
+      uni.showToast({ title: '行程口令验证成功', icon: 'success' })
+      setTimeout(() => {
+        showCodePopup.value = false
+        codeDigits.value = ['', '', '', '', '', '']
+        uni.setStorageSync('importedRouteShareCode', code)
+        uni.navigateTo({ url: '/packageTrip/pages/planning/detail?shareCode=' + encodeURIComponent(code) })
+      }, 800)
+      return
+    }
+  } catch {}
+
+  try {
+    const res = await importByShareCode(code)
+    codeResult.value = res
+    uni.showToast({ title: '口令验证成功', icon: 'success' })
+    setTimeout(() => {
+      showCodePopup.value = false
+      codeResult.value = null
+      codeDigits.value = ['', '', '', '', '', '']
+      uni.navigateTo({
+        url: '/pages/checklist/index?shareCode=' + encodeURIComponent(code)
+      })
+    }, 800)
+  } catch (error: any) {
+    const msg = error?.response?.msg || error?.response?.message || error?.message || '口令无效或已失效'
+    uni.showToast({ title: msg, icon: 'none' })
+  } finally {
+    codeLoading.value = false
+  }
 }
 
 // 创建新行程
@@ -3003,13 +3053,13 @@ $shadow-medium: 0 4rpx 30rpx rgba(0, 0, 0, 0.1);
 .code-inputs {
   display: flex;
   justify-content: center;
-  gap: 24rpx;
+  gap: 16rpx;
   padding: 48rpx 0;
 }
 
 .code-input-box {
-  width: 100rpx;
-  height: 120rpx;
+  width: 80rpx;
+  height: 100rpx;
   border: 3rpx solid $text-primary;
   border-radius: 16rpx;
   display: flex;
@@ -3021,9 +3071,20 @@ $shadow-medium: 0 4rpx 30rpx rgba(0, 0, 0, 0.1);
   width: 100%;
   height: 100%;
   text-align: center;
-  font-size: 48rpx;
+  font-size: 44rpx;
   font-weight: 600;
   color: $text-primary;
+}
+
+.code-loading {
+  display: flex;
+  justify-content: center;
+  padding-bottom: 16rpx;
+}
+
+.code-loading-text {
+  font-size: 26rpx;
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .ticket-dashed {

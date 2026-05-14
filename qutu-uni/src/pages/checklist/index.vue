@@ -331,7 +331,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 
 // 胶囊按钮适配
@@ -760,11 +760,16 @@ onMounted(() => {
   loadChecklists()
   isFirstLoad.value = false
 
-  // 检查是否有预填参数（从景点详情/规划页跳转过来）
   const pages = getCurrentPages()
   const currentPage = pages[pages.length - 1] as any
   const options = currentPage?.options || {}
-  if (options.name || options.destination) {
+  if (options.shareCode) {
+    shareCodeInput.value = decodeURIComponent(options.shareCode)
+    showUseCode.value = true
+    nextTick(() => {
+      doUseCode()
+    })
+  } else if (options.name || options.destination) {
     formData.value = {
       name: decodeURIComponent(options.name || ''),
       destination: decodeURIComponent(options.destination || ''),

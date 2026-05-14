@@ -319,3 +319,16 @@ export function generateShareCode(checklistId: ChecklistId, maxUseCount?: number
 export function importByShareCode(shareCode: string) {
   return post<ShareCodeImportResult>(`${API_PREFIX}/checklists/import-by-code`, { shareCode })
 }
+
+export interface RouteShareCodeImportResult {
+  routeId: number
+  routeName: string
+  startCity: string
+  endCity: string
+  days: number
+  schedule?: any[]
+}
+
+export function importRouteByShareCode(shareCode: string) {
+  return post<RouteShareCodeImportResult>(`${API_PREFIX}/planning/share-code/import`, { shareCode })
+}
