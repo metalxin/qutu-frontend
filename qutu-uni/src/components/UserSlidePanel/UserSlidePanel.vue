@@ -215,22 +215,22 @@ const bindWechat = async () => {
 
 const goToSettings = () => {
   close()
-  uni.navigateTo({ url: '/pages/user/settings' })
+  uni.navigateTo({ url: '/packageUser/pages/user/settings' })
 }
 
 const goToVipCenter = () => {
   close()
-  uni.navigateTo({ url: '/pages/user/vip' })
+  uni.navigateTo({ url: '/packageUser/pages/user/vip' })
 }
 
 const handleMenuClick = (menu: string) => {
   close()
   const menuRoutes: Record<string, string> = {
-    'routes': '/pages/route/list',
-    'frequent': '/pages/user/frequent',
-    'favorites': '/pages/user/favorites',
-    'favoriteGuides': '/pages/user/favorite-guides',
-    'messages': '/pages/message/index'
+    'routes': '/packageTrip/pages/route/list',
+    'frequent': '/packageUser/pages/user/frequent',
+    'favorites': '/packageUser/pages/user/favorites',
+    'favoriteGuides': '/packageUser/pages/user/favorite-guides',
+    'messages': '/packageMessage/pages/message/index'
   }
   const target = menuRoutes[menu]
   if (target) {
@@ -246,7 +246,7 @@ const goToProfile = () => {
     uni.navigateTo({ url: '/pages/user/login' })
     return
   }
-  uni.navigateTo({ url: '/pages/user/profile' })
+  uni.navigateTo({ url: '/packageUser/pages/user/profile' })
 }
 
 const goToLogin = () => {

@@ -699,7 +699,7 @@ const submitChecklist = async () => {
 // 跳转详情
 const goToDetail = (item: Checklist) => {
   uni.navigateTo({
-    url: `/pages/checklist/detail?id=${encodeURIComponent(String(item.id))}`
+    url: `/packageChecklist/pages/checklist/detail?id=${encodeURIComponent(String(item.id))}`
   })
 }
 

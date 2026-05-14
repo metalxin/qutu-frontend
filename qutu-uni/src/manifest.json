@@ -60,9 +60,15 @@
     "mp-weixin" : {
         "appid" : "",
         "setting" : {
-            "urlCheck" : false
+            "urlCheck" : false,
+            "minified" : true,
+            "postcss" : true
         },
         "usingComponents" : true,
+        "lazyCodeLoading" : "requiredComponents",
+        "optimization" : {
+            "subPackages" : true
+        },
         "networkTimeout" : {
             "request" : 15000,
             "connectSocket" : 15000,

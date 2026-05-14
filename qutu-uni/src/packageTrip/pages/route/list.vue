@@ -228,7 +228,7 @@ const loadMore = () => {
 }
 
 const viewDetail = (record: RouteRecord) => {
-  uni.navigateTo({ url: `/pages/route/detail?id=${record.id}` })
+  uni.navigateTo({ url: `/packageTrip/pages/route/detail?id=${record.id}` })
 }
 
 const confirmDelete = (record: RouteRecord) => {
@@ -252,7 +252,7 @@ const confirmDelete = (record: RouteRecord) => {
 }
 
 const goToRecord = () => {
-  uni.navigateTo({ url: '/pages/record/index' })
+  uni.navigateTo({ url: '/packageTrip/pages/record/index' })
 }
 
 const goBack = () => {

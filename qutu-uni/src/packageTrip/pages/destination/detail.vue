@@ -824,7 +824,7 @@ const viewAllGuides = () => {
 // 跳转攻略详情
 const goToGuideDetail = (id: number) => {
   uni.navigateTo({
-    url: `/pages/guide/detail?id=${id}`
+    url: `/packageGuide/pages/guide/detail?id=${id}`
   })
 }
 
@@ -886,7 +886,7 @@ const generateTrip = async () => {
     showTripSheet.value = false
 
     uni.setStorageSync('currentRoute', JSON.stringify(route))
-    uni.navigateTo({ url: '/pages/planning/detail' })
+    uni.navigateTo({ url: '/packageTrip/pages/planning/detail' })
   } catch (error) {
     isGenerating.value = false
     uni.showToast({ title: '规划生成失败，请重试', icon: 'none' })
@@ -909,7 +909,7 @@ const createChecklistFromDestination = async () => {
     showTripSheet.value = false
     uni.showToast({ title: '清单创建成功', icon: 'success' })
     setTimeout(() => {
-      uni.navigateTo({ url: `/pages/checklist/detail?id=${checklistId}` })
+      uni.navigateTo({ url: `/packageChecklist/pages/checklist/detail?id=${checklistId}` })
     }, 500)
   } catch (error) {
     uni.showToast({ title: '创建清单失败', icon: 'none' })

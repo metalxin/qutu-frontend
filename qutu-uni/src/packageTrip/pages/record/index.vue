@@ -708,7 +708,7 @@ const previewPhoto = (index: number) => {
 }
 
 const goToHistory = () => {
-  uni.navigateTo({ url: '/pages/route/list' })
+  uni.navigateTo({ url: '/packageTrip/pages/route/list' })
 }
 
 const goBack = () => {

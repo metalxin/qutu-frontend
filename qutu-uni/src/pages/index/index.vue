@@ -696,7 +696,7 @@ const onRecordBtnTouchEnd = () => {
 const startRecording = () => {
   showRecordPopup.value = false
   uni.navigateTo({
-    url: '/pages/record/index'
+    url: '/packageTrip/pages/record/index'
   })
 }
 
@@ -731,7 +731,7 @@ const headerHeight = computed(() => {
 // 显示通知
 const showNotification = () => {
   uni.navigateTo({
-    url: '/pages/message/index'
+    url: '/packageMessage/pages/message/index'
   })
 }
 
@@ -846,7 +846,7 @@ const submitCode = () => {
 const handleCreateTrip = () => {
   showAddMenu.value = false
   uni.navigateTo({
-    url: '/pages/planning/index'
+    url: '/packageTrip/pages/planning/index'
   })
 }
 
@@ -854,7 +854,7 @@ const handleCreateTrip = () => {
 const handleCollect = () => {
   showAddMenu.value = false
   uni.navigateTo({
-    url: '/pages/collect/camera'
+    url: '/packageCollect/pages/collect/camera'
   })
 }
 
@@ -1045,7 +1045,7 @@ const goToAIService = () => {
 // 跳转到点亮足迹页面
 const goToFootprint = () => {
   uni.navigateTo({
-    url: '/pages/footprint/index'
+    url: '/packageFootprint/pages/footprint/index'
   })
 }
 
@@ -1076,7 +1076,7 @@ const closeSpotList = () => {
 const goToSpotDetail = (spot: SpotListItem) => {
   showSpotListPopup.value = false
   uni.navigateTo({
-    url: `/pages/destination/detail?id=${spot.id}&name=${encodeURIComponent(spot.name)}`,
+    url: `/packageTrip/pages/destination/detail?id=${spot.id}&name=${encodeURIComponent(spot.name)}`,
     fail: (err) => {
       console.error('跳转失败:', err)
       uni.showToast({
@@ -1115,7 +1115,7 @@ const goToStoryList = () => {
 const goToInspirationDetail = (item: any) => {
   showInspirationListPopup.value = false
   uni.navigateTo({
-    url: `/pages/guide/detail?id=${item.id}`
+    url: `/packageGuide/pages/guide/detail?id=${item.id}`
   })
 }
 

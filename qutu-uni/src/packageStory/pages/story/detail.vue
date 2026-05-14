@@ -406,7 +406,7 @@ const shareStory = () => {
   // 保存故事数据供分享页使用
   uni.setStorageSync('shareStory', JSON.stringify(story.value))
   uni.navigateTo({
-    url: `/pages/story/share?id=${storyId.value}`
+    url: `/packageStory/pages/story/share?id=${storyId.value}`
   })
 }
 
@@ -569,7 +569,7 @@ const deleteConfirm = () => {
 onShareAppMessage(() => {
   return {
     title: story.value.title || '我的旅行故事',
-    path: `/pages/story/detail?id=${storyId.value}&from=share`,
+    path: `/packageStory/pages/story/detail?id=${storyId.value}&from=share`,
     imageUrl: story.value.image || ''
   }
 })
@@ -578,7 +578,7 @@ onShareAppMessage(() => {
 onShareTimeline(() => {
   return {
     title: story.value.title || '我的旅行故事',
-    path: `/pages/story/detail?id=${storyId.value}&from=share`,
+    path: `/packageStory/pages/story/detail?id=${storyId.value}&from=share`,
     imageUrl: story.value.image || ''
   }
 })

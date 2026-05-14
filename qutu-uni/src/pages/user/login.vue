@@ -334,7 +334,7 @@ const onWxLogin = async () => {
         cancelText: '取消',
         success: (res) => {
           if (res.confirm) {
-            uni.navigateTo({ url: '/pages/user/wechat-register' })
+            uni.navigateTo({ url: '/packageUser/pages/user/wechat-register' })
           }
         }
       })
@@ -347,11 +347,11 @@ const onWxLogin = async () => {
 }
 
 const goRegister = () => {
-  uni.navigateTo({ url: '/pages/user/register' })
+  uni.navigateTo({ url: '/packageUser/pages/user/register' })
 }
 
 const goForgotPassword = () => {
-  uni.navigateTo({ url: '/pages/user/forgot-password' })
+  uni.navigateTo({ url: '/packageUser/pages/user/forgot-password' })
 }
 
 const goBack = () => {

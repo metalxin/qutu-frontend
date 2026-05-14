@@ -24,7 +24,7 @@ const APP_NAME = '趣途云迹'
 const APP_SLOGAN = '发现世界的每一处美好'
 
 function getSharePath(type: string, id: number | string): string {
-  return `/pages/destination/detail?id=${id}&from=share`
+  return `/packageTrip/pages/destination/detail?id=${id}&from=share`
 }
 
 export function buildShareConfig(type: string, id: number | string, title: string, imageUrl?: string, summary?: string): ShareConfig {

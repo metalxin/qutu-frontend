@@ -467,9 +467,9 @@ const selectCityTemp = (city: string) => { selectedCityTemp.value = city }
 const selectCity = (city: string) => { currentCityName.value = city.includes('市') ? city : city + '市'; showCityPopup.value = false; const coords = cityCoords[currentCityName.value]; if (coords) mapCenter.value = { latitude: coords.lat, longitude: coords.lng }; loadPois() }
 const confirmCitySelection = () => { if (selectedCityTemp.value) selectCity(selectedCityTemp.value); showCityPopup.value = false }
 
-const handleAddLocation = () => { showAddMenuPopup.value = false; uni.navigateTo({ url: '/pages/collect/edit' }) }
-const handleRecordTrip = () => { showAddMenuPopup.value = false; uni.navigateTo({ url: '/pages/record/index' }) }
-const handleTakePhoto = () => { showAddMenuPopup.value = false; uni.chooseImage({ count: 1, sourceType: ['camera'], success: () => uni.navigateTo({ url: '/pages/collect/camera' }) }) }
+const handleAddLocation = () => { showAddMenuPopup.value = false; uni.navigateTo({ url: '/packageCollect/pages/collect/edit' }) }
+const handleRecordTrip = () => { showAddMenuPopup.value = false; uni.navigateTo({ url: '/packageTrip/pages/record/index' }) }
+const handleTakePhoto = () => { showAddMenuPopup.value = false; uni.chooseImage({ count: 1, sourceType: ['camera'], success: () => uni.navigateTo({ url: '/packageCollect/pages/collect/camera' }) }) }
 
 onMounted(() => {
   const sys = uni.getSystemInfoSync(); statusBarHeight.value = sys.statusBarHeight || 20; windowWidth.value = sys.windowWidth || 375

@@ -418,7 +418,7 @@ async function createChecklistFromPlan() {
     })
     uni.showToast({ title: '清单创建成功', icon: 'success' })
     setTimeout(() => {
-      uni.navigateTo({ url: `/pages/checklist/detail?id=${checklistId}` })
+      uni.navigateTo({ url: `/packageChecklist/pages/checklist/detail?id=${checklistId}` })
     }, 500)
   } catch (error) {
     uni.showToast({ title: '创建清单失败', icon: 'none' })

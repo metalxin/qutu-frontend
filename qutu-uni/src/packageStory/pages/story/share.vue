@@ -1,7 +1,7 @@
 <template>
   <view class="share-page">
     <!-- 顶部导航 -->
-    <view class="nav-bar" :style="{ paddingTop: statusBarHeight + 'px' }">
+    <view class="nav-bar" :style="navBarStyle">
       <view class="nav-left" @click="goBack">
         <text class="back-icon">‹</text>
       </view>
@@ -149,7 +149,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, getCurrentInstance } from 'vue'
+import { ref, computed, onMounted, getCurrentInstance } from 'vue'
 import { onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
 import { generateStoryPoster, saveImageToAlbum, copyShareLink, trackShare } from '@/utils/share'
 
@@ -173,6 +173,23 @@ interface Story {
 
 // 状态栏高度
 const statusBarHeight = ref(0)
+const navBarHeight = ref(44)
+
+const navBarStyle = computed(() => {
+  const style: Record<string, string> = {
+    paddingTop: statusBarHeight.value + 'px'
+  }
+  // #ifdef MP-WEIXIN
+  try {
+    const menuButton = uni.getMenuButtonBoundingClientRect()
+    if (menuButton) {
+      const navHeight = (menuButton.top - statusBarHeight.value) * 2 + menuButton.height
+      navBarHeight.value = navHeight
+    }
+  } catch (e) {}
+  // #endif
+  return style
+})
 
 // 卡片背景色列表
 const cardColors = [
@@ -286,7 +303,7 @@ const savePosterToAlbum = async () => {
   try {
     await saveImageToAlbum(posterImagePath.value)
     uni.showToast({ title: '海报已保存到相册', icon: 'success' })
-    trackShare('save_poster', `/pages/story/share?id=${story.value.id}`)
+    trackShare('save_poster', `/packageStory/pages/story/share?id=${story.value.id}`)
   } catch (e) {
     console.error('保存海报失败:', e)
   }
@@ -299,7 +316,7 @@ const shareToMoments = () => {
 
 // 复制链接
 const copyStoryLink = () => {
-  const path = `/pages/story/detail?id=${story.value.id}`
+  const path = `/packageStory/pages/story/detail?id=${story.value.id}`
   copyShareLink(path).then(() => {
     uni.showToast({ title: '链接已复制', icon: 'success' })
   }).catch(() => {
@@ -313,20 +330,20 @@ const copyStoryLink = () => {
 
 // 微信分享
 onShareAppMessage(() => {
-  trackShare('wechat_friend', `/pages/story/detail?id=${story.value.id}`)
+  trackShare('wechat_friend', `/packageStory/pages/story/detail?id=${story.value.id}`)
   return {
     title: story.value.title || '我的旅行故事',
-    path: `/pages/story/detail?id=${story.value.id}&from=share`,
+    path: `/packageStory/pages/story/detail?id=${story.value.id}&from=share`,
     imageUrl: story.value.image || ''
   }
 })
 
 // 朋友圈分享
 onShareTimeline(() => {
-  trackShare('moments', `/pages/story/detail?id=${story.value.id}`)
+  trackShare('moments', `/packageStory/pages/story/detail?id=${story.value.id}`)
   return {
     title: story.value.title || '我的旅行故事',
-    path: `/pages/story/detail?id=${story.value.id}&from=share`,
+    path: `/packageStory/pages/story/detail?id=${story.value.id}&from=share`,
     imageUrl: story.value.image || ''
   }
 })

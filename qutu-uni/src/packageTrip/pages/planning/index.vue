@@ -576,7 +576,7 @@ const generateRoute = async () => {
     
     // 跳转到详情页
     uni.navigateTo({
-      url: '/pages/planning/detail'
+      url: '/packageTrip/pages/planning/detail'
     })
   } catch (error) {
     clearInterval(progressInterval)
@@ -594,7 +594,7 @@ const generateRoute = async () => {
     
     // 跳转到详情页
     uni.navigateTo({
-      url: '/pages/planning/detail'
+      url: '/packageTrip/pages/planning/detail'
     })
   }
 }

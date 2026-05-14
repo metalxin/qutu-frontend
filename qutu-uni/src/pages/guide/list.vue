@@ -280,7 +280,7 @@ const goBack = () => {
 
 const goToDetail = (id: number) => {
   uni.navigateTo({
-    url: `/pages/guide/detail?id=${id}`
+    url: `/packageGuide/pages/guide/detail?id=${id}`
   })
 }
 

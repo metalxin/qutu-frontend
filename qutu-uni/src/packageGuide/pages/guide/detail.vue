@@ -300,32 +300,44 @@
           <text class="channel-name">朋友圈</text>
         </view>
       </view>
+    </view>
 
-      <!-- 海报预览 -->
-      <view class="poster-preview" v-if="posterImagePath">
-        <view class="poster-mask" @tap="posterImagePath = ''"></view>
-        <view class="poster-content">
-          <image class="poster-image" :src="posterImagePath" mode="widthFix" />
-          <view class="poster-actions">
-            <view class="poster-btn" @tap="savePosterToAlbum">
-              <SFIcon name="import" :size="32" color="#FFFFFF" />
-              <text class="poster-btn-text">保存到相册</text>
-            </view>
-            <view class="poster-btn secondary" @tap="posterImagePath = ''">
-              <text class="poster-btn-text">关闭</text>
-            </view>
-          </view>
+    <!-- 海报预览弹窗 -->
+    <view class="poster-overlay" :class="{ show: showPosterPreview }" @tap="showPosterPreview = false"></view>
+    <view class="poster-popup" :class="{ show: showPosterPreview }">
+      <view class="poster-header" :style="posterHeaderStyle">
+        <text class="poster-title">分享海报</text>
+        <view class="poster-close" @tap="showPosterPreview = false">
+          <text class="close-icon">×</text>
+        </view>
+      </view>
+      <scroll-view scroll-y class="poster-scroll">
+        <view class="poster-canvas-wrapper">
+          <image v-if="posterImagePath" class="poster-preview-img" :src="posterImagePath" mode="widthFix" />
+        </view>
+      </scroll-view>
+      <view class="poster-actions">
+        <view class="poster-save-btn" @tap="savePosterToAlbum">
+          <text class="poster-save-text">保存到相册</text>
+        </view>
+        <view class="poster-share-btn" @tap="sharePosterToMoments">
+          <text class="poster-share-text">分享到朋友圈</text>
         </view>
       </view>
     </view>
 
-    <!-- 海报 Canvas（隐藏） -->
-    <canvas id="guidePosterCanvas" type="2d" style="position:fixed;left:-9999px;top:-9999px;width:600px;height:960px;"></canvas>
+    <!-- Canvas用于海报生成，生成时显示 -->
+    <canvas
+      v-if="isGeneratingPoster"
+      id="guidePosterCanvas"
+      type="2d"
+      :style="{ position: 'fixed', left: '0', top: '0', width: '600px', height: '960px', opacity: '0', zIndex: -1, pointerEvents: 'none' }"
+    ></canvas>
   </view>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, getCurrentInstance } from 'vue'
+import { ref, computed, onMounted, getCurrentInstance, nextTick } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
 import SFIcon from '@/components/SFIcon/SFIcon.vue'
@@ -335,6 +347,18 @@ import type { PreferenceOption, TransportMode } from '@/api/modules/planning'
 import { generateGuidePoster, saveImageToAlbum, copyShareLink, trackShare } from '@/utils/share'
 
 const instance = getCurrentInstance()
+
+const menuButtonBottom = ref(0)
+
+const posterHeaderStyle = computed(() => {
+  const style: Record<string, string> = {}
+  if (menuButtonBottom.value > 0) {
+    style.paddingTop = (menuButtonBottom.value + 8) + 'px'
+  } else {
+    style.paddingTop = '32rpx'
+  }
+  return style
+})
 
 const scrollTop = ref(0)
 const activeDay = ref('overview')
@@ -433,7 +457,7 @@ const toggleCollect = async () => {
 
 // 复制链接
 const copyLink = () => {
-  const path = `/pages/guide/detail?id=${guideDetail.value.id}`
+  const path = `/packageGuide/pages/guide/detail?id=${guideDetail.value.id}`
   copyShareLink(path).then(() => {
     uni.showToast({ title: '链接已复制', icon: 'success' })
   }).catch(() => {
@@ -445,13 +469,21 @@ const copyLink = () => {
   trackShare('copy_link', path)
 }
 
-// 海报图片路径
+// 海报相关状态
 const posterImagePath = ref('')
+const showPosterPreview = ref(false)
+const isGeneratingPoster = ref(false)
 
 // 生成海报
 const savePoster = async () => {
-  uni.showLoading({ title: '生成海报中...' })
+  if (isGeneratingPoster.value) return
+  isGeneratingPoster.value = true
+  showSharePopup.value = false
+
   try {
+    await nextTick()
+    await new Promise(resolve => setTimeout(resolve, 300))
+
     const path = await generateGuidePoster('guidePosterCanvas', {
       coverUrl: guideDetail.value.cover,
       title: guideDetail.value.title,
@@ -463,48 +495,73 @@ const savePoster = async () => {
       views: guideDetail.value.views,
       guideId: guideDetail.value.id
     }, instance?.proxy)
-    posterImagePath.value = path
-    uni.hideLoading()
-  } catch (e) {
-    uni.hideLoading()
+    if (path) {
+      posterImagePath.value = path
+      showPosterPreview.value = true
+    }
+  } catch (e: any) {
     console.error('生成海报失败:', e)
-    uni.showToast({ title: '海报生成失败', icon: 'none' })
+    uni.showToast({ title: e?.message || '海报生成失败，请重试', icon: 'none', duration: 2000 })
+  } finally {
+    isGeneratingPoster.value = false
   }
 }
 
 // 保存海报到相册
 const savePosterToAlbum = async () => {
-  if (!posterImagePath.value) return
+  if (!posterImagePath.value) {
+    uni.showToast({ title: '请先生成海报', icon: 'none' })
+    return
+  }
   try {
     await saveImageToAlbum(posterImagePath.value)
-    uni.showToast({ title: '海报已保存到相册', icon: 'success' })
-    trackShare('save_poster', `/pages/guide/detail?id=${guideDetail.value.id}`)
+    uni.showToast({ title: '已保存到相册', icon: 'success' })
+    trackShare('save_poster', `/packageGuide/pages/guide/detail?id=${guideDetail.value.id}`)
   } catch (e) {
     console.error('保存海报失败:', e)
   }
 }
 
-// 分享到朋友圈（引导保存海报）
+// 分享海报到朋友圈
+const sharePosterToMoments = async () => {
+  if (!posterImagePath.value) {
+    uni.showToast({ title: '请先生成海报', icon: 'none' })
+    return
+  }
+  try {
+    await saveImageToAlbum(posterImagePath.value)
+    uni.showModal({
+      title: '分享到朋友圈',
+      content: '海报已保存到相册，请打开微信朋友圈，选择该图片发布即可',
+      showCancel: false,
+      confirmText: '我知道了'
+    })
+  } catch (e) {
+    console.error('保存失败:', e)
+  }
+}
+
+// 分享到朋友圈（引导生成海报）
 const shareToMoments = () => {
   savePoster()
 }
 
 // 微信分享配置
 onShareAppMessage(() => {
-  trackShare('wechat_friend', `/pages/guide/detail?id=${guideDetail.value.id}`)
+  trackShare('wechat_friend', `/packageGuide/pages/guide/detail?id=${guideDetail.value.id}`)
   return {
     title: `${guideDetail.value.title} - 趣途云迹`,
-    path: `/pages/guide/detail?id=${guideDetail.value.id}&from=share`,
+    path: `/packageGuide/pages/guide/detail?id=${guideDetail.value.id}&from=share`,
     imageUrl: guideDetail.value.cover || ''
   }
 })
 
 // 朋友圈分享配置
 onShareTimeline(() => {
-  trackShare('moments', `/pages/guide/detail?id=${guideDetail.value.id}`)
+  trackShare('moments', `/packageGuide/pages/guide/detail?id=${guideDetail.value.id}`)
   return {
     title: `${guideDetail.value.title} - 趣途云迹`,
-    path: `/pages/guide/detail?id=${guideDetail.value.id}&from=share`,
+    path: `/packageGuide/pages/guide/detail?id=${guideDetail.value.id}&from=share`,
     imageUrl: guideDetail.value.cover || ''
   }
 })
@@ -568,7 +625,7 @@ const generateTrip = async () => {
     showTripSheet.value = false
 
     uni.setStorageSync('currentRoute', JSON.stringify(route))
-    uni.navigateTo({ url: '/pages/planning/detail' })
+    uni.navigateTo({ url: '/packageTrip/pages/planning/detail' })
   } catch (error) {
     isGenerating.value = false
     uni.showToast({ title: '规划生成失败，请重试', icon: 'none' })
@@ -577,6 +634,15 @@ const generateTrip = async () => {
 
 // 页面加载
 onMounted(() => {
+  // #ifdef MP-WEIXIN
+  try {
+    const menuButton = uni.getMenuButtonBoundingClientRect()
+    if (menuButton) {
+      menuButtonBottom.value = menuButton.top + menuButton.height
+    }
+  } catch (e) {}
+  // #endif
+
   // 从页面参数获取攻略ID
   const pages = getCurrentPages()
   const currentPage = pages[pages.length - 1] as any
@@ -1195,68 +1261,131 @@ $border-radius-md: 16rpx;
   color: $text-secondary;
 }
 
-// 海报预览
-.poster-preview {
+// 海报预览弹窗
+.poster-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 2000;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+
+  &.show {
+    opacity: 1;
+    visibility: visible;
+  }
 }
 
-.poster-mask {
-  position: absolute;
-  top: 0;
+.poster-popup {
+  position: fixed;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
+  top: 0;
+  background: $card-bg;
+  z-index: 1001;
+  display: flex;
+  flex-direction: column;
+  transform: translateY(100%);
+  transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+
+  &.show {
+    transform: translateY(0);
+  }
 }
 
-.poster-content {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  width: 80%;
+.poster-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 32rpx;
+}
+
+.poster-title {
+  font-size: 34rpx;
+  font-weight: 600;
+  color: $text-primary;
+}
+
+.poster-close {
+  width: 56rpx;
+  height: 56rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: $bg-color;
+  border-radius: 50%;
+}
+
+.poster-scroll {
+  flex: 1;
+  overflow: hidden;
+}
+
+.poster-canvas-wrapper {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 32rpx;
+  padding: 32rpx;
 }
 
-.poster-image {
-  width: 100%;
+.poster-preview-img {
+  width: 600rpx;
   border-radius: 16rpx;
-  box-shadow: 0 8rpx 40rpx rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.15);
 }
 
 .poster-actions {
   display: flex;
-  gap: 24rpx;
-  width: 100%;
+  gap: 20rpx;
+  padding: 32rpx;
+  padding-bottom: calc(32rpx + env(safe-area-inset-bottom));
+  background: $card-bg;
+  border-top: 1rpx solid #E5E5EA;
 }
 
-.poster-btn {
+.poster-save-btn {
   flex: 1;
+  height: 88rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8rpx;
-  height: 88rpx;
-  border-radius: 44rpx;
-  background: linear-gradient(135deg, #00C853, #00BFA5);
+  background: $bg-color;
+  border-radius: 50rpx;
 
-  &.secondary {
-    background: rgba(255, 255, 255, 0.2);
+  &:active {
+    opacity: 0.7;
   }
 }
 
-.poster-btn-text {
-  font-size: 28rpx;
-  color: #FFFFFF;
+.poster-save-text {
+  font-size: 30rpx;
   font-weight: 500;
+  color: $text-primary;
+}
+
+.poster-share-btn {
+  flex: 1;
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #07C160;
+  border-radius: 50rpx;
+
+  &:active {
+    opacity: 0.7;
+  }
+}
+
+.poster-share-text {
+  font-size: 30rpx;
+  font-weight: 500;
+  color: #FFFFFF;
 }
 
 // 行程配置弹窗遮罩

@@ -583,7 +583,7 @@ const viewDiaryDetail = (diary: Diary) => {
 
   uni.setStorageSync('currentStory', JSON.stringify(storyData))
   uni.navigateTo({
-    url: `/pages/story/detail?id=${diary.id}`
+    url: `/packageStory/pages/story/detail?id=${diary.id}`
   })
 }
 
@@ -608,7 +608,7 @@ const shareDiary = (diary: Diary) => {
 
   uni.setStorageSync('shareStory', JSON.stringify(storyData))
   uni.navigateTo({
-    url: `/pages/story/share?id=${diary.id}`
+    url: `/packageStory/pages/story/share?id=${diary.id}`
   })
 }
 
