@@ -261,53 +261,84 @@ export function getHotCities() {
 /**
  * 获取景点评论
  */
-export function getSpotComments(spotId: number, params?: { page?: number; pageSize?: number }) {
-  return get<Comment[]>(`/api/spots/${spotId}/comments`, params, mockComments)
+export async function getSpotComments(spotId: number, params?: { current?: number; size?: number }) {
+  try {
+    const res = await request<{ records: Comment[]; total: number; size: number; current: number; pages: number }>({
+      url: `/admin/spots/${spotId}/comments`,
+      method: 'GET',
+      useMock: false,
+      data: {
+        current: params?.current ?? 1,
+        size: params?.size ?? 20
+      }
+    })
+    const records = (res?.records || []).map((item: any) => ({
+      ...item,
+      userAvatar: resolveFileUrl(item.userAvatar || ''),
+      showAllReplies: false,
+      replyCount: item.replyCount ?? (item.replies?.length || 0)
+    }))
+    return { records, total: res?.total || 0 }
+  } catch {
+    return { records: [], total: 0 }
+  }
 }
 
 /**
  * 发表评论
  */
-export function postComment(spotId: number, data: { content: string; images?: string[] }) {
-  const newComment: Comment = {
-    id: Date.now(),
-    userId: 1,
-    userName: '当前用户',
-    userAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&q=80',
-    content: data.content,
-    images: data.images || [],
-    likes: 0,
-    isLiked: false,
-    createTime: new Date().toLocaleString(),
-    replies: [],
-    showAllReplies: false
-  }
-  return post<Comment>(`/api/spots/${spotId}/comments`, data, newComment)
+export async function postComment(spotId: number, data: { content: string; images?: string[] }) {
+  return request<Comment>({
+    url: `/admin/spots/${spotId}/comments`,
+    method: 'POST',
+    useMock: false,
+    data
+  })
 }
 
 /**
  * 回复评论
  */
-export function replyComment(commentId: number, data: { content: string; replyTo: string }) {
-  const newReply: Reply = {
-    id: Date.now(),
-    userId: 1,
-    userName: '当前用户',
-    userAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&q=80',
-    content: data.content,
-    likes: 0,
-    isLiked: false,
-    createTime: new Date().toLocaleString(),
-    replyTo: data.replyTo
-  }
-  return post<Reply>(`/api/comments/${commentId}/replies`, data, newReply)
+export async function replyComment(commentId: number, data: { content: string; replyTo: string }) {
+  return request<Reply>({
+    url: `/admin/comments/${commentId}/replies`,
+    method: 'POST',
+    useMock: false,
+    data
+  })
 }
 
 /**
  * 点赞评论
  */
 export function likeComment(commentId: number) {
-  return post<{ success: boolean }>(`/api/comments/${commentId}/like`, undefined, { success: true })
+  return request<boolean>({
+    url: `/admin/comments/${commentId}/like`,
+    method: 'POST',
+    useMock: false
+  })
+}
+
+/**
+ * 取消点赞评论
+ */
+export function unlikeComment(commentId: number) {
+  return request<boolean>({
+    url: `/admin/comments/${commentId}/like`,
+    method: 'DELETE',
+    useMock: false
+  })
+}
+
+/**
+ * 删除评论
+ */
+export function deleteComment(commentId: number) {
+  return request<boolean>({
+    url: `/admin/comments/${commentId}`,
+    method: 'DELETE',
+    useMock: false
+  })
 }
 
 /**

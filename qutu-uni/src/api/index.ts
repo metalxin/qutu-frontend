@@ -24,6 +24,8 @@ export {
   postComment,
   replyComment,
   likeComment,
+  unlikeComment,
+  deleteComment,
   favoriteSpot,
   unfavoriteSpot,
   getUserFavoriteSpots,
@@ -33,7 +35,9 @@ export {
 } from './modules/destination'
 
 export type {
-  FavoriteSpotItem
+  FavoriteSpotItem,
+  Comment,
+  Reply
 } from './modules/destination'
 
 export {

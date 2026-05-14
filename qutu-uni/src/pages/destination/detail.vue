@@ -139,16 +139,117 @@
           </view>
         </view>
       </view>
+
+      <!-- 评论区域 -->
+      <view class="comments-section">
+        <view class="section-header" @click="showComments = !showComments">
+          <text class="section-title">评论 ({{ commentTotal }})</text>
+          <text class="section-toggle">{{ showComments ? '收起' : '展开' }}</text>
+        </view>
+
+        <view class="comments-list" v-if="showComments && comments.length > 0">
+          <view class="comment-item" v-for="comment in comments" :key="comment.id">
+            <image class="comment-avatar" :src="comment.userAvatar || '/static/logo.png'" mode="aspectFill" />
+            <view class="comment-body">
+              <view class="comment-header">
+                <text class="comment-username">{{ comment.userName }}</text>
+                <text class="comment-time">{{ comment.createTime }}</text>
+              </view>
+              <text class="comment-content">{{ comment.content }}</text>
+              <view class="comment-actions">
+                <view class="action-item" @click="handleLikeComment(comment)">
+                  <text class="action-icon">{{ comment.isLiked ? '❤️' : '🤍' }}</text>
+                  <text class="action-text">{{ comment.likes || '' }}</text>
+                </view>
+                <view class="action-item" @click="replyToComment(comment)">
+                  <text class="action-icon">💬</text>
+                  <text class="action-text">回复</text>
+                </view>
+              </view>
+
+              <!-- 二级评论/回复 -->
+              <view class="replies-section" v-if="comment.replies && comment.replies.length > 0">
+                <view class="reply-item" v-for="reply in (comment.showAllReplies ? comment.replies : comment.replies.slice(0, 3))" :key="reply.id">
+                  <image class="reply-avatar" :src="reply.userAvatar || '/static/logo.png'" mode="aspectFill" />
+                  <view class="reply-body">
+                    <view class="reply-header">
+                      <text class="reply-username">{{ reply.userName }}</text>
+                      <text class="reply-to" v-if="reply.replyTo">回复 <text class="reply-to-name">@{{ reply.replyTo }}</text></text>
+                    </view>
+                    <text class="reply-content">{{ reply.content }}</text>
+                    <view class="reply-actions">
+                      <text class="reply-time">{{ reply.createTime }}</text>
+                      <view class="action-item" @click="handleLikeReply(comment, reply)">
+                        <text class="action-icon-small">{{ reply.isLiked ? '❤️' : '🤍' }}</text>
+                        <text class="action-text-small">{{ reply.likes || '' }}</text>
+                      </view>
+                      <view class="action-item" @click="replyToReply(comment, reply)">
+                        <text class="action-text-small">回复</text>
+                      </view>
+                    </view>
+                  </view>
+                </view>
+                <view class="load-more-replies" v-if="comment.replies.length > 3 && !comment.showAllReplies" @click="comment.showAllReplies = true">
+                  <text class="load-more-text">展开全部 {{ comment.replies.length }} 条回复</text>
+                </view>
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <view class="no-comments" v-if="showComments && comments.length === 0">
+          <text class="no-comments-text">暂无评论，快来抢沙发~</text>
+        </view>
+      </view>
     </view>
 
     <!-- 底部按钮 -->
     <view class="bottom-bar">
+      <view class="bottom-comment-btn" @click="focusCommentInput">
+        <text class="bottom-comment-icon">💬</text>
+      </view>
       <view class="footprint-btn" :class="{ lit: isFootprintLit }" @click="toggleFootprint">
         <text class="footprint-icon">{{ isFootprintLit ? '✓' : '📍' }}</text>
         <text class="footprint-text">{{ isFootprintLit ? '已点亮' : '点亮足迹' }}</text>
       </view>
       <view class="start-btn" @click="startJourney">
         <text class="start-text">开始旅程</text>
+      </view>
+    </view>
+
+    <!-- 评论输入弹层 -->
+    <view class="comment-input-overlay" v-if="isCommentFocus" @tap="closeCommentInput"></view>
+    <view class="comment-input-popup" :class="{ show: isCommentFocus }">
+      <view class="input-row">
+        <input
+          class="comment-input"
+          v-model="commentText"
+          :placeholder="commentPlaceholder"
+          :focus="isCommentFocus"
+          :adjust-position="true"
+          confirm-type="send"
+          @confirm="sendComment"
+        />
+        <view class="emoji-toggle" @click="showEmojiPicker = !showEmojiPicker">
+          <text class="emoji-icon">{{ showEmojiPicker ? '⌨️' : '😊' }}</text>
+        </view>
+        <view class="send-btn" :class="{ active: commentText.trim() }" @click="sendComment">
+          <text class="send-text">发送</text>
+        </view>
+      </view>
+      <view class="emoji-picker" v-if="showEmojiPicker">
+        <scroll-view scroll-y class="emoji-scroll">
+          <view class="emoji-grid">
+            <view
+              class="emoji-item"
+              v-for="emoji in emojiList"
+              :key="emoji"
+              @click="insertEmoji(emoji)"
+            >
+              <text class="emoji-text">{{ emoji }}</text>
+            </view>
+          </view>
+        </scroll-view>
       </view>
     </view>
 
@@ -311,7 +412,7 @@
     <!-- 海报预览弹窗 -->
     <view class="poster-overlay" :class="{ show: showPosterPreview }" @tap="showPosterPreview = false"></view>
     <view class="poster-popup" :class="{ show: showPosterPreview }">
-      <view class="poster-header">
+      <view class="poster-header" :style="posterHeaderStyle">
         <text class="poster-title">分享海报</text>
         <view class="poster-close" @tap="showPosterPreview = false">
           <text class="close-icon">×</text>
@@ -346,7 +447,7 @@
 import { ref, onMounted, computed, getCurrentInstance, nextTick } from 'vue'
 import { onPageScroll, onShow, onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
 import SFIcon from '@/components/SFIcon/SFIcon.vue'
-import { getSpotDetail, getSpotComments, getUserFavoriteSpots, postComment, replyComment, likeComment as likeCommentApi, favoriteSpot, unfavoriteSpot, createChecklist, createFootprintRecord, getFootprintRecords } from '@/api'
+import { getSpotDetail, getSpotComments, getUserFavoriteSpots, postComment, replyComment, likeComment as likeCommentApi, unlikeComment as unlikeCommentApi, deleteComment as deleteCommentApi, favoriteSpot, unfavoriteSpot, createChecklist, createFootprintRecord, getFootprintRecords } from '@/api'
 import { getRelatedGuides } from '@/api/modules/guide'
 import { generateAIRoute, getPreferenceOptions, getTransportModes } from '@/api/modules/planning'
 import type { SpotDetail, Comment, Reply } from '@/api/modules/destination'
@@ -361,6 +462,7 @@ const loading = ref(false)
 // 状态栏高度
 const statusBarHeight = ref(44)
 const menuButtonSpace = ref(0)
+const menuButtonBottom = ref(0)
 
 // 收藏状态
 const isFavorite = ref(false)
@@ -424,6 +526,16 @@ const toolbarStyle = computed(() => {
   return style
 })
 
+const posterHeaderStyle = computed(() => {
+  const style: Record<string, string> = {}
+  if (menuButtonBottom.value > 0) {
+    style.paddingTop = (menuButtonBottom.value + 8) + 'px'
+  } else {
+    style.paddingTop = '32rpx'
+  }
+  return style
+})
+
 // 描述展开状态
 const isDescExpanded = ref(false)
 
@@ -461,6 +573,7 @@ onMounted(async () => {
     const menuButton = uni.getMenuButtonBoundingClientRect()
     if (menuButton) {
       menuButtonSpace.value = windowWidth - menuButton.left + 10
+      menuButtonBottom.value = menuButton.top + menuButton.height
     }
   } catch (e) {
     console.log('获取胶囊按钮位置失败', e)
@@ -494,7 +607,6 @@ onShow(() => {
 const loadSpotInfo = async (id: string) => {
   loading.value = true
   try {
-    // 并行加载景点信息、评论和相关攻略
     const [spotRes, commentsRes, guidesRes] = await Promise.all([
       getSpotDetail(Number(id)),
       getSpotComments(Number(id)),
@@ -509,7 +621,8 @@ const loadSpotInfo = async (id: string) => {
       isFavorite.value = favoriteRecords.some(item => Number(item.id) === Number(id))
     }
     await checkFootprintStatus(Number(id))
-    comments.value = commentsRes
+    comments.value = commentsRes?.records || []
+    commentTotal.value = commentsRes?.total || 0
     relatedGuides.value = guidesRes
   } catch (error) {
     console.error('加载景点信息失败:', error)
@@ -808,145 +921,178 @@ const isCommentFocus = ref(false)
 const commentText = ref('')
 const commentPlaceholder = ref('写下你的评论...')
 const replyTarget = ref<any>(null)
+const showEmojiPicker = ref(false)
+const showComments = ref(true)
+const commentTotal = ref(0)
+const commentPage = ref(1)
+const commentPageSize = 20
 const hasMoreComments = ref(true)
 
+const emojiList = [
+  '😀', '😁', '😂', '🤣', '😃', '😄', '😅', '😆',
+  '😉', '😊', '😋', '😎', '😍', '😘', '🥰', '😗',
+  '😙', '😚', '🙂', '🤗', '🤩', '🤔', '🤨', '😐',
+  '😑', '😶', '😏', '😒', '🙄', '😬', '🤥', '😌',
+  '😔', '😪', '🤤', '😴', '😷', '🤒', '🤕', '🤢',
+  '🤮', '🥵', '🥶', '🥴', '😵', '🤯', '🤠', '🥳',
+  '🥸', '😎', '🤓', '🧐', '😕', '😟', '🙁', '😮',
+  '😯', '😲', '😳', '🥺', '😦', '😧', '😨', '😰',
+  '😥', '😢', '😭', '😱', '😖', '😣', '😞', '😓',
+  '😩', '😫', '🥱', '😤', '😡', '😠', '🤬', '😈',
+  '👿', '💀', '☠️', '💩', '🤡', '👹', '👺', '👻',
+  '👍', '👎', '👏', '🙌', '🤝', '❤️', '🧡', '💛',
+  '💚', '💙', '💜', '🖤', '🤍', '💔', '❣️', '💕',
+  '💞', '💓', '💗', '💖', '💘', '💝', '💟', '✨',
+  '⭐', '🌟', '💫', '🔥', '💯', '🎉', '🎊', '🎈',
+  '🏆', '🥇', '🎯', '🎨', '📸', '📷', '🎬', '🎭',
+  '🌍', '🌎', '🌏', '🗺️', '🏔️', '⛰️', '🌋', '🏖️',
+  '🏕️', '🏠', '🏛️', '🗼', '🏰', '⛩️', '🕌', '🕍',
+  '✈️', '🚗', '🚕', '🚌', '🚎', '🚄', '🚅', '🚈',
+  '🚢', '🛳️', '⛵', '🚤', '🚲', '🛵', '🏍️', '🚨'
+]
+
 // 评论数据
-const comments = ref<Comment[]>([])
+const comments = ref<any[]>([])
 
-// 给评论点赞
-const likeComment = async (comment: any) => {
+const focusCommentInput = () => {
+  replyTarget.value = null
+  commentPlaceholder.value = '写下你的评论...'
+  isCommentFocus.value = true
+  showEmojiPicker.value = false
+}
+
+const insertEmoji = (emoji: string) => {
+  commentText.value += emoji
+}
+
+const handleLikeComment = async (comment: any) => {
   try {
-    await likeCommentApi(comment.id)
-    comment.isLiked = !comment.isLiked
-    comment.likes += comment.isLiked ? 1 : -1
-  } catch (error) {
-    // 乐观更新，即使失败也更新UI
-    comment.isLiked = !comment.isLiked
-    comment.likes += comment.isLiked ? 1 : -1
+    if (comment.isLiked) {
+      await unlikeCommentApi(comment.id)
+      comment.isLiked = false
+      comment.likes = Math.max(0, (comment.likes || 0) - 1)
+    } else {
+      await likeCommentApi(comment.id)
+      comment.isLiked = true
+      comment.likes = (comment.likes || 0) + 1
+    }
+  } catch {
+    if (comment.isLiked) {
+      comment.isLiked = false
+      comment.likes = Math.max(0, (comment.likes || 0) - 1)
+    } else {
+      comment.isLiked = true
+      comment.likes = (comment.likes || 0) + 1
+    }
   }
 }
 
-// 给回复点赞
-const likeReply = async (comment: any, reply: any) => {
+const handleLikeReply = async (comment: any, reply: any) => {
   try {
-    await likeCommentApi(reply.id)
-    reply.isLiked = !reply.isLiked
-    reply.likes += reply.isLiked ? 1 : -1
-  } catch (error) {
-    reply.isLiked = !reply.isLiked
-    reply.likes += reply.isLiked ? 1 : -1
+    if (reply.isLiked) {
+      await unlikeCommentApi(reply.id)
+      reply.isLiked = false
+      reply.likes = Math.max(0, (reply.likes || 0) - 1)
+    } else {
+      await likeCommentApi(reply.id)
+      reply.isLiked = true
+      reply.likes = (reply.likes || 0) + 1
+    }
+  } catch {
+    if (reply.isLiked) {
+      reply.isLiked = false
+      reply.likes = Math.max(0, (reply.likes || 0) - 1)
+    } else {
+      reply.isLiked = true
+      reply.likes = (reply.likes || 0) + 1
+    }
   }
 }
 
-// 回复评论
 const replyToComment = (comment: any) => {
   replyTarget.value = { type: 'comment', comment }
   commentPlaceholder.value = `回复 @${comment.userName}`
   isCommentFocus.value = true
+  showEmojiPicker.value = false
 }
 
-// 回复回复
 const replyToReply = (comment: any, reply: any) => {
   replyTarget.value = { type: 'reply', comment, reply }
   commentPlaceholder.value = `回复 @${reply.userName}`
   isCommentFocus.value = true
+  showEmojiPicker.value = false
 }
 
-// 输入框失焦
 const onCommentBlur = () => {
   setTimeout(() => {
     if (!commentText.value) {
       isCommentFocus.value = false
       replyTarget.value = null
       commentPlaceholder.value = '写下你的评论...'
+      showEmojiPicker.value = false
     }
-  }, 100)
+  }, 150)
 }
 
-// 发送评论
+const closeCommentInput = () => {
+  isCommentFocus.value = false
+  replyTarget.value = null
+  commentPlaceholder.value = '写下你的评论...'
+  showEmojiPicker.value = false
+}
+
 const sendComment = async () => {
-  if (!commentText.value.trim()) {
-    return
-  }
-  
+  if (!commentText.value.trim()) return
+
   try {
     if (replyTarget.value) {
-      // 回复评论或回复
       const targetComment = replyTarget.value.comment
-      const replyToUser = replyTarget.value.type === 'reply' 
-        ? replyTarget.value.reply.userName 
+      const replyToUser = replyTarget.value.type === 'reply'
+        ? replyTarget.value.reply.userName
         : targetComment.userName
-      
+
       const res = await replyComment(targetComment.id, {
         content: commentText.value,
         replyTo: replyToUser
       })
-      
+
+      if (!targetComment.replies) targetComment.replies = []
       targetComment.replies.push(res)
     } else {
-      // 新评论
       const res = await postComment(spotInfo.value.id, {
         content: commentText.value
       })
-      
+
       comments.value.unshift(res)
     }
-    
+
     commentText.value = ''
     replyTarget.value = null
     commentPlaceholder.value = '写下你的评论...'
     isCommentFocus.value = false
-    
-    uni.showToast({
-      title: '评论成功',
-      icon: 'success'
-    })
-  } catch (error) {
+    showEmojiPicker.value = false
+
+    uni.showToast({ title: '评论成功，等待审核', icon: 'none' })
+  } catch {
     uni.showToast({ title: '发送失败', icon: 'none' })
   }
 }
 
-// 加载更多回复
-const loadMoreReplies = (comment: any) => {
-  // Mock加载更多回复
-  const moreReplies = [
-    {
-      id: Date.now(),
-      username: '游客' + Math.floor(Math.random() * 100),
-      avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100',
-      content: '同感，这里真的很棒！',
-      time: '2天前',
-      likes: Math.floor(Math.random() * 20),
-      isLiked: false,
-      replyTo: ''
+const loadComments = async () => {
+  try {
+    const res = await getSpotComments(spotInfo.value.id, {
+      current: commentPage.value,
+      size: commentPageSize
+    })
+    if (commentPage.value === 1) {
+      comments.value = res.records || []
+    } else {
+      comments.value.push(...(res.records || []))
     }
-  ]
-  comment.replies.push(...moreReplies)
-  
-  if (comment.replies.length >= comment.totalReplies) {
-    comment.totalReplies = comment.replies.length
-  }
-}
-
-// 加载更多评论
-const loadMoreComments = () => {
-  const newComment = {
-    id: Date.now(),
-    userId: Date.now(),
-    userName: '旅行者' + Math.floor(Math.random() * 100),
-    userAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100',
-    content: '故宫是北京必去的景点，历史底蕴深厚，建筑也很壮观！',
-    images: [],
-    createTime: '3天前',
-    likes: Math.floor(Math.random() * 100),
-    isLiked: false,
-    replies: [],
-    showAllReplies: false
-  }
-  comments.value.push(newComment)
-  
-  if (comments.value.length >= 10) {
-    hasMoreComments.value = false
+    commentTotal.value = res.total || 0
+    hasMoreComments.value = comments.value.length < commentTotal.value
+  } catch {
+    // ignore
   }
 }
 </script>
@@ -961,7 +1107,6 @@ $text-secondary: #86868B;
 .page {
   min-height: 100vh;
   background: $card-bg;
-  padding-bottom: calc(200rpx + env(safe-area-inset-bottom));
 }
 
 // 封面区域
@@ -1054,6 +1199,7 @@ $text-secondary: #86868B;
 // 内容区域
 .content-section {
   padding: 32rpx;
+  padding-bottom: calc(180rpx + env(safe-area-inset-bottom));
   margin-top: -40rpx;
   background: $card-bg;
   border-radius: 32rpx 32rpx 0 0;
@@ -1357,81 +1503,6 @@ $text-secondary: #86868B;
 .tip-desc {
   font-size: 24rpx;
   color: $text-secondary;
-}
-
-// 底部按钮
-.bottom-bar {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  display: flex;
-  gap: 16rpx;
-  padding: 24rpx 32rpx;
-  padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
-  z-index: 900;
-}
-
-.footprint-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4rpx;
-  min-width: 140rpx;
-  padding: 12rpx 24rpx;
-  background: #F5F5F7;
-  border-radius: 50rpx;
-  border: 2rpx solid #E5E5EA;
-  transition: all 0.2s ease;
-
-  &.lit {
-    background: #E8F5E9;
-    border-color: #4CAF50;
-  }
-
-  &:active {
-    transform: scale(0.96);
-  }
-}
-
-.footprint-icon {
-  font-size: 28rpx;
-}
-
-.footprint-text {
-  font-size: 20rpx;
-  font-weight: 500;
-  color: #86868B;
-
-  .lit & {
-    color: #2E7D32;
-  }
-}
-
-.start-btn {
-  flex: 1;
-  height: 100rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #FF7043, #FF5722);
-  border-radius: 50rpx;
-  box-shadow: 0 8rpx 24rpx rgba(255, 87, 34, 0.3);
-  transition: all 0.2s ease;
-
-  &:active {
-    transform: scale(0.98);
-    box-shadow: 0 4rpx 16rpx rgba(255, 87, 34, 0.3);
-  }
-}
-
-.start-text {
-  font-size: 32rpx;
-  font-weight: 600;
-  color: #FFFFFF;
 }
 
 // 行程配置弹窗
@@ -2028,7 +2099,6 @@ $text-secondary: #86868B;
   justify-content: space-between;
   align-items: center;
   padding: 32rpx;
-  padding-top: calc(32rpx + env(safe-area-inset-top));
 }
 
 .poster-title {
@@ -2122,34 +2192,33 @@ $text-secondary: #86868B;
 
 // 评论区域
 .comments-section {
-  margin-bottom: 40rpx;
-}
-
-.comment-count {
-  font-size: 28rpx;
-  color: $text-secondary;
+  margin-top: 24rpx;
+  padding: 0 32rpx 32rpx;
 }
 
 .comments-list {
   display: flex;
   flex-direction: column;
-  gap: 32rpx;
+  gap: 24rpx;
 }
 
 .comment-item {
-  background: $card-bg;
-}
-
-.comment-main {
   display: flex;
   gap: 20rpx;
+  padding: 24rpx 0;
+  border-bottom: 1rpx solid #F0F0F0;
+
+  &:last-child {
+    border-bottom: none;
+  }
 }
 
 .comment-avatar {
-  width: 80rpx;
-  height: 80rpx;
+  width: 72rpx;
+  height: 72rpx;
   border-radius: 50%;
   flex-shrink: 0;
+  background: #F0F0F0;
 }
 
 .comment-body {
@@ -2160,8 +2229,8 @@ $text-secondary: #86868B;
 .comment-header {
   display: flex;
   align-items: center;
-  gap: 16rpx;
-  margin-bottom: 12rpx;
+  justify-content: space-between;
+  margin-bottom: 8rpx;
 }
 
 .comment-username {
@@ -2171,7 +2240,7 @@ $text-secondary: #86868B;
 }
 
 .comment-time {
-  font-size: 24rpx;
+  font-size: 22rpx;
   color: $text-secondary;
 }
 
@@ -2181,6 +2250,7 @@ $text-secondary: #86868B;
   line-height: 1.6;
   display: block;
   margin-bottom: 16rpx;
+  word-break: break-all;
 }
 
 .comment-actions {
@@ -2191,8 +2261,8 @@ $text-secondary: #86868B;
 .action-item {
   display: flex;
   align-items: center;
-  gap: 8rpx;
-  padding: 8rpx 0;
+  gap: 6rpx;
+  padding: 4rpx 0;
 
   &:active {
     opacity: 0.7;
@@ -2208,28 +2278,39 @@ $text-secondary: #86868B;
   color: $text-secondary;
 }
 
+.action-icon-small {
+  font-size: 24rpx;
+}
+
+.action-text-small {
+  font-size: 22rpx;
+  color: $text-secondary;
+}
+
 // 二级评论/回复
-.replies-list {
-  margin-top: 20rpx;
-  padding-left: 20rpx;
-  border-left: 4rpx solid #E5E5EA;
+.replies-section {
+  margin-top: 16rpx;
+  padding: 16rpx 20rpx;
+  background: #F8F8FA;
+  border-radius: 16rpx;
 }
 
 .reply-item {
   display: flex;
-  gap: 16rpx;
-  padding: 16rpx 0;
+  gap: 12rpx;
+  padding: 12rpx 0;
 
   &:not(:last-child) {
-    border-bottom: 1rpx solid #F0F0F0;
+    border-bottom: 1rpx solid #EEEEF0;
   }
 }
 
 .reply-avatar {
-  width: 56rpx;
-  height: 56rpx;
+  width: 48rpx;
+  height: 48rpx;
   border-radius: 50%;
   flex-shrink: 0;
+  background: #E5E5EA;
 }
 
 .reply-body {
@@ -2241,30 +2322,23 @@ $text-secondary: #86868B;
   display: flex;
   align-items: center;
   gap: 8rpx;
-  margin-bottom: 8rpx;
+  margin-bottom: 4rpx;
   flex-wrap: wrap;
 }
 
 .reply-username {
-  font-size: 26rpx;
+  font-size: 24rpx;
   font-weight: 600;
   color: $text-primary;
 }
 
 .reply-to {
-  font-size: 24rpx;
+  font-size: 22rpx;
   color: $text-secondary;
 }
 
 .reply-to-name {
-  font-size: 24rpx;
   color: $primary-color;
-}
-
-.reply-time {
-  font-size: 22rpx;
-  color: $text-secondary;
-  margin-left: auto;
 }
 
 .reply-content {
@@ -2272,42 +2346,23 @@ $text-secondary: #86868B;
   color: $text-primary;
   line-height: 1.5;
   display: block;
-  margin-bottom: 12rpx;
+  margin-bottom: 8rpx;
+  word-break: break-all;
 }
 
 .reply-actions {
   display: flex;
-  gap: 24rpx;
-}
-
-// 展开更多回复
-.expand-replies {
-  display: flex;
   align-items: center;
-  gap: 8rpx;
-  padding: 16rpx 0;
-  
-  &:active {
-    opacity: 0.7;
-  }
+  gap: 20rpx;
 }
 
-.expand-text {
-  font-size: 26rpx;
-  color: $primary-color;
-}
-
-.expand-arrow {
+.reply-time {
   font-size: 20rpx;
-  color: $primary-color;
+  color: $text-secondary;
 }
 
-// 加载更多评论
-.load-more-comments {
-  display: flex;
-  justify-content: center;
-  padding: 24rpx 0;
-  margin-top: 16rpx;
+.load-more-replies {
+  padding: 12rpx 0 4rpx;
 
   &:active {
     opacity: 0.7;
@@ -2315,48 +2370,180 @@ $text-secondary: #86868B;
 }
 
 .load-more-text {
-  font-size: 28rpx;
+  font-size: 24rpx;
   color: $primary-color;
-  font-weight: 500;
 }
 
-// 评论输入栏
-.comment-input-bar {
+.no-comments {
+  padding: 60rpx 0;
+  text-align: center;
+}
+
+.no-comments-text {
+  font-size: 28rpx;
+  color: $text-secondary;
+}
+
+// 底部按钮
+.bottom-bar {
   position: fixed;
   left: 0;
   right: 0;
   bottom: 0;
   display: flex;
-  align-items: center;
   gap: 16rpx;
-  padding: 16rpx 32rpx;
-  padding-bottom: calc(16rpx + env(safe-area-inset-bottom));
-  background: $card-bg;
-  border-top: 1rpx solid #E5E5EA;
-  z-index: 100;
-  transition: all 0.3s ease;
+  padding: 24rpx 32rpx;
+  padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  z-index: 900;
+}
 
-  &.focus {
-    box-shadow: 0 -8rpx 32rpx rgba(0, 0, 0, 0.1);
+.bottom-comment-btn {
+  width: 100rpx;
+  height: 100rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #F5F5F7;
+  border-radius: 50rpx;
+  border: 2rpx solid #E5E5EA;
+
+  &:active {
+    transform: scale(0.96);
+    opacity: 0.7;
   }
 }
 
-.input-wrapper {
+.bottom-comment-icon {
+  font-size: 40rpx;
+}
+
+.footprint-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4rpx;
+  min-width: 140rpx;
+  padding: 12rpx 24rpx;
+  background: #F5F5F7;
+  border-radius: 50rpx;
+  border: 2rpx solid #E5E5EA;
+  transition: all 0.2s ease;
+
+  &.lit {
+    background: #E8F5E9;
+    border-color: #4CAF50;
+  }
+
+  &:active {
+    transform: scale(0.96);
+  }
+}
+
+.footprint-icon {
+  font-size: 28rpx;
+}
+
+.footprint-text {
+  font-size: 20rpx;
+  font-weight: 500;
+  color: #86868B;
+
+  .lit & {
+    color: #2E7D32;
+  }
+}
+
+.start-btn {
   flex: 1;
-  padding: 20rpx 28rpx;
+  height: 100rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #FF7043, #FF5722);
+  border-radius: 50rpx;
+  box-shadow: 0 8rpx 24rpx rgba(255, 87, 34, 0.3);
+  transition: all 0.2s ease;
+
+  &:active {
+    transform: scale(0.98);
+    box-shadow: 0 4rpx 16rpx rgba(255, 87, 34, 0.3);
+  }
+}
+
+.start-text {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #FFFFFF;
+}
+
+// 评论输入弹层
+.comment-input-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 950;
+}
+
+.comment-input-popup {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: $card-bg;
+  border-top-left-radius: 24rpx;
+  border-top-right-radius: 24rpx;
+  z-index: 960;
+  padding: 24rpx 32rpx;
+  padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
+  transform: translateY(100%);
+  transition: transform 0.3s ease;
+
+  &.show {
+    transform: translateY(0);
+  }
+}
+
+.input-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.comment-input {
+  flex: 1;
+  height: 72rpx;
+  padding: 0 24rpx;
+  font-size: 28rpx;
+  color: $text-primary;
   background: $bg-color;
   border-radius: 100rpx;
   border: 2rpx solid #E5E5EA;
 }
 
-.comment-input {
-  width: 100%;
-  font-size: 28rpx;
-  color: $text-primary;
+.emoji-toggle {
+  width: 72rpx;
+  height: 72rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:active {
+    opacity: 0.7;
+  }
+}
+
+.emoji-icon {
+  font-size: 40rpx;
 }
 
 .send-btn {
-  padding: 20rpx 32rpx;
+  padding: 16rpx 28rpx;
   background: #E5E5EA;
   border-radius: 100rpx;
   transition: all 0.2s ease;
@@ -2378,5 +2565,45 @@ $text-secondary: #86868B;
 
 .send-btn.active .send-text {
   color: #FFFFFF;
+}
+
+// 表情选择器
+.emoji-picker {
+  margin-top: 12rpx;
+  border-top: 1rpx solid #E5E5EA;
+}
+
+.emoji-scroll {
+  max-height: 360rpx;
+}
+
+.emoji-grid {
+  display: flex;
+  flex-wrap: wrap;
+  padding: 16rpx 0;
+}
+
+.emoji-item {
+  width: 80rpx;
+  height: 80rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:active {
+    background: $bg-color;
+    border-radius: 16rpx;
+  }
+}
+
+.emoji-text {
+  font-size: 40rpx;
+}
+
+// 评论区收起/展开
+.section-toggle {
+  font-size: 24rpx;
+  color: $text-secondary;
+  margin-left: auto;
 }
 </style>
