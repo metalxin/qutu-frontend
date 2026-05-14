@@ -262,8 +262,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
-import type { AIRoute, RouteSpot, DaySchedule } from '@/api/modules/planning'
-import { saveRoute } from '@/api/modules/planning'
+import type { AIRoute, RouteSpot, DaySchedule } from '../../api/planning'
+import { saveRoute } from '../../api/planning'
 import { createChecklist } from '@/api'
 
 // 状态栏高度

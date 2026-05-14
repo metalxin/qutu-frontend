@@ -158,7 +158,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { getCollections, getCollectionGroups } from '@/api'
+import { getCollections, getCollectionGroups } from '../../api/collect'
 
 // 状态栏高度
 const statusBarHeight = ref(0)

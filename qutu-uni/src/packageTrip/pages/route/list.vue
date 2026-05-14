@@ -117,9 +117,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import SFIcon from '@/components/SFIcon/SFIcon.vue'
-import { getRouteRecords, deleteRouteRecord } from '@/api'
+import { getRouteRecords, deleteRouteRecord, type RouteRecord } from '../../api/route'
 import { resolveFileUrl } from '@/api/modules/user'
-import type { RouteRecord } from '@/api'
 
 const records = ref<RouteRecord[]>([])
 const loading = ref(false)

@@ -342,9 +342,8 @@ import { onShow } from '@dcloudio/uni-app'
 import { onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
 import SFIcon from '@/components/SFIcon/SFIcon.vue'
 import { getGuideDetail, toggleGuideCollect, checkGuideFavorite, type GuideDetail as GuideDetailType, type GuideDay } from '@/api'
-import { generateAIRoute, getPreferenceOptions, getTransportModes } from '@/api/modules/planning'
-import type { PreferenceOption, TransportMode } from '@/api/modules/planning'
-import { generateGuidePoster, saveImageToAlbum, copyShareLink, trackShare } from '@/utils/share'
+import { generateAIRoute, getPreferenceOptions, getTransportModes, type PreferenceOption, type TransportMode } from '../../api/planning'
+import { generateGuidePoster, saveImageToAlbum, copyShareLink, trackShare } from '../../utils/share'
 
 const instance = getCurrentInstance()
 

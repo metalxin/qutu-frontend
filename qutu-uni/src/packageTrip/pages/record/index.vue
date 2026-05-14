@@ -227,8 +227,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import SFIcon from '@/components/SFIcon/SFIcon.vue'
-import { saveRouteRecord, uploadRoutePhoto } from '@/api'
-import type { RoutePhoto, RoutePoint } from '@/api'
+import { saveRouteRecord, uploadRoutePhoto, type RoutePhoto, type RoutePoint } from '../../api/route'
 import { getUserSettings } from '@/api'
 
 interface ActivityType {

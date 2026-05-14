@@ -56,8 +56,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { getNotificationList, getUnreadCount as getNotificationUnreadCount, markNotificationRead, markAllNotificationRead } from '@/api/modules/notification'
-import type { NotificationItem } from '@/api/modules/notification'
+import { getNotificationList, getUnreadCount as getNotificationUnreadCount, markNotificationRead, markAllNotificationRead, type NotificationItem } from '../../api/notification'
 import { notificationWs } from '@/api/modules/notification-ws'
 
 const statusBarHeight = ref(0)

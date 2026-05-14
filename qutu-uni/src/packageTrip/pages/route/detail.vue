@@ -222,8 +222,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { getRouteDetail } from '@/api'
-import type { RouteDetail } from '@/api'
+import { getRouteDetail, type RouteDetail } from '../../api/route'
 
 const routeDetail = ref<RouteDetail | null>(null)
 const loading = ref(true)

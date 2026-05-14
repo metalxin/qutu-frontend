@@ -1,13 +1,11 @@
-// 采集模块 API
-import { get, post, put, del } from '../request'
+import { get, post, put, del } from '@/api/request'
 import {
   mockCollections,
   mockCollectionGroups,
   mockCollectionDetail,
   mockCollectionStats
-} from '../mock/collect'
+} from './mock/collect'
 
-// 类型定义
 export interface Collection {
   id: number
   title: string
@@ -47,7 +45,6 @@ export interface CollectionStats {
   locations: Array<{ type: string; name: string; count: number }>
 }
 
-// 获取采集列表
 export const getCollections = async (params?: {
   groupId?: number
   location?: string
@@ -62,7 +59,6 @@ export const getCollections = async (params?: {
   }
 }
 
-// 获取采集分组列表
 export const getCollectionGroups = async (): Promise<CollectionGroup[]> => {
   try {
     return await get<CollectionGroup[]>('/collect/groups')
@@ -72,7 +68,6 @@ export const getCollectionGroups = async (): Promise<CollectionGroup[]> => {
   }
 }
 
-// 获取采集详情
 export const getCollectionDetail = async (id: number): Promise<CollectionDetail | null> => {
   try {
     return await get<CollectionDetail>(`/collect/detail/${id}`)
@@ -82,7 +77,6 @@ export const getCollectionDetail = async (id: number): Promise<CollectionDetail 
   }
 }
 
-// 获取采集统计
 export const getCollectionStats = async (): Promise<CollectionStats> => {
   try {
     return await get<CollectionStats>('/collect/stats')
@@ -92,7 +86,6 @@ export const getCollectionStats = async (): Promise<CollectionStats> => {
   }
 }
 
-// 创建采集
 export const createCollection = async (data: {
   image: string
   title?: string
@@ -119,7 +112,6 @@ export const createCollection = async (data: {
   }
 }
 
-// 更新采集
 export const updateCollection = async (id: number, data: Partial<CollectionDetail>): Promise<boolean> => {
   try {
     await put(`/collect/update/${id}`, data)
@@ -130,7 +122,6 @@ export const updateCollection = async (id: number, data: Partial<CollectionDetai
   }
 }
 
-// 删除采集
 export const deleteCollection = async (id: number): Promise<boolean> => {
   try {
     await del(`/collect/delete/${id}`)
@@ -141,7 +132,6 @@ export const deleteCollection = async (id: number): Promise<boolean> => {
   }
 }
 
-// 创建分组
 export const createCollectionGroup = async (name: string): Promise<CollectionGroup> => {
   try {
     return await post<CollectionGroup>('/collect/group/create', { name })
@@ -155,7 +145,6 @@ export const createCollectionGroup = async (name: string): Promise<CollectionGro
   }
 }
 
-// 删除分组
 export const deleteCollectionGroup = async (id: number): Promise<boolean> => {
   try {
     await del(`/collect/group/delete/${id}`)
@@ -166,7 +155,6 @@ export const deleteCollectionGroup = async (id: number): Promise<boolean> => {
   }
 }
 
-// AI 识别图片
 export const recognizeImage = async (imagePath: string): Promise<{
   title: string
   description: string

@@ -151,7 +151,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, getCurrentInstance } from 'vue'
 import { onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
-import { generateStoryPoster, saveImageToAlbum, copyShareLink, trackShare } from '@/utils/share'
+import { generateStoryPoster, saveImageToAlbum, copyShareLink, trackShare } from '../../utils/share'
 
 const instance = getCurrentInstance()
 

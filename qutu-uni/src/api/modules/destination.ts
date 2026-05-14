@@ -11,7 +11,7 @@ import {
   mockHotCities,
   mockComments 
 } from '../mock/destination'
-import { mockSpotDatabase } from '../mock/planning'
+import { mockSpotDatabase } from '../mock/destination'
 
 // 类型定义
 export interface Destination {

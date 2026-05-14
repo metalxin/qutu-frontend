@@ -1,8 +1,4 @@
-/**
- * 规划模块 API
- */
-
-import { get, post } from '../request'
+import { get, post } from '@/api/request'
 import {
   mockPlanningCities,
   mockPreferenceOptions,
@@ -10,7 +6,7 @@ import {
   mockSpotDatabase,
   mockRestaurants,
   mockHotels
-} from '../mock/planning'
+} from './mock/planning'
 
 export interface SpotInfo {
   id: number

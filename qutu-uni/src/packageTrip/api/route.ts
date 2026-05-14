@@ -1,5 +1,5 @@
-import { request, get, post, put, del } from '../request'
-import { mockRouteRecords, mockRouteDetail } from '../mock/route'
+import { request, get, post, put, del } from '@/api/request'
+import { mockRouteRecords, mockRouteDetail } from './mock/route'
 
 export interface RoutePoint {
   latitude: number
@@ -39,6 +39,7 @@ export interface RouteRecord {
   endLng: number
   mapStyle: string
   createTime: string
+  remark?: string
 }
 
 export interface RouteDetail extends RouteRecord {
@@ -48,7 +49,6 @@ export interface RouteDetail extends RouteRecord {
 
 export async function getRouteRecords(params?: { page?: number; pageSize?: number }) {
   try {
-    // request() 已自动解包 R.data，返回的就是 Page<RouteRecordVO>
     const res = await request<any>({
       url: '/admin/route/records',
       method: 'GET',
@@ -62,7 +62,6 @@ export async function getRouteRecords(params?: { page?: number; pageSize?: numbe
         total: mockRouteRecords.length
       }
     })
-    // res 已经是 Page 对象：{ records: [...], total: N }
     const records = res?.records || res?.list || (Array.isArray(res) ? res : [])
     const total = res?.total ?? records.length
     return { list: records as RouteRecord[], total }
@@ -73,7 +72,6 @@ export async function getRouteRecords(params?: { page?: number; pageSize?: numbe
 
 export async function getRouteDetail(id: number): Promise<RouteDetail> {
   try {
-    // request() 已自动解包 R.data，返回的就是 RouteDetailVO 本身
     const res = await request<any>({
       url: `/admin/route/records/${id}`,
       method: 'GET',
@@ -101,10 +99,8 @@ export async function saveRouteRecord(data: {
   mapStyle: string
   remark?: string
 }): Promise<RouteRecord> {
-  // 后端时间格式要求：yyyy-MM-dd HH:mm:ss
   const formatTime = (isoStr: string) => {
     if (!isoStr) return isoStr
-    // 已经是目标格式
     if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(isoStr)) return isoStr
     const d = new Date(isoStr)
     if (isNaN(d.getTime())) return isoStr
@@ -123,7 +119,6 @@ export async function saveRouteRecord(data: {
   }
 
   try {
-    // request() 已自动解包 R.data
     const res = await request<any>({
       url: '/admin/route/records',
       method: 'POST',
@@ -159,7 +154,6 @@ export async function saveRouteRecord(data: {
 
 export async function deleteRouteRecord(id: number): Promise<boolean> {
   try {
-    // request() 已自动解包 R.data，返回 true/false
     const res = await request<any>({
       url: `/admin/route/records/${id}`,
       method: 'DELETE',

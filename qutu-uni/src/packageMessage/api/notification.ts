@@ -1,4 +1,4 @@
-import { request } from '../request'
+import { request } from '@/api/request'
 
 export interface NotificationItem {
   id: number
@@ -15,9 +15,6 @@ export interface NotificationItem {
   createdAt: string
 }
 
-/**
- * 获取通知列表（已发布）- C端接口
- */
 export function getNotificationList(params?: { current?: number; size?: number; userId?: number }) {
   return request<{ records: NotificationItem[]; total: number }>({
     url: '/admin/notification/list',
@@ -27,9 +24,6 @@ export function getNotificationList(params?: { current?: number; size?: number; 
   })
 }
 
-/**
- * 获取未读通知数量
- */
 export function getUnreadCount(userId: number) {
   return request<number>({
     url: '/admin/notification/unread-count',
@@ -39,9 +33,6 @@ export function getUnreadCount(userId: number) {
   })
 }
 
-/**
- * 标记单条通知已读
- */
 export function markNotificationRead(id: number, userId: number) {
   return request<boolean>({
     url: `/admin/notification/${id}/read?userId=${userId}`,
@@ -50,9 +41,6 @@ export function markNotificationRead(id: number, userId: number) {
   })
 }
 
-/**
- * 全部标记已读
- */
 export function markAllNotificationRead(userId: number) {
   return request<boolean>({
     url: `/admin/notification/read-all?userId=${userId}`,

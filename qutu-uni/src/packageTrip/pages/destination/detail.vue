@@ -449,12 +449,12 @@ import { onPageScroll, onShow, onShareAppMessage, onShareTimeline } from '@dclou
 import SFIcon from '@/components/SFIcon/SFIcon.vue'
 import { getSpotDetail, getSpotComments, getUserFavoriteSpots, postComment, replyComment, likeComment as likeCommentApi, unlikeComment as unlikeCommentApi, deleteComment as deleteCommentApi, favoriteSpot, unfavoriteSpot, createChecklist, createFootprintRecord, getFootprintRecords } from '@/api'
 import { getRelatedGuides } from '@/api/modules/guide'
-import { generateAIRoute, getPreferenceOptions, getTransportModes } from '@/api/modules/planning'
+import { generateAIRoute, getPreferenceOptions, getTransportModes } from '../../api/planning'
 import type { SpotDetail, Comment, Reply } from '@/api/modules/destination'
 import type { RelatedGuide } from '@/api/modules/guide'
-import type { AIRoute, PreferenceOption, TransportMode } from '@/api/modules/planning'
-import { buildShareConfig, copyShareLink, generateAndSavePoster, saveImageToAlbum, shareToWechatFriend, shareToMoments } from '@/utils/share'
-import type { PosterConfig } from '@/utils/share'
+import type { AIRoute, PreferenceOption, TransportMode } from '../../api/planning'
+import { buildShareConfig, copyShareLink, generateAndSavePoster, saveImageToAlbum, shareToWechatFriend, shareToMoments } from '../../utils/share'
+import type { PosterConfig } from '../../utils/share'
 
 // 加载状态
 const loading = ref(false)

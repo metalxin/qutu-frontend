@@ -229,7 +229,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import SFIcon from '@/components/SFIcon/SFIcon.vue'
-import { getPlanningSettings, generatePlanningRoute, getCityList } from '@/api'
+import { getPlanningSettings, generatePlanningRoute, getCityList } from '../../api/planning'
 import { getRegionGroups } from '@/api'
 
 // 状态栏高度
