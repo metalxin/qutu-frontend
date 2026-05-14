@@ -264,7 +264,7 @@ import { ref, computed, onMounted } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import type { AIRoute, RouteSpot, DaySchedule } from '../../api/planning'
 import { saveRoute } from '../../api/planning'
-import { createChecklist } from '@/api'
+import { generateAIRoute } from '@/api'
 
 // 状态栏高度
 const statusBarHeight = ref(44)
@@ -402,27 +402,20 @@ async function saveAndStart() {
   }
 }
 
-async function createChecklistFromPlan() {
+function createChecklistFromPlan() {
   if (!route.value) return
   const today = new Date()
   const endDate = new Date(today)
   endDate.setDate(today.getDate() + (route.value.days || 1) - 1)
   const formatDate = (d: Date) => d.toISOString().slice(0, 10)
 
-  try {
-    const checklistId = await createChecklist({
-      title: (route.value.name || route.value.endCity || '') + '之旅',
-      destination: route.value.endCity || '',
-      departDate: formatDate(today),
-      returnDate: formatDate(endDate)
-    })
-    uni.showToast({ title: '清单创建成功', icon: 'success' })
-    setTimeout(() => {
-      uni.navigateTo({ url: `/packageChecklist/pages/checklist/detail?id=${checklistId}` })
-    }, 500)
-  } catch (error) {
-    uni.showToast({ title: '创建清单失败', icon: 'none' })
-  }
+  const params = [
+    `name=${encodeURIComponent((route.value.name || route.value.endCity || '') + '之旅')}`,
+    `destination=${encodeURIComponent(route.value.endCity || '')}`,
+    `departDate=${formatDate(today)}`,
+    `returnDate=${formatDate(endDate)}`
+  ].join('&')
+  uni.navigateTo({ url: `/pages/checklist/index?${params}` })
 }
 </script>
 

@@ -117,6 +117,7 @@
             :class="{ active: preference === 'auto' }"
             @tap="preference = 'auto'"
           >
+            <text class="preference-icon">✨</text>
             <text class="preference-text">自动推荐</text>
           </view>
           <view 
@@ -124,6 +125,7 @@
             :class="{ active: preference === 'spots' }"
             @tap="preference = 'spots'"
           >
+            <text class="preference-icon">🏔️</text>
             <text class="preference-text">只规划景点</text>
           </view>
         </view>
@@ -602,9 +604,9 @@ const generateRoute = async () => {
 
 <style lang="scss" scoped>
 $primary-color: #00C9A7;
-$primary-light: #E3F9F5;
+$primary-light: rgba(0, 201, 167, 0.12);
 $bg-color: #F5F5F7;
-$card-bg: #FFFFFF;
+$card-bg: rgba(255, 255, 255, 0.72);
 $text-primary: #1D1D1F;
 $text-secondary: #86868B;
 
@@ -624,9 +626,12 @@ $text-secondary: #86868B;
   align-items: center;
   justify-content: space-between;
   padding: 16rpx 32rpx;
-  background: $card-bg;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   z-index: 100;
   box-sizing: border-box;
+  border-bottom: 1rpx solid rgba(0, 0, 0, 0.06);
 }
 
 .nav-back {
@@ -654,11 +659,24 @@ $text-secondary: #86868B;
 
 // 头部横幅
 .header-banner {
-  background: linear-gradient(135deg, #007AFF 0%, #5AC8FA 50%, #34C759 100%);
+  background: linear-gradient(135deg, #00C9A7 0%, #00B4D8 50%, #48CAE4 100%);
   padding: 56rpx 32rpx 72rpx;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.header-banner::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 300rpx;
+  height: 300rpx;
+  background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%);
+  border-radius: 50%;
 }
 
 .banner-content {
@@ -719,9 +737,12 @@ $text-secondary: #86868B;
 .location-card {
   margin: -48rpx 24rpx 28rpx;
   background: $card-bg;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-radius: 32rpx;
   padding: 12rpx 0;
-  box-shadow: 0 8rpx 40rpx rgba(0, 0, 0, 0.12);
+  box-shadow: 0 8rpx 40rpx rgba(0, 0, 0, 0.08);
+  border: 1rpx solid rgba(255, 255, 255, 0.6);
   position: relative;
   z-index: 10;
 }
@@ -730,7 +751,7 @@ $text-secondary: #86868B;
   display: flex;
   align-items: center;
   padding: 32rpx 36rpx;
-  border-bottom: 1rpx solid #F0F0F5;
+  border-bottom: 1rpx solid rgba(0, 0, 0, 0.06);
   position: relative;
   transition: background-color 0.2s ease;
 
@@ -753,27 +774,27 @@ $text-secondary: #86868B;
 .location-tag {
   width: 48rpx;
   height: 48rpx;
-  border-radius: 8rpx;
+  border-radius: 12rpx;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-right: 20rpx;
 
   &.start {
-    background: $primary-color;
+    background: linear-gradient(135deg, #00C9A7 0%, #00B4D8 100%);
   }
 
   &.end {
-    background: #FF6B6B;
+    background: linear-gradient(135deg, #FF6B6B 0%, #FF8E8E 100%);
   }
 
   &.add {
-    background: $primary-light;
+    background: rgba(0, 201, 167, 0.12);
     border: 2rpx dashed $primary-color;
   }
 
   &.waypoint {
-    background: #FFB800;
+    background: linear-gradient(135deg, #FFB800 0%, #FFD60A 100%);
   }
 }
 
@@ -822,9 +843,12 @@ $text-secondary: #86868B;
 .settings-card {
   margin: 0 24rpx 28rpx;
   background: $card-bg;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-radius: 32rpx;
   padding: 36rpx;
-  box-shadow: 0 8rpx 40rpx rgba(0, 0, 0, 0.12);
+  box-shadow: 0 8rpx 40rpx rgba(0, 0, 0, 0.08);
+  border: 1rpx solid rgba(255, 255, 255, 0.6);
 }
 
 .settings-header {
@@ -837,7 +861,7 @@ $text-secondary: #86868B;
 .header-indicator {
   width: 6rpx;
   height: 32rpx;
-  background: $primary-color;
+  background: linear-gradient(180deg, #00C9A7 0%, #00B4D8 100%);
   border-radius: 3rpx;
 }
 
@@ -874,9 +898,12 @@ $text-secondary: #86868B;
   display: flex;
   align-items: center;
   gap: 24rpx;
-  background: $bg-color;
+  background: rgba(245, 245, 247, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   padding: 12rpx 24rpx;
   border-radius: 24rpx;
+  border: 1rpx solid rgba(255, 255, 255, 0.5);
 }
 
 .day-btn {
@@ -889,8 +916,11 @@ $text-secondary: #86868B;
   transition: all 0.2s ease;
 
   &.minus {
-    background: #FFFFFF;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.06);
+    border: 1rpx solid rgba(255, 255, 255, 0.6);
     
     .btn-icon {
       color: $text-primary;
@@ -898,8 +928,8 @@ $text-secondary: #86868B;
   }
 
   &.plus {
-    background: $primary-color;
-    box-shadow: 0 4rpx 12rpx rgba(0, 122, 255, 0.25);
+    background: linear-gradient(135deg, #00C9A7 0%, #00B4D8 100%);
+    box-shadow: 0 4rpx 12rpx rgba(0, 201, 167, 0.25);
     
     .btn-icon {
       color: #FFFFFF;
@@ -944,15 +974,20 @@ $text-secondary: #86868B;
   flex: 1;
   padding: 24rpx 32rpx;
   border-radius: 20rpx;
-  border: 2rpx solid #E5E5EA;
-  background: $card-bg;
+  border: 1rpx solid rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   transition: all 0.2s ease;
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8rpx;
 
   &.active {
     border-color: $primary-color;
     background: $primary-light;
-    box-shadow: 0 4rpx 12rpx rgba(0, 122, 255, 0.15);
+    box-shadow: 0 4rpx 12rpx rgba(0, 201, 167, 0.15);
   }
 
   &:active {
@@ -960,9 +995,15 @@ $text-secondary: #86868B;
   }
 }
 
+.preference-icon {
+  font-size: 36rpx;
+  line-height: 1;
+}
+
 .preference-text {
-  font-size: 28rpx;
+  font-size: 26rpx;
   color: $text-primary;
+  white-space: nowrap;
 
   .preference-btn.active & {
     color: $primary-color;
@@ -978,18 +1019,21 @@ $text-secondary: #86868B;
   bottom: 0;
   padding: 24rpx 32rpx;
   padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
-  background: $bg-color;
+  background: rgba(245, 245, 247, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1rpx solid rgba(0, 0, 0, 0.06);
 }
 
 .generate-btn {
   width: 100%;
   height: 100rpx;
-  background: $primary-color;
+  background: linear-gradient(135deg, #00C9A7 0%, #00B4D8 100%);
   border-radius: 50rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8rpx 24rpx rgba(0, 122, 255, 0.3);
+  box-shadow: 0 8rpx 24rpx rgba(0, 201, 167, 0.3);
   transition: all 0.2s ease;
 
   &:active {
@@ -1021,13 +1065,16 @@ $text-secondary: #86868B;
   right: 0;
   bottom: 0;
   height: 85vh;
-  background: $card-bg;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-radius: 40rpx 40rpx 0 0;
   z-index: 999;
   display: flex;
   flex-direction: column;
   transform: translateY(100%);
   transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+  border-top: 1rpx solid rgba(255, 255, 255, 0.6);
 
   &.popup-show {
     transform: translateY(0);
@@ -1070,9 +1117,11 @@ $text-secondary: #86868B;
   gap: 16rpx;
   margin: 0 40rpx 32rpx;
   padding: 24rpx 32rpx;
-  background: $bg-color;
+  background: rgba(245, 245, 247, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border-radius: 20rpx;
-  border: 2rpx solid #E5E5EA;
+  border: 1rpx solid rgba(0, 0, 0, 0.06);
 }
 
 .popup-search-icon {
@@ -1130,13 +1179,15 @@ $text-secondary: #86868B;
 
 .region-tag {
   padding: 20rpx 36rpx;
-  background: $bg-color;
+  background: rgba(245, 245, 247, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border-radius: 16rpx;
-  border: 2rpx solid transparent;
+  border: 1rpx solid rgba(0, 0, 0, 0.06);
   transition: all 0.2s ease;
 
   &.selected {
-    background: rgba(0, 122, 255, 0.1);
+    background: rgba(0, 201, 167, 0.12);
     border-color: $primary-color;
   }
 
@@ -1162,8 +1213,10 @@ $text-secondary: #86868B;
   gap: 24rpx;
   padding: 24rpx 40rpx;
   padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
-  background: $card-bg;
-  border-top: 1rpx solid #E5E5EA;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1rpx solid rgba(0, 0, 0, 0.06);
 }
 
 .footer-back {
@@ -1171,7 +1224,10 @@ $text-secondary: #86868B;
   align-items: center;
   gap: 8rpx;
   padding: 24rpx 32rpx;
-  background: $bg-color;
+  background: rgba(245, 245, 247, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1rpx solid rgba(0, 0, 0, 0.06);
   border-radius: 100rpx;
 }
 
@@ -1191,8 +1247,9 @@ $text-secondary: #86868B;
   align-items: center;
   justify-content: center;
   padding: 28rpx 40rpx;
-  background: $primary-color;
+  background: linear-gradient(135deg, #00C9A7 0%, #00B4D8 100%);
   border-radius: 100rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 201, 167, 0.25);
 }
 
 .confirm-text {
@@ -1218,11 +1275,14 @@ $text-secondary: #86868B;
 .generating-card {
   width: 560rpx;
   padding: 60rpx 40rpx;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-radius: 32rpx;
   display: flex;
   flex-direction: column;
   align-items: center;
+  border: 1rpx solid rgba(255, 255, 255, 0.6);
 }
 
 .ai-brain {

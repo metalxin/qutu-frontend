@@ -759,6 +759,20 @@ onMounted(() => {
 
   loadChecklists()
   isFirstLoad.value = false
+
+  // 检查是否有预填参数（从景点详情/规划页跳转过来）
+  const pages = getCurrentPages()
+  const currentPage = pages[pages.length - 1] as any
+  const options = currentPage?.options || {}
+  if (options.name || options.destination) {
+    formData.value = {
+      name: decodeURIComponent(options.name || ''),
+      destination: decodeURIComponent(options.destination || ''),
+      startDate: options.departDate || '',
+      endDate: options.returnDate || ''
+    }
+    showAddPopup.value = true
+  }
 })
 
 onShow(() => {

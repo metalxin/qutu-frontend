@@ -264,9 +264,6 @@
 
         <!-- 标题区域 -->
         <view class="sheet-header">
-          <view class="header-icon">
-            <text class="icon-emoji">🚀</text>
-          </view>
           <view class="header-info">
             <text class="header-title">开始旅程</text>
             <text class="header-subtitle">目的地: {{ spotInfo.name }} · {{ spotInfo.locationTitle }}</text>
@@ -447,7 +444,7 @@
 import { ref, onMounted, computed, getCurrentInstance, nextTick } from 'vue'
 import { onPageScroll, onShow, onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
 import SFIcon from '@/components/SFIcon/SFIcon.vue'
-import { getSpotDetail, getSpotComments, getUserFavoriteSpots, postComment, replyComment, likeComment as likeCommentApi, unlikeComment as unlikeCommentApi, deleteComment as deleteCommentApi, favoriteSpot, unfavoriteSpot, createChecklist, createFootprintRecord, getFootprintRecords } from '@/api'
+import { getSpotDetail, getSpotComments, getUserFavoriteSpots, postComment, replyComment, likeComment as likeCommentApi, unlikeComment as unlikeCommentApi, deleteComment as deleteCommentApi, favoriteSpot, unfavoriteSpot, createFootprintRecord, getFootprintRecords } from '@/api'
 import { getRelatedGuides } from '@/api/modules/guide'
 import { generateAIRoute, getPreferenceOptions, getTransportModes } from '../../api/planning'
 import type { SpotDetail, Comment, Reply } from '@/api/modules/destination'
@@ -893,27 +890,20 @@ const generateTrip = async () => {
   }
 }
 
-const createChecklistFromDestination = async () => {
+const createChecklistFromDestination = () => {
   const today = new Date()
   const endDate = new Date(today)
   endDate.setDate(today.getDate() + tripDays.value - 1)
   const formatDate = (d: Date) => d.toISOString().slice(0, 10)
 
-  try {
-    const checklistId = await createChecklist({
-      title: spotInfo.value.name + '之旅',
-      destination: spotInfo.value.locationTitle || spotInfo.value.name,
-      departDate: formatDate(today),
-      returnDate: formatDate(endDate)
-    })
-    showTripSheet.value = false
-    uni.showToast({ title: '清单创建成功', icon: 'success' })
-    setTimeout(() => {
-      uni.navigateTo({ url: `/packageChecklist/pages/checklist/detail?id=${checklistId}` })
-    }, 500)
-  } catch (error) {
-    uni.showToast({ title: '创建清单失败', icon: 'none' })
-  }
+  showTripSheet.value = false
+  const params = [
+    `name=${encodeURIComponent(spotInfo.value.name + '之旅')}`,
+    `destination=${encodeURIComponent(spotInfo.value.locationTitle || spotInfo.value.name)}`,
+    `departDate=${formatDate(today)}`,
+    `returnDate=${formatDate(endDate)}`
+  ].join('&')
+  uni.navigateTo({ url: `/pages/checklist/index?${params}` })
 }
 
 // 评论相关
@@ -1099,8 +1089,9 @@ const loadComments = async () => {
 
 <style lang="scss" scoped>
 $primary-color: #FF7043;
+$primary-light: rgba(255, 112, 67, 0.12);
 $bg-color: #F5F5F7;
-$card-bg: #FFFFFF;
+$card-bg: rgba(255, 255, 255, 0.72);
 $text-primary: #1D1D1F;
 $text-secondary: #86868B;
 
@@ -1202,9 +1193,12 @@ $text-secondary: #86868B;
   padding-bottom: calc(180rpx + env(safe-area-inset-bottom));
   margin-top: -40rpx;
   background: $card-bg;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-radius: 32rpx 32rpx 0 0;
   position: relative;
   z-index: 5;
+  border-top: 1rpx solid rgba(255, 255, 255, 0.6);
 }
 
 // 标题
@@ -1301,8 +1295,11 @@ $text-secondary: #86868B;
   display: flex;
   gap: 16rpx;
   padding: 24rpx;
-  background: $bg-color;
+  background: rgba(245, 245, 247, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border-radius: 16rpx;
+  border: 1rpx solid rgba(0, 0, 0, 0.06);
 }
 
 .info-icon {
@@ -1398,7 +1395,10 @@ $text-secondary: #86868B;
   display: flex;
   gap: 20rpx;
   padding: 20rpx;
-  background: $card-bg;
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1rpx solid rgba(255, 255, 255, 0.6);
   border-radius: 20rpx;
   box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.05);
   transition: transform 0.2s ease;
@@ -1480,8 +1480,11 @@ $text-secondary: #86868B;
   display: flex;
   gap: 16rpx;
   padding: 20rpx;
-  background: $bg-color;
+  background: rgba(245, 245, 247, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border-radius: 16rpx;
+  border: 1rpx solid rgba(0, 0, 0, 0.06);
 }
 
 .tip-icon {
@@ -1539,11 +1542,14 @@ $text-secondary: #86868B;
 }
 
 .trip-sheet-content {
-  background: #FFFFFF;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-radius: 32rpx 32rpx 0 0;
   padding-bottom: env(safe-area-inset-bottom);
   max-height: 85vh;
   overflow-y: auto;
+  border-top: 1rpx solid rgba(255, 255, 255, 0.6);
 }
 
 .sheet-handle {
@@ -1604,7 +1610,10 @@ $text-secondary: #86868B;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #F5F5F5;
+  background: rgba(245, 245, 247, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1rpx solid rgba(0, 0, 0, 0.06);
   border-radius: 50%;
 }
 
@@ -1653,14 +1662,16 @@ $text-secondary: #86868B;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #F5F5F7;
+  background: rgba(245, 245, 247, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border-radius: 16rpx;
-  border: 2rpx solid transparent;
+  border: 1rpx solid rgba(0, 0, 0, 0.06);
   transition: all 0.2s ease;
 
   &.active {
-    background: #FFF3E0;
-    border-color: #FF5722;
+    background: rgba(255, 112, 67, 0.12);
+    border-color: $primary-color;
   }
 }
 
@@ -1670,7 +1681,7 @@ $text-secondary: #86868B;
   color: #666;
 
   .day-item.active & {
-    color: #FF5722;
+    color: $primary-color;
     font-weight: 700;
   }
 }
@@ -1685,14 +1696,16 @@ $text-secondary: #86868B;
   display: flex;
   align-items: center;
   padding: 24rpx;
-  background: #F5F5F7;
+  background: rgba(245, 245, 247, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border-radius: 20rpx;
-  border: 2rpx solid transparent;
+  border: 1rpx solid rgba(0, 0, 0, 0.06);
   transition: all 0.2s ease;
 
   &.active {
-    background: #FFF3E0;
-    border-color: #FF5722;
+    background: rgba(255, 112, 67, 0.12);
+    border-color: $primary-color;
   }
 }
 
@@ -1700,10 +1713,9 @@ $text-secondary: #86868B;
   font-size: 28rpx;
   font-weight: 600;
   color: #333;
-  margin-right: 16rpx;
 
   .preference-item.active & {
-    color: #FF5722;
+    color: $primary-color;
   }
 }
 
@@ -1725,14 +1737,16 @@ $text-secondary: #86868B;
   align-items: center;
   gap: 8rpx;
   padding: 20rpx 0;
-  background: #F5F5F7;
+  background: rgba(245, 245, 247, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border-radius: 20rpx;
-  border: 2rpx solid transparent;
+  border: 1rpx solid rgba(0, 0, 0, 0.06);
   transition: all 0.2s ease;
 
   &.active {
-    background: #FFF3E0;
-    border-color: #FF5722;
+    background: rgba(255, 112, 67, 0.12);
+    border-color: $primary-color;
   }
 }
 
@@ -1745,7 +1759,7 @@ $text-secondary: #86868B;
   color: #666;
 
   .transport-item.active & {
-    color: #FF5722;
+    color: $primary-color;
     font-weight: 600;
   }
 }
@@ -1806,15 +1820,17 @@ $text-secondary: #86868B;
   align-items: center;
   justify-content: center;
   gap: 12rpx;
-  background: #FFFFFF;
-  border: 2rpx solid #E5E5EA;
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1rpx solid rgba(0, 0, 0, 0.08);
   border-radius: 50rpx;
   margin-top: 20rpx;
   transition: all 0.2s ease;
 
   &:active {
     transform: scale(0.98);
-    background: #F5F5F7;
+    background: rgba(245, 245, 247, 0.6);
   }
 }
 
@@ -1853,13 +1869,16 @@ $text-secondary: #86868B;
   left: 0;
   right: 0;
   bottom: 0;
-  background: $card-bg;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-radius: 32rpx 32rpx 0 0;
   padding: 32rpx;
   padding-bottom: calc(48rpx + env(safe-area-inset-bottom));
   z-index: 999;
   transform: translateY(100%);
   transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+  border-top: 1rpx solid rgba(255, 255, 255, 0.6);
 
   &.show {
     transform: translateY(0);
@@ -1885,7 +1904,10 @@ $text-secondary: #86868B;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: $bg-color;
+  background: rgba(245, 245, 247, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1rpx solid rgba(0, 0, 0, 0.06);
   border-radius: 50%;
 }
 
@@ -1899,8 +1921,11 @@ $text-secondary: #86868B;
   display: flex;
   gap: 20rpx;
   padding: 20rpx;
-  background: $bg-color;
+  background: rgba(245, 245, 247, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border-radius: 16rpx;
+  border: 1rpx solid rgba(0, 0, 0, 0.06);
   margin-bottom: 24rpx;
 }
 
@@ -1963,8 +1988,11 @@ $text-secondary: #86868B;
   align-items: center;
   justify-content: space-between;
   padding: 20rpx 24rpx;
-  background: $bg-color;
+  background: rgba(245, 245, 247, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border-radius: 12rpx;
+  border: 1rpx solid rgba(0, 0, 0, 0.06);
   margin-bottom: 32rpx;
 }
 

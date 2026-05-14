@@ -9,8 +9,8 @@ export let BASE_URL = 'https://api.sdstudio.cn'
 BASE_URL = ''
 // #endif
 // #ifdef MP-WEIXIN
-BASE_URL = 'https://api.sdstudio.cn'
-// BASE_URL = 'http://localhost:9999'
+// BASE_URL = 'https://api.sdstudio.cn'
+BASE_URL = 'http://localhost:9999'
 // #endif
 
 // H5 运行时兜底：确保走 Vite 代理，不直连远程地址

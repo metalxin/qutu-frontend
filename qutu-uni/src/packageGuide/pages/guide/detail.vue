@@ -161,9 +161,6 @@
 
         <!-- 标题区域 -->
         <view class="sheet-header">
-          <view class="header-icon">
-            <text class="icon-emoji">🚀</text>
-          </view>
           <view class="header-info">
             <text class="header-title">一键生成行程</text>
             <text class="header-subtitle">基于攻略: {{ guideDetail.title }}</text>
@@ -655,8 +652,9 @@ onMounted(() => {
 
 <style lang="scss" scoped>
 $primary-color: #00C853;
+$primary-light: rgba(0, 200, 83, 0.12);
 $bg-color: #F5F5F7;
-$card-bg: #FFFFFF;
+$card-bg: rgba(255, 255, 255, 0.72);
 $text-primary: #1D1D1F;
 $text-secondary: #86868B;
 $border-radius-lg: 24rpx;
@@ -729,6 +727,9 @@ $border-radius-md: 16rpx;
 .info-section {
   padding: 32rpx;
   background: $card-bg;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1rpx solid rgba(255, 255, 255, 0.6);
 }
 
 .guide-title {
@@ -812,6 +813,9 @@ $border-radius-md: 16rpx;
 
 .content-block {
   background: $card-bg;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1rpx solid rgba(255, 255, 255, 0.6);
   border-radius: $border-radius-lg;
   padding: 32rpx;
   margin-bottom: 24rpx;
@@ -913,16 +917,22 @@ $border-radius-md: 16rpx;
   color: $text-secondary;
   line-height: 1.7;
   padding: 16rpx 20rpx;
-  background: $bg-color;
+  background: rgba(245, 245, 247, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border-radius: $border-radius-md;
+  border: 1rpx solid rgba(0, 0, 0, 0.06);
   margin-bottom: 20rpx;
 }
 
 // 景点卡片
 .spot-card {
   padding: 24rpx;
-  background: $bg-color;
+  background: rgba(245, 245, 247, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border-radius: $border-radius-md;
+  border: 1rpx solid rgba(0, 0, 0, 0.06);
   margin-bottom: 20rpx;
 
   &:last-child {
@@ -1028,10 +1038,10 @@ $border-radius-md: 16rpx;
   gap: 20rpx;
   padding: 20rpx 32rpx;
   padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border-top: 1rpx solid rgba(0, 0, 0, 0.05);
+  border-top: 1rpx solid rgba(0, 0, 0, 0.06);
 }
 
 .action-btn {
@@ -1048,12 +1058,16 @@ $border-radius-md: 16rpx;
   }
 
   &.collect, &.share {
-    background: $bg-color;
+    background: rgba(245, 245, 247, 0.6);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1rpx solid rgba(0, 0, 0, 0.06);
   }
 
   &.primary {
     flex: 1;
-    background: $primary-color;
+    background: linear-gradient(135deg, #00C853, #00BFA5);
+    box-shadow: 0 4rpx 16rpx rgba(0, 200, 83, 0.25);
   }
 }
 
@@ -1096,13 +1110,16 @@ $border-radius-md: 16rpx;
   left: 0;
   right: 0;
   bottom: 0;
-  background: $card-bg;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-radius: 32rpx 32rpx 0 0;
   padding: 32rpx;
   padding-bottom: calc(48rpx + env(safe-area-inset-bottom));
   z-index: 999;
   transform: translateY(100%);
   transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+  border-top: 1rpx solid rgba(255, 255, 255, 0.6);
 
   &.show {
     transform: translateY(0);
@@ -1128,7 +1145,10 @@ $border-radius-md: 16rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: $bg-color;
+  background: rgba(245, 245, 247, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1rpx solid rgba(0, 0, 0, 0.06);
   border-radius: 50%;
 }
 
@@ -1142,8 +1162,11 @@ $border-radius-md: 16rpx;
   display: flex;
   gap: 20rpx;
   padding: 20rpx;
-  background: $bg-color;
+  background: rgba(245, 245, 247, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border-radius: 16rpx;
+  border: 1rpx solid rgba(0, 0, 0, 0.06);
   margin-bottom: 24rpx;
 }
 
@@ -1285,7 +1308,9 @@ $border-radius-md: 16rpx;
   right: 0;
   bottom: 0;
   top: 0;
-  background: $card-bg;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   z-index: 1001;
   display: flex;
   flex-direction: column;
@@ -1316,7 +1341,10 @@ $border-radius-md: 16rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: $bg-color;
+  background: rgba(245, 245, 247, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1rpx solid rgba(0, 0, 0, 0.06);
   border-radius: 50%;
 }
 
@@ -1343,8 +1371,10 @@ $border-radius-md: 16rpx;
   gap: 20rpx;
   padding: 32rpx;
   padding-bottom: calc(32rpx + env(safe-area-inset-bottom));
-  background: $card-bg;
-  border-top: 1rpx solid #E5E5EA;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1rpx solid rgba(0, 0, 0, 0.06);
 }
 
 .poster-save-btn {
@@ -1353,7 +1383,10 @@ $border-radius-md: 16rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: $bg-color;
+  background: rgba(245, 245, 247, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1rpx solid rgba(0, 0, 0, 0.06);
   border-radius: 50rpx;
 
   &:active {
@@ -1421,11 +1454,14 @@ $border-radius-md: 16rpx;
 }
 
 .trip-sheet-content {
-  background: #FFFFFF;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-radius: 32rpx 32rpx 0 0;
   padding-bottom: env(safe-area-inset-bottom);
   max-height: 85vh;
   overflow-y: auto;
+  border-top: 1rpx solid rgba(255, 255, 255, 0.6);
 }
 
 .sheet-handle {
@@ -1489,7 +1525,10 @@ $border-radius-md: 16rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #F5F5F5;
+  background: rgba(245, 245, 247, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1rpx solid rgba(0, 0, 0, 0.06);
   border-radius: 50%;
 }
 
@@ -1532,14 +1571,16 @@ $border-radius-md: 16rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #F5F5F7;
+  background: rgba(245, 245, 247, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border-radius: 16rpx;
-  border: 2rpx solid transparent;
+  border: 1rpx solid rgba(0, 0, 0, 0.06);
   transition: all 0.2s ease;
 
   &.active {
-    background: #E8F5E9;
-    border-color: #00C853;
+    background: rgba(0, 200, 83, 0.12);
+    border-color: $primary-color;
   }
 }
 
@@ -1549,7 +1590,7 @@ $border-radius-md: 16rpx;
   color: #666;
 
   .day-item.active & {
-    color: #00C853;
+    color: $primary-color;
     font-weight: 700;
   }
 }
@@ -1564,14 +1605,16 @@ $border-radius-md: 16rpx;
   display: flex;
   align-items: center;
   padding: 24rpx;
-  background: #F5F5F7;
+  background: rgba(245, 245, 247, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border-radius: 20rpx;
-  border: 2rpx solid transparent;
+  border: 1rpx solid rgba(0, 0, 0, 0.06);
   transition: all 0.2s ease;
 
   &.active {
-    background: #E8F5E9;
-    border-color: #00C853;
+    background: rgba(0, 200, 83, 0.12);
+    border-color: $primary-color;
   }
 }
 
@@ -1579,10 +1622,9 @@ $border-radius-md: 16rpx;
   font-size: 28rpx;
   font-weight: 600;
   color: #333;
-  margin-right: 16rpx;
 
   .preference-item.active & {
-    color: #00C853;
+    color: $primary-color;
   }
 }
 
@@ -1604,14 +1646,16 @@ $border-radius-md: 16rpx;
   align-items: center;
   gap: 8rpx;
   padding: 20rpx 0;
-  background: #F5F5F7;
+  background: rgba(245, 245, 247, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border-radius: 20rpx;
-  border: 2rpx solid transparent;
+  border: 1rpx solid rgba(0, 0, 0, 0.06);
   transition: all 0.2s ease;
 
   &.active {
-    background: #E8F5E9;
-    border-color: #00C853;
+    background: rgba(0, 200, 83, 0.12);
+    border-color: $primary-color;
   }
 }
 
@@ -1624,7 +1668,7 @@ $border-radius-md: 16rpx;
   color: #666;
 
   .transport-item.active & {
-    color: #00C853;
+    color: $primary-color;
     font-weight: 600;
   }
 }
