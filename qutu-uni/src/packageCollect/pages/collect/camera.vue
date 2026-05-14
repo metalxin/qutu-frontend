@@ -284,7 +284,7 @@ const openSystemCamera = () => {
       saveRecentPhoto(tempPath)
       // 跳转到编辑页面
       uni.navigateTo({
-        url: `/pages/collect/edit?image=${encodeURIComponent(tempPath)}`
+        url: `/packageCollect/pages/collect/edit?image=${encodeURIComponent(tempPath)}`
       })
     },
     fail: (err) => {
@@ -344,7 +344,7 @@ const takePhoto = () => {
         const tempPath = res.tempImagePath
         saveRecentPhoto(tempPath)
         uni.navigateTo({
-          url: `/pages/collect/edit?image=${encodeURIComponent(tempPath)}`
+          url: `/packageCollect/pages/collect/edit?image=${encodeURIComponent(tempPath)}`
         })
       },
       fail: (err) => {
@@ -378,7 +378,7 @@ const chooseFromAlbum = () => {
       const tempPath = res.tempFilePaths[0]
       saveRecentPhoto(tempPath)
       uni.navigateTo({
-        url: `/pages/collect/edit?image=${encodeURIComponent(tempPath)}`
+        url: `/packageCollect/pages/collect/edit?image=${encodeURIComponent(tempPath)}`
       })
     }
   })
@@ -398,7 +398,7 @@ const goBack = () => {
 // 前往设置
 const goToSettings = () => {
   uni.navigateTo({
-    url: '/pages/collect/settings'
+    url: '/packageCollect/pages/collect/settings'
   })
 }
 </script>

@@ -348,7 +348,7 @@ const saveCollection = async () => {
     setTimeout(() => {
       // 返回采集列表
       uni.redirectTo({
-        url: '/pages/collect/index'
+        url: '/packageCollect/pages/collect/index'
       })
     }, 1500)
   } catch (e) {

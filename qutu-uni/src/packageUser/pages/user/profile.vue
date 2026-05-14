@@ -403,11 +403,11 @@ const onWechatClick = () => {
 const goBack = () => { uni.navigateBack() }
 
 const goToFavoriteSpots = () => {
-  uni.navigateTo({ url: '/pages/user/favorites' })
+  uni.navigateTo({ url: '/packageUser/pages/user/favorites' })
 }
 
 const goToFavoriteGuides = () => {
-  uni.navigateTo({ url: '/pages/user/favorite-guides' })
+  uni.navigateTo({ url: '/packageUser/pages/user/favorite-guides' })
 }
 
 const navBarStyle = computed(() => {

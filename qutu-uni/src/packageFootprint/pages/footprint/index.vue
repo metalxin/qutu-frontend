@@ -283,16 +283,16 @@ const showActivityInfo = () => {
 }
 
 const goToRecords = () => {
-  uni.navigateTo({ url: '/pages/footprint/records' })
+  uni.navigateTo({ url: '/packageFootprint/pages/footprint/records' })
 }
 
 const goToMap = (type: string) => {
-  uni.navigateTo({ url: `/pages/footprint/map?type=${type}` })
+  uni.navigateTo({ url: `/packageFootprint/pages/footprint/map?type=${type}` })
 }
 
 const viewSpotDetail = (record: FootprintRecord) => {
   if (record.spotId) {
-    uni.navigateTo({ url: `/pages/destination/detail?id=${record.spotId}` })
+    uni.navigateTo({ url: `/packageTrip/pages/destination/detail?id=${record.spotId}` })
   }
 }
 

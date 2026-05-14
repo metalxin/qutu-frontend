@@ -639,9 +639,9 @@ const logoSrc = ref('/static/logo.png')
 
 // 功能入口数据
 const features = ref([
-  { id: 1, name: '时光采集', iconName: 'collection', iconColor: '#007AFF', bgColor: '#E3F2FD', path: '/pages/collect/camera' },
+  { id: 1, name: '时光采集', iconName: 'collection', iconColor: '#007AFF', bgColor: '#E3F2FD', path: '/packageCollect/pages/collect/camera' },
   { id: 2, name: '精选攻略', iconName: 'guide', iconColor: '#34C759', bgColor: '#E8F5E9', path: '/pages/guide/list' },
-  { id: 3, name: '智能规划', iconName: 'route', iconColor: '#34C759', bgColor: '#E8F5E9', path: '/pages/planning/index' },
+  { id: 3, name: '智能规划', iconName: 'route', iconColor: '#34C759', bgColor: '#E8F5E9', path: '/packageTrip/pages/planning/index' },
   { id: 4, name: '旅行故事', iconName: 'play', iconColor: '#AF52DE', bgColor: '#F3E5F5', path: '/pages/story/index' },
   { id: 5, name: '旅行清单', iconName: 'luggage', iconColor: '#FF2D55', bgColor: '#FCE4EC', path: '/pages/checklist/index' }
 ])

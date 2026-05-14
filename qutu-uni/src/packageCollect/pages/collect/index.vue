@@ -270,28 +270,28 @@ const goBack = () => {
 // 前往设置
 const goToSettings = () => {
   uni.navigateTo({
-    url: '/pages/collect/settings'
+    url: '/packageCollect/pages/collect/settings'
   })
 }
 
 // 打开相机
 const openCamera = () => {
   uni.navigateTo({
-    url: '/pages/collect/camera'
+    url: '/packageCollect/pages/collect/camera'
   })
 }
 
 // 查看采集详情
 const viewCollection = (item: Collection) => {
   uni.navigateTo({
-    url: `/pages/collect/detail?id=${item.id}`
+    url: `/packageCollect/pages/collect/detail?id=${item.id}`
   })
 }
 
 // 查看分组
 const viewGroup = (group: Group) => {
   uni.navigateTo({
-    url: `/pages/collect/group?id=${group.id}`
+    url: `/packageCollect/pages/collect/group?id=${group.id}`
   })
 }
 

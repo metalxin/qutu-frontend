@@ -212,7 +212,7 @@ const goBack = () => {
 onShareAppMessage(() => {
   return {
     title: collection.value.title,
-    path: `/pages/collect/detail?id=${collection.value.id}`,
+    path: `/packageCollect/pages/collect/detail?id=${collection.value.id}`,
     imageUrl: collection.value.image
   }
 })

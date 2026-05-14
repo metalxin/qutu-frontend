@@ -189,7 +189,7 @@ const goBack = () => {
 }
 
 const goToCreate = () => {
-  uni.navigateTo({ url: '/pages/footprint/map?type=china' })
+  uni.navigateTo({ url: '/packageFootprint/pages/footprint/map?type=china' })
 }
 
 onMounted(() => {

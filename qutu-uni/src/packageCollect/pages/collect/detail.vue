@@ -212,7 +212,7 @@ const previewImage = () => {
 const shareCollection = () => {
   showMoreMenu.value = false
   uni.navigateTo({
-    url: `/pages/collect/share?id=${collectionId.value}`
+    url: `/packageCollect/pages/collect/share?id=${collectionId.value}`
   })
 }
 
@@ -220,7 +220,7 @@ const shareCollection = () => {
 const editCollection = () => {
   showMoreMenu.value = false
   uni.navigateTo({
-    url: `/pages/collect/edit?id=${collectionId.value}&image=${encodeURIComponent(collection.value.image)}`
+    url: `/packageCollect/pages/collect/edit?id=${collectionId.value}&image=${encodeURIComponent(collection.value.image)}`
   })
 }
 

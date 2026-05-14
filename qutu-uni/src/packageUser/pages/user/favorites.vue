@@ -175,7 +175,7 @@ const removeFavorite = async (item: FavoriteSpotItem) => {
 
 const viewDetail = (item: FavoriteSpotItem) => {
   uni.navigateTo({
-    url: `/pages/destination/detail?id=${item.id}`
+    url: `/packageTrip/pages/destination/detail?id=${item.id}`
   })
 }
 
