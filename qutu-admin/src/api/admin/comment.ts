@@ -1,7 +1,6 @@
 import request from '/@/utils/request';
 
 // ========== 评论管理 ==========
-// 后台管理接口路径: /comment-admin (AdminCommentController in qutu-destination)
 
 export function fetchCommentPage(query?: Object) {
 	return request({
@@ -15,6 +14,23 @@ export function delComment(id?: string | number) {
 	return request({
 		url: '/admin/comment-admin/comments/' + id,
 		method: 'delete',
+	});
+}
+
+export function auditComment(id: string | number, status: number) {
+	return request({
+		url: `/admin/comment-admin/comments/${id}/audit`,
+		method: 'put',
+		params: { status },
+	});
+}
+
+export function batchAuditComment(ids: number[], status: number) {
+	return request({
+		url: '/admin/comment-admin/comments/batch-audit',
+		method: 'put',
+		data: ids,
+		params: { status },
 	});
 }
 
