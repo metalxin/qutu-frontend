@@ -41,7 +41,7 @@
 
     <!-- 地图区域 -->
     <view class="map-container" :style="{ top: (navBarHeight + 80) + 'px' }">
-      <map id="nearbyMap" class="nearby-map" :latitude="mapCenter.latitude" :longitude="mapCenter.longitude" :scale="mapScale" :markers="mapMarkers" :show-location="true" :enable-satellite="mapStyleType === 'satellite'" :enable-traffic="showTraffic" @markertap="onMarkerTap" />
+      <map id="nearbyMap" class="nearby-map" :latitude="mapCenter.latitude" :longitude="mapCenter.longitude" :scale="mapScale" :markers="mapMarkers" :show-location="true" :enable-satellite="mapStyleType === 'satellite'" :enable-traffic="showTraffic" @markertap="onMarkerTap" @callouttap="onMarkerTap" />
       <cover-view class="map-controls">
         <cover-view class="control-btn" @click="showMapStylePicker = true">
           <cover-view class="control-text">🗺</cover-view>
@@ -369,7 +369,8 @@ const loadPois = async () => {
 const selectCategory = (id: number) => { currentCategoryId.value = id; loadPois() }
 
 const onMarkerTap = async (e: any) => {
-  const markerId = e.detail?.markerId ?? e.markerId
+  const rawId = e.detail?.markerId ?? e.markerId
+  const markerId = Number(rawId)
   const poi = allPois.value.find(p => p.id === markerId)
   if (!poi) return
   uni.showLoading({ title: '加载详情...' })

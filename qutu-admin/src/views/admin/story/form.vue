@@ -20,6 +20,11 @@
 								<span>基础信息</span>
 							</div>
 						</template>
+						<el-form-item label="所属用户" prop="userId">
+							<el-select v-model="form.userId" clearable filterable remote reserve-keyword placeholder="搜索用户名或手机号" :remote-method="searchUsers" :loading="userSearching" style="width: 100%">
+								<el-option v-for="u in userOptions" :key="u.userId" :label="u.username + (u.phone ? ' (' + u.phone + ')' : '')" :value="u.userId" />
+							</el-select>
+						</el-form-item>
 						<el-form-item label="故事内容" prop="content">
 							<el-input v-model="form.content" type="textarea" :rows="4" placeholder="记录旅途中的故事..." />
 						</el-form-item>
@@ -110,6 +115,11 @@
 								<span>基础信息</span>
 							</div>
 						</template>
+						<el-form-item label="所属用户" prop="userId">
+							<el-select v-model="form.userId" clearable filterable remote reserve-keyword placeholder="搜索用户名或手机号" :remote-method="searchUsers" :loading="userSearching" style="width: 100%">
+								<el-option v-for="u in userOptions" :key="u.userId" :label="u.username + (u.phone ? ' (' + u.phone + ')' : '')" :value="u.userId" />
+							</el-select>
+						</el-form-item>
 						<el-form-item label="故事内容" prop="content">
 							<el-input v-model="form.content" type="textarea" :rows="4" placeholder="记录旅途中的故事..." />
 						</el-form-item>
@@ -230,6 +240,7 @@ import { addStory, getStoryObj, putStory } from '/@/api/admin/story';
 import { fetchSpotPage } from '/@/api/admin/destination';
 import { useMessage } from '/@/hooks/message';
 import { Location } from '@element-plus/icons-vue';
+import request from '/@/utils/request';
 
 const ImageUpload = defineAsyncComponent(() => import('/@/components/Upload/Image.vue'));
 const MapPicker = defineAsyncComponent(() => import('/@/components/MapPicker/index.vue'));
@@ -243,6 +254,8 @@ const currentStep = ref(0);
 const mapPickerRef = ref();
 
 const spotOptions = ref<any[]>([]);
+const userSearching = ref(false);
+const userOptions = ref<any[]>([]);
 
 const stepsConfig = computed(() => {
 	if (form.id) {
@@ -280,6 +293,7 @@ const form = reactive({
 });
 
 const dataRules = ref({
+	userId: [{ required: true, message: '请选择所属用户', trigger: 'change' }],
 	content: [{ required: true, message: '故事内容不能为空', trigger: 'blur' }],
 	recordDate: [{ required: true, message: '记录日期不能为空', trigger: 'change' }],
 });
@@ -338,10 +352,21 @@ const loadSpotOptions = async () => {
 	}
 };
 
+const searchUsers = async (query: string) => {
+	if (!query) { userOptions.value = []; return; }
+	userSearching.value = true;
+	try {
+		const res = await request({ url: '/admin/user/page', method: 'get', params: { username: query, size: 20 } });
+		userOptions.value = res.data?.records || [];
+	} catch { userOptions.value = []; }
+	finally { userSearching.value = false; }
+};
+
 const openDialog = async (id?: string) => {
 	visible.value = true;
 	currentStep.value = 0;
 	const isEditMode = id !== undefined && id !== null && id !== '';
+	userOptions.value = [];
 
 	Object.assign(form, {
 		id: isEditMode ? (id as any) : '',
@@ -381,6 +406,12 @@ const openDialog = async (id?: string) => {
 				images: data.images || [],
 				imagesStr: (data.images || []).join(','),
 			});
+			if (data.userId) {
+				try {
+					const uRes: any = await request({ url: '/admin/user/page', method: 'get', params: { userId: data.userId, size: 1 } });
+					if (uRes.data?.records?.length) userOptions.value = uRes.data.records;
+				} catch {}
+			}
 		} catch (err: any) {
 			useMessage().error(err.msg || '获取数据失败');
 		} finally {

@@ -2,47 +2,22 @@
 	<div class="select-none">
 		<div class="login-container">
 			<div class="login-box">
-				<!-- 左侧 -->
 				<div class="login-box-left">
-					<div class="login-left-decoration">
-						<div class="login-logo-icon">
-						<img src="/assets/login/logo.png" alt="logo" />
-						</div>
-					</div>
 					<div class="login-left-title">
 						<h2>趣途后台管理系统</h2>
 						<p>欢迎登录</p>
 					</div>
 				</div>
 				
-				<!-- 右侧表单 -->
 				<div class="login-form">
-					<!-- 下载二维码 -->
-					<div class="login-qr-download">
-						<button class="qr-btn">扫码下载APP</button>
-						<div class="qr-icon">
-							<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-								<rect x="2" y="2" width="28" height="28" rx="4" stroke="#ddd" stroke-width="1.5"/>
-								<rect x="6" y="6" width="20" height="20" rx="2" fill="#36b36e" opacity="0.1"/>
-								<rect x="8" y="8" width="6" height="6" fill="#36b36e"/>
-								<rect x="18" y="8" width="6" height="6" fill="#36b36e"/>
-								<rect x="8" y="18" width="6" height="6" fill="#36b36e"/>
-								<rect x="18" y="18" width="6" height="6" fill="#36b36e"/>
-							</svg>
-						</div>
-					</div>
-					
 					<div class="login-title">欢迎登录</div>
 					<el-tabs v-model="tabsActiveName">
-						<!-- 用户名密码登录 -->
 						<el-tab-pane :label="$t('label.one1')" name="account">
 							<Password @signInSuccess="signInSuccess" />
 						</el-tab-pane>
-						<!-- 手机号登录 -->
 						<el-tab-pane :label="$t('label.two2')" name="mobile">
 							<Mobile @signInSuccess="signInSuccess" />
 						</el-tab-pane>
-						<!-- 注册 -->
 						<el-tab-pane :label="$t('label.register')" name="register" v-if="registerEnable">
 							<Register @afterSuccess="tabsActiveName = 'account'" />
 						</el-tab-pane>
@@ -56,8 +31,6 @@
 <script setup lang="ts" name="loginIndex">
 import { useThemeConfig } from '/@/stores/themeConfig';
 import { NextLoading } from '/@/utils/loading';
-import illustration from '/@/assets/login/login_bg.svg';
-import miniQr from '/@/assets/login/mini_qr.png';
 import { useI18n } from 'vue-i18n';
 import { formatAxis } from '/@/utils/formatTime';
 import { useMessage } from '/@/hooks/message';

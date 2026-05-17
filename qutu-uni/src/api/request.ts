@@ -3,25 +3,21 @@
  * 支持接口调用失败时自动降级到mock数据
  */
 
-// API基础配置
-export let BASE_URL = 'https://api.sdstudio.cn'
+export let BASE_URL = (import.meta.env.VITE_API_BASE_URL as string) || ''
 // #ifdef H5
 BASE_URL = ''
 // #endif
 // #ifdef MP-WEIXIN
-// BASE_URL = 'https://api.sdstudio.cn'
-BASE_URL = 'http://localhost:9999'
+BASE_URL = (import.meta.env.VITE_WX_API_BASE_URL as string) || BASE_URL
 // #endif
 
-// H5 运行时兜底：确保走 Vite 代理，不直连远程地址
 if (typeof window !== 'undefined') {
   BASE_URL = ''
 }
 
-const TIMEOUT = 10000 // 请求超时时间
+const TIMEOUT = Number(import.meta.env.VITE_REQUEST_TIMEOUT) || 10000
 
-// 是否启用mock模式（开发环境默认关闭，对接真实API）
-export const USE_MOCK = false
+export const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true'
 
 // 请求配置接口
 interface RequestConfig {
