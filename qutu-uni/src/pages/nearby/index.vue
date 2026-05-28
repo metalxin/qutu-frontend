@@ -119,15 +119,7 @@
     <AppTabBar current="nearby" @add="showAddMenuPopup = true" />
 
     <!-- 添加菜单弹窗 -->
-    <view class="add-menu-mask" :class="{ show: showAddMenuPopup }" @click="showAddMenuPopup = false"></view>
-    <view class="add-menu-popup" :class="{ show: showAddMenuPopup }">
-      <view class="menu-options">
-        <view class="menu-option dark animate-item item-1" :class="{ show: showAddMenuPopup }" @click="handleAddLocation"><text class="option-title">添加地点</text><view class="option-icon-wrapper"><SFIcon name="location" :size="40" color="#FFFFFF" /></view></view>
-        <view class="menu-option light animate-item item-2" :class="{ show: showAddMenuPopup }" @click="handleRecordTrip"><view class="option-content"><text class="option-title">记录行程</text><text class="option-desc">记录你的出行路线和足迹</text></view><view class="option-icon-wrapper light"><SFIcon name="route" :size="40" color="#FF9500" /></view></view>
-        <view class="menu-option light animate-item item-3" :class="{ show: showAddMenuPopup }" @click="handleTakePhoto"><view class="option-content"><text class="option-title">拍照打卡</text><text class="option-desc">拍照记录当前位置</text></view><view class="option-icon-wrapper light"><SFIcon name="camera" :size="40" color="#AF52DE" /></view></view>
-      </view>
-      <view class="menu-close animate-item item-4" :class="{ show: showAddMenuPopup }" @click="showAddMenuPopup = false"><SFIcon name="close" :size="40" color="#FFFFFF" /></view>
-    </view>
+    <AddMenuPopup v-model="showAddMenuPopup" />
 
     <!-- 城市选择弹窗 -->
     <view class="popup-mask" v-if="showCityPopup" @click="showCityPopup = false"></view>
@@ -196,6 +188,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import SFIcon from '@/components/SFIcon/SFIcon.vue'
+import AddMenuPopup from '@/components/AddMenuPopup/AddMenuPopup.vue'
 import AppTabBar from '@/components/AppTabBar/AppTabBar.vue'
 import UserSlidePanel from '@/components/UserSlidePanel/UserSlidePanel.vue'
 import { getNearbyCategories, getNearbyPois, getPoiDetail, favoritePoi, unfavoritePoi, checkinPoi } from '@/api'
@@ -559,17 +552,6 @@ onShow(() => {
 .cancel-text { font-size: 28rpx; color: #1D1D1F; }
 .footer-confirm { flex: 1; display: flex; align-items: center; justify-content: center; padding: 28rpx 40rpx; background: #00C853; border-radius: 100rpx; }
 .confirm-text { font-size: 30rpx; color: #FFF; font-weight: 600; }
-.add-menu-mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0); z-index: 998; pointer-events: none; transition: all 0.4s; &.show { background: rgba(0,0,0,0.3); backdrop-filter: blur(30px); pointer-events: auto; } }
-.add-menu-popup { position: fixed; left: 0; right: 0; bottom: 0; z-index: 999; padding: 0 48rpx; padding-bottom: calc(60rpx + env(safe-area-inset-bottom)); pointer-events: none; &.show { pointer-events: auto; } }
-.menu-options { display: flex; flex-direction: column; gap: 20rpx; }
-.animate-item { opacity: 0; transform: translateY(80rpx) scale(0.9); transition: all 0.5s cubic-bezier(0.34,1.56,0.64,1); &.show { opacity: 1; transform: translateY(0) scale(1); } &.item-1 { transition-delay: 0s; } &.item-2 { transition-delay: 0.05s; } &.item-3 { transition-delay: 0.1s; } &.item-4 { transition-delay: 0.15s; } }
-.menu-option { display: flex; align-items: center; justify-content: space-between; padding: 36rpx 40rpx; border-radius: 28rpx; &:active { transform: scale(0.98) !important; } &.dark { background: rgba(30,30,30,0.95); } &.light { background: rgba(255,255,255,0.95); } }
-.option-content { flex: 1; display: flex; flex-direction: column; gap: 8rpx; }
-.option-title { font-size: 32rpx; font-weight: 600; color: #1D1D1F; }
-.menu-option.dark .option-title { color: #FFF; }
-.option-desc { font-size: 24rpx; color: #86868B; }
-.option-icon-wrapper { width: 56rpx; height: 56rpx; display: flex; align-items: center; justify-content: center; &.light { width: 48rpx; height: 48rpx; } }
-.menu-close { width: 96rpx; height: 96rpx; margin: 48rpx auto 0; display: flex; align-items: center; justify-content: center; background: rgba(128,128,128,0.6); border-radius: 50%; }
 .marker-canvas { position: fixed; left: -9999px; top: -9999px; }
 
 .popup-mask {

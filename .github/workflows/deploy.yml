@@ -1,0 +1,101 @@
+name: Frontend CI/CD
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - 'qutu-admin/**'
+      - 'qutu-uni/**'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch:
+    inputs:
+      build_admin:
+        description: 'Build admin UI'
+        required: false
+        default: 'true'
+      build_h5:
+        description: 'Build H5 UI'
+        required: false
+        default: 'true'
+
+env:
+  REGISTRY: crpi-ubtxy1vobolwzut3.cn-hangzhou.personal.cr.aliyuncs.com
+  IMAGE_PREFIX: qutux
+
+jobs:
+  build-admin-ui:
+    if: ${{ github.event.inputs.build_admin != 'false' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: npm
+          cache-dependency-path: qutu-admin/package.json
+
+      - name: Install and build
+        run: |
+          cd qutu-admin
+          npm install
+          npm run build
+
+      - name: Docker login
+        run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }} ${{ env.REGISTRY }}
+
+      - name: Build and push admin UI image
+        run: |
+          IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/qutu-admin-ui"
+          docker build -t "$IMAGE:latest" -f qutu-admin/docker/Dockerfile qutu-admin
+          docker push "$IMAGE:latest"
+
+  build-h5-ui:
+    if: ${{ github.event.inputs.build_h5 != 'false' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: npm
+          cache-dependency-path: qutu-uni/package.json
+
+      - name: Install and build H5
+        run: |
+          cd qutu-uni
+          npm install
+          npm run build:h5
+
+      - name: Docker login
+        run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }} ${{ env.REGISTRY }}
+
+      - name: Build and push H5 image
+        run: |
+          IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/qutu-h5-ui"
+          docker build -t "$IMAGE:latest" -f qutu-uni/docker/Dockerfile qutu-uni
+          docker push "$IMAGE:latest"
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [build-admin-ui, build-h5-ui]
+    if: ${{ always() && (needs.build-admin-ui.result == 'success' || needs.build-admin-ui.result == 'skipped') && (needs.build-h5-ui.result == 'success' || needs.build-h5-ui.result == 'skipped') }}
+    steps:
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT }}
+          script: |
+            set -e
+            cd ${{ secrets.SERVER_DEPLOY_PATH }}
+            bash deploy.sh latest
