@@ -62,6 +62,13 @@
 						"enableShareAppMessage": true,
 						"enableShareTimeline": true
 					}
+				},
+				{
+					"path": "pages/guide/create",
+					"style": {
+						"navigationStyle": "custom",
+						"navigationBarTitleText": "写攻略"
+					}
 				}
 			]
 		},

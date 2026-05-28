@@ -143,6 +143,10 @@
         <SFIcon name="share" :size="32" color="#86868B" />
         <text class="btn-text">分享</text>
       </view>
+      <view class="action-btn share-code" @click="openShareCodePopup">
+        <text class="btn-icon">🔗</text>
+        <text class="btn-text">口令</text>
+      </view>
       <view class="action-btn primary" @click="showTripSheet = true">
         <text class="btn-text">一键生成行程</text>
       </view>
@@ -330,6 +334,33 @@
       type="2d"
       :style="{ position: 'fixed', left: '0', top: '0', width: '600px', height: '960px', opacity: '0', zIndex: -1, pointerEvents: 'none' }"
     ></canvas>
+
+    <!-- 攻略口令分享弹窗 -->
+    <view class="sc-overlay" :class="{ show: showShareCodePopup }" @tap="closeShareCodePopup"></view>
+    <view class="sc-popup" :class="{ show: showShareCodePopup }">
+      <view class="sc-header">
+        <text class="sc-title">分享攻略口令</text>
+        <view class="sc-close" @tap="closeShareCodePopup">
+          <text class="close-icon">×</text>
+        </view>
+      </view>
+      <view class="sc-body" v-if="!shareCodeValue">
+        <text class="sc-desc">生成口令后，好友在首页点击「使用口令」输入即可查看你的攻略</text>
+        <view class="sc-generate" @tap="doGenerateShareCode">
+          <text class="sc-generate-text">{{ generatingCode ? '生成中...' : '生成口令' }}</text>
+        </view>
+      </view>
+      <view class="sc-body" v-else>
+        <text class="sc-desc">将以下口令分享给好友</text>
+        <view class="sc-code-display">
+          <text class="sc-code-text">{{ shareCodeValue }}</text>
+        </view>
+        <view class="sc-copy" @tap="copyShareCode">
+          <text class="sc-copy-text">复制口令</text>
+        </view>
+        <text class="sc-hint">好友在首页「+ → 使用口令」中输入即可查看攻略</text>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -338,7 +369,7 @@ import { ref, computed, onMounted, getCurrentInstance, nextTick } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
 import SFIcon from '@/components/SFIcon/SFIcon.vue'
-import { getGuideDetail, toggleGuideCollect, checkGuideFavorite, type GuideDetail as GuideDetailType, type GuideDay } from '@/api'
+import { getGuideDetail, toggleGuideCollect, checkGuideFavorite, generateGuideShareCode, type GuideDetail as GuideDetailType, type GuideDay } from '@/api'
 import { generateAIRoute, getPreferenceOptions, getTransportModes, type PreferenceOption, type TransportMode } from '../../api/planning'
 import { generateGuidePoster, saveImageToAlbum, copyShareLink, trackShare } from '../../utils/share'
 
@@ -430,6 +461,41 @@ const goBack = () => {
 
 // 收藏状态
 const isCollected = ref(false)
+
+// 口令分享
+const showShareCodePopup = ref(false)
+const shareCodeValue = ref('')
+const generatingCode = ref(false)
+
+const openShareCodePopup = () => {
+  showShareCodePopup.value = true
+}
+
+const closeShareCodePopup = () => {
+  showShareCodePopup.value = false
+}
+
+const doGenerateShareCode = async () => {
+  if (generatingCode.value) return
+  generatingCode.value = true
+  try {
+    const code = await generateGuideShareCode(guideId.value)
+    shareCodeValue.value = code || ''
+  } catch (error: any) {
+    uni.showToast({ title: error.message || '生成失败', icon: 'none' })
+  } finally {
+    generatingCode.value = false
+  }
+}
+
+const copyShareCode = () => {
+  uni.setClipboardData({
+    data: shareCodeValue.value,
+    success: () => {
+      uni.showToast({ title: '口令已复制', icon: 'success' })
+    }
+  })
+}
 
 // 分享弹窗
 const showSharePopup = ref(false)
@@ -1720,5 +1786,132 @@ $border-radius-md: 16rpx;
   font-size: 30rpx;
   font-weight: 600;
   color: #FFFFFF;
+}
+
+// 口令分享弹窗
+.sc-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+
+  &.show {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+.sc-popup {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  background: #FFFFFF;
+  border-radius: 32rpx 32rpx 0 0;
+  padding: 40rpx 32rpx;
+  padding-bottom: calc(40rpx + env(safe-area-inset-bottom));
+  transform: translateY(100%);
+  transition: transform 0.3s ease;
+
+  &.show {
+    transform: translateY(0);
+  }
+}
+
+.sc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32rpx;
+}
+
+.sc-title {
+  font-size: 34rpx;
+  font-weight: 600;
+  color: #1D1D1F;
+}
+
+.sc-close {
+  width: 56rpx;
+  height: 56rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sc-body {
+  text-align: center;
+}
+
+.sc-desc {
+  font-size: 28rpx;
+  color: #86868B;
+  margin-bottom: 32rpx;
+  display: block;
+}
+
+.sc-generate {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24rpx 64rpx;
+  background: #00C853;
+  border-radius: 100rpx;
+}
+
+.sc-generate-text {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #FFFFFF;
+}
+
+.sc-code-display {
+  background: #F2F2F7;
+  border-radius: 16rpx;
+  padding: 40rpx;
+  margin-bottom: 24rpx;
+}
+
+.sc-code-text {
+  font-size: 48rpx;
+  font-weight: 700;
+  color: #00C853;
+  letter-spacing: 8rpx;
+}
+
+.sc-copy {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20rpx 48rpx;
+  background: #00C853;
+  border-radius: 100rpx;
+  margin-bottom: 24rpx;
+}
+
+.sc-copy-text {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #FFFFFF;
+}
+
+.sc-hint {
+  font-size: 24rpx;
+  color: #86868B;
+  display: block;
+}
+
+// 底部操作栏口令按钮
+.action-btn.share-code {
+  .btn-icon {
+    font-size: 28rpx;
+  }
 }
 </style>

@@ -5,7 +5,10 @@
         <SFIcon name="back" :size="40" color="#1D1D1F" />
       </view>
       <text class="nav-title">{{ currentSpotId ? '相关攻略' : '精选攻略' }}</text>
-      <view class="nav-placeholder"></view>
+      <view class="nav-action" @click="goToCreate" v-if="!currentSpotId">
+        <text class="nav-action-text">写攻略</text>
+      </view>
+      <view class="nav-placeholder" v-else></view>
     </view>
 
     <view
@@ -280,6 +283,12 @@ const goToDetail = (id: number) => {
   })
 }
 
+const goToCreate = () => {
+  uni.navigateTo({
+    url: '/packageGuide/pages/guide/create'
+  })
+}
+
 const loadMore = () => {
   if (!loading.value && hasMore.value) {
     if (currentSpotId.value) {
@@ -339,6 +348,16 @@ $shadow-light: 0 2rpx 20rpx rgba(0, 0, 0, 0.06);
 
 .nav-placeholder {
   width: 60rpx;
+}
+
+.nav-action {
+  padding: 8rpx 24rpx;
+}
+
+.nav-action-text {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #00C853;
 }
 
 .fixed-header {

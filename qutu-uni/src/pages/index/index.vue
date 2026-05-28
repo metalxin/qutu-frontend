@@ -633,7 +633,7 @@ import { onShow } from '@dcloudio/uni-app'
 import SFIcon from '@/components/SFIcon/SFIcon.vue'
 import AppTabBar from '@/components/AppTabBar/AppTabBar.vue'
 import UserSlidePanel from '@/components/UserSlidePanel/UserSlidePanel.vue'
-import { getDestinations, getRegionGroups, getHotCities, getDestinationSpots, getInspirations, searchDestinations, searchInspirations, getFootprintStats, importByShareCode, importRouteByShareCode } from '@/api'
+import { getDestinations, getRegionGroups, getHotCities, getDestinationSpots, getInspirations, searchDestinations, searchInspirations, getFootprintStats, importByShareCode, importRouteByShareCode, importGuideByShareCode } from '@/api'
 import type { ShareCodeImportResult } from '@/api/modules/checklist'
 import { DEFAULT_AVATAR, getUserInfo } from '@/api/modules/user'
 import type { Destination, SpotListItem } from '@/api/modules/destination'
@@ -867,6 +867,20 @@ const submitCode = async () => {
         codeDigits.value = ['', '', '', '', '', '']
         uni.setStorageSync('importedRouteShareCode', code)
         uni.navigateTo({ url: '/packageTrip/pages/planning/detail?shareCode=' + encodeURIComponent(code) })
+      }, 800)
+      return
+    }
+  } catch {}
+
+  // 尝试攻略口令
+  try {
+    const guideRes = await importGuideByShareCode(code)
+    if (guideRes && guideRes.guideId) {
+      uni.showToast({ title: '攻略口令验证成功', icon: 'success' })
+      setTimeout(() => {
+        showCodePopup.value = false
+        codeDigits.value = ['', '', '', '', '', '']
+        uni.navigateTo({ url: `/packageGuide/pages/guide/detail?id=${guideRes.guideId}` })
       }, 800)
       return
     }

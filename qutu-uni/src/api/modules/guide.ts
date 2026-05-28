@@ -414,3 +414,94 @@ export async function searchInspirations(keyword: string, limit: number = 20) {
     return []
   }
 }
+
+// 用户创建攻略相关类型
+export interface GuideUserCreateDTO {
+  title: string
+  coverUrl?: string
+  summary?: string
+  days?: number
+  nights?: number
+  tag?: string
+  cityId?: number
+  cityName?: string
+  itinerary?: GuideDayCreateDTO[]
+}
+
+export interface GuideDayCreateDTO {
+  dayIndex?: number
+  title?: string
+  summary?: string
+  items?: GuideDayItemCreateDTO[]
+}
+
+export interface GuideDayItemCreateDTO {
+  type?: string
+  title?: string
+  content?: string
+  spotId?: number
+  orderNum?: number
+}
+
+export interface GuideShareCodeImportVO {
+  guideId: number
+  title: string
+  cover: string
+  summary: string
+  days: number
+  nights: number
+  tag: string
+  cityName: string
+  itinerary: GuideDay[]
+}
+
+/**
+ * 用户创建攻略
+ */
+export function createUserGuide(dto: GuideUserCreateDTO) {
+  return request<number>({
+    url: '/admin/guides/user/create',
+    method: 'POST',
+    data: dto,
+    useMock: false
+  })
+}
+
+/**
+ * 获取用户创建的攻略列表
+ */
+export function getUserGuides(params?: { current?: number; size?: number }) {
+  return request<FavoriteGuidePage>({
+    url: '/admin/guides/user/guides',
+    method: 'GET',
+    data: {
+      current: params?.current ?? 1,
+      size: params?.size ?? 20
+    },
+    useMock: false
+  })
+}
+
+/**
+ * 生成攻略分享口令
+ */
+export function generateGuideShareCode(guideId: number, maxUseCount?: number) {
+  return request<string>({
+    url: `/admin/guides/share-code/${guideId}`,
+    method: 'POST',
+    data: maxUseCount ? { maxUseCount } : {},
+    useMock: false
+  })
+}
+
+/**
+ * 通过口令导入攻略
+ */
+export function importGuideByShareCode(shareCode: string) {
+  return request<GuideShareCodeImportVO>({
+    url: '/admin/guides/share-code/import',
+    method: 'POST',
+    data: { shareCode },
+    useMock: false
+  })
+}

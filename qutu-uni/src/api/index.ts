@@ -51,7 +51,11 @@ export {
   toggleGuideCollect,
   checkGuideFavorite,
   getUserFavoriteGuides,
-  generateGuideTrip
+  generateGuideTrip,
+  createUserGuide,
+  getUserGuides,
+  generateGuideShareCode,
+  importGuideByShareCode
 } from './modules/guide'
 
 export type {
@@ -63,7 +67,11 @@ export type {
   RelatedGuide,
   InspirationItem,
   FavoriteGuideItem,
-  FavoriteGuidePage
+  FavoriteGuidePage,
+  GuideUserCreateDTO,
+  GuideDayCreateDTO,
+  GuideDayItemCreateDTO,
+  GuideShareCodeImportVO
 } from './modules/guide'
 
 export {
