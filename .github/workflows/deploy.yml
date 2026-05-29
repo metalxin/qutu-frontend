@@ -21,8 +21,7 @@ on:
         default: 'true'
 
 env:
-  REGISTRY: crpi-ubtxy1vobolwzut3.cn-hangzhou.personal.cr.aliyuncs.com
-  IMAGE_PREFIX: qutux
+  REGISTRY: registry.cn-hangzhou.aliyuncs.com
 
 jobs:
   build-admin-ui:
@@ -50,7 +49,7 @@ jobs:
 
       - name: Build and push admin UI image
         run: |
-          IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/qutu-admin-ui"
+          IMAGE="${{ env.REGISTRY }}/qutux/qutu-admin-ui"
           docker build -t "$IMAGE:latest" -f qutu-admin/docker/Dockerfile qutu-admin
           docker push "$IMAGE:latest"
 
@@ -79,7 +78,7 @@ jobs:
 
       - name: Build and push H5 image
         run: |
-          IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/qutu-h5-ui"
+          IMAGE="${{ env.REGISTRY }}/qutux/qutu-h5-ui"
           docker build -t "$IMAGE:latest" -f qutu-uni/docker/Dockerfile qutu-uni
           docker push "$IMAGE:latest"
 
@@ -98,4 +97,9 @@ jobs:
           script: |
             set -e
             cd ${{ secrets.SERVER_DEPLOY_PATH }}
-            bash deploy.sh latest
+            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }} registry.cn-hangzhou.aliyuncs.com
+            docker pull registry.cn-hangzhou.aliyuncs.com/qutux/qutu-admin-ui:latest
+            docker pull registry.cn-hangzhou.aliyuncs.com/qutux/qutu-h5-ui:latest
+            docker tag registry.cn-hangzhou.aliyuncs.com/qutux/qutu-admin-ui:latest qutu-admin-ui:latest
+            docker tag registry.cn-hangzhou.aliyuncs.com/qutux/qutu-h5-ui:latest qutu-h5-ui:latest
+            docker compose up -d --no-deps qutu-admin-ui qutu-h5-ui
