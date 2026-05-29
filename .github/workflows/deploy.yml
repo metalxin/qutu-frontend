@@ -21,7 +21,7 @@ on:
         default: 'true'
 
 env:
-  REGISTRY: registry.cn-hangzhou.aliyuncs.com
+  REGISTRY: crpi-ubtxy1vobolwzut3.cn-hangzhou.personal.cr.aliyuncs.com
 
 jobs:
   build-admin-ui:
@@ -97,9 +97,9 @@ jobs:
           script: |
             set -e
             cd ${{ secrets.SERVER_DEPLOY_PATH }}
-            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }} registry.cn-hangzhou.aliyuncs.com
-            docker pull registry.cn-hangzhou.aliyuncs.com/qutux/qutu-admin-ui:latest
-            docker pull registry.cn-hangzhou.aliyuncs.com/qutux/qutu-h5-ui:latest
-            docker tag registry.cn-hangzhou.aliyuncs.com/qutux/qutu-admin-ui:latest qutu-admin-ui:latest
-            docker tag registry.cn-hangzhou.aliyuncs.com/qutux/qutu-h5-ui:latest qutu-h5-ui:latest
+            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }} crpi-ubtxy1vobolwzut3.cn-hangzhou.personal.cr.aliyuncs.com
+            docker pull crpi-ubtxy1vobolwzut3.cn-hangzhou.personal.cr.aliyuncs.com/qutux/qutu-admin-ui:latest
+            docker pull crpi-ubtxy1vobolwzut3.cn-hangzhou.personal.cr.aliyuncs.com/qutux/qutu-h5-ui:latest
+            docker tag crpi-ubtxy1vobolwzut3.cn-hangzhou.personal.cr.aliyuncs.com/qutux/qutu-admin-ui:latest qutu-admin-ui:latest
+            docker tag crpi-ubtxy1vobolwzut3.cn-hangzhou.personal.cr.aliyuncs.com/qutux/qutu-h5-ui:latest qutu-h5-ui:latest
             docker compose up -d --no-deps qutu-admin-ui qutu-h5-ui
